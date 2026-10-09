@@ -12,4 +12,5 @@ export const APP_COMPONENTS = {
   video: lazy(() => import('./video/VideoApp.jsx')),
   calc: lazy(() => import('./calculator/Calculator.jsx')),
   editor: lazy(() => import('./editor/Editor.jsx')),
+  weather: lazy(() => import('./weather/WeatherApp.jsx')),
 };

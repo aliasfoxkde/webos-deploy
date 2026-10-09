@@ -5,13 +5,34 @@ import EmbedFrame from './EmbedFrame.jsx';
 
 const MIN_W = 320, MIN_H = 220;
 
+/* Resize directions → CSS cursor. All eight edges/corners are live handles. */
+const DIRS = ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'];
+const CURSOR = { n: 'ns-resize', s: 'ns-resize', e: 'ew-resize', w: 'ew-resize', ne: 'nesw-resize', sw: 'nesw-resize', nw: 'nwse-resize', se: 'nwse-resize' };
+
+// Apply a pointer delta to a starting rect, honoring the dragged edges and
+// clamping to minimums without inverting the window.
+function resized(start, dx, dy, dir) {
+  const r = { ...start.rect };
+  if (dir.includes('e')) r.w = Math.max(MIN_W, start.rect.w + dx);
+  if (dir.includes('s')) r.h = Math.max(MIN_H, start.rect.h + dy);
+  if (dir.includes('w')) {
+    const w = Math.max(MIN_W, start.rect.w - dx);
+    r.x = start.rect.x + (start.rect.w - w);
+    r.w = w;
+  }
+  if (dir.includes('n')) {
+    const h = Math.max(MIN_H, start.rect.h - dy);
+    r.y = start.rect.y + (start.rect.h - h);
+    r.h = h;
+  }
+  return r;
+}
+
 export default function Window({ win }) {
   const os = useOS();
   const app = os.findApp(win.appId);
-  const ref = useRef(null);
   const [loaded, setLoaded] = useState(false);
   const [slow, setSlow] = useState(false);
-  const dragState = useRef(null);
 
   useEffect(() => {
     if (loaded) return;
@@ -22,28 +43,30 @@ export default function Window({ win }) {
   if (!app) return null;
   const focused = os.focused === win.id;
 
-  const onTitlePointerDown = (e) => {
-    if (e.target.closest('.tb-btn') || win.max) return;
+  // Shared pointer plumbing for titlebar drag + edge resize.
+  const beginGesture = (e, mode, dir) => {
+    e.preventDefault();
     os.focus(win.id);
-    const startX = e.clientX - win.rect.x, startY = e.clientY - win.rect.y;
-    dragState.current = 'move';
+    const start = { x: e.clientX, y: e.clientY, rect: { ...win.rect } };
+    let last = null;
     const move = (ev) => {
-      if (dragState.current === 'move') {
+      const dx = ev.clientX - start.x;
+      const dy = ev.clientY - start.y;
+      if (mode === 'move') {
         os.setRect(win.id, {
-          ...win.rect,
-          x: Math.max(-win.rect.w + 90, ev.clientX - startX),
-          y: Math.max(0, Math.min(window.innerHeight - 100, ev.clientY - startY)),
+          ...start.rect,
+          x: Math.max(-start.rect.w + 90, ev.clientX - (start.x - start.rect.x)),
+          y: Math.max(0, Math.min(window.innerHeight - 100, ev.clientY - (start.y - start.rect.y))),
         });
-      } else if (dragState.current === 'resize') {
-        os.setRect(win.id, {
-          ...win.rect,
-          w: Math.max(MIN_W, ev.clientX - win.rect.x),
-          h: Math.max(MIN_H, ev.clientY - win.rect.y),
-        });
+      } else {
+        last = resized(start, dx, dy, dir);
+        os.setRect(win.id, last);
       }
     };
     const up = () => {
-      dragState.current = null;
+      // Snap any clamped edge back to its min instead of leaving a
+      // negative-size rect behind.
+      if (mode === 'resize' && last) os.setRect(win.id, last);
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);
     };
@@ -51,13 +74,29 @@ export default function Window({ win }) {
     window.addEventListener('pointerup', up);
   };
 
+  const onTitlePointerDown = (e) => {
+    if (e.target.closest('.tb-btn') || win.max) return;
+    beginGesture(e, 'move');
+  };
+
   const style = win.max
     ? { left: 0, top: 0, width: '100%', height: '100%', zIndex: win.z }
     : { left: win.rect.x, top: win.rect.y, width: win.rect.w, height: win.rect.h, zIndex: win.z };
 
+  const pluginBody = (() => {
+    const Plugin = APP_COMPONENTS[win.appId];
+    if (Plugin) {
+      return (
+        <Suspense fallback={<div className="win-loading"><div className="spin" /><span>Starting {app.name}…</span></div>}>
+          <Plugin />
+        </Suspense>
+      );
+    }
+    return <EmbedFrame app={app} onLoaded={() => setLoaded(true)} slow={slow} />;
+  })();
+
   return (
     <section
-      ref={ref}
       className={`win ${focused ? 'focused' : ''} ${win.max ? 'maximized' : ''}`}
       style={{ ...style, display: win.min ? 'none' : undefined }}
       data-cm={`titlebar:${win.id}`}
@@ -73,17 +112,7 @@ export default function Window({ win }) {
         <button className="tb-btn close" title="Close" onClick={() => os.close(win.id)}>✕</button>
       </header>
       <div className="win-body" style={{ '--win-accent': app.accent }}>
-        {(() => {
-          const Plugin = APP_COMPONENTS[win.appId];
-          if (Plugin) {
-            return (
-              <Suspense fallback={<div className="win-loading"><div className="spin" /><span>Starting {app.name}…</span></div>}>
-                <Plugin />
-              </Suspense>
-            );
-          }
-          return <EmbedFrame app={app} onLoaded={() => setLoaded(true)} slow={slow} />;
-        })()}
+        {pluginBody}
         {!loaded && !APP_COMPONENTS[win.appId] && app.embed ? (
           <div className="win-loading" style={{ opacity: loaded ? 0 : 1 }}>
             <div className="spin" />
@@ -91,7 +120,14 @@ export default function Window({ win }) {
           </div>
         ) : null}
       </div>
-      {!win.max && <div className="tb-resize" onPointerDown={(e) => { e.stopPropagation(); onTitlePointerDown({ ...e, target: e.currentTarget }); dragState.current = 'resize'; }} />}
+      {!win.max && DIRS.map((dir) => (
+        <div
+          key={dir}
+          className={`rz rz-${dir}`}
+          style={{ cursor: CURSOR[dir] }}
+          onPointerDown={(e) => { e.stopPropagation(); beginGesture(e, 'resize', dir); }}
+        />
+      ))}
     </section>
   );
 }

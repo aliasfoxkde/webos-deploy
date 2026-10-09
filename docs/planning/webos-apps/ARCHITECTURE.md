@@ -16,15 +16,27 @@ pattern instead of a shell surgery.
 ```
 webos/src/
 ├── main.jsx                  entry (Vite)
-├── App.jsx                   desktop root: windows, context menus, deep links
+├── App.jsx                   desktop root: windows, icon drag-reorder, context menus,
+│                             properties dialog, widget sidebar, mobile drawer, deep links
 ├── styles.css                shell chrome only (desktop, windows, taskbar, popups)
 ├── os/                       OS core — no UI
-│   ├── registry.js           app data: external defaults, store apps, plugin manifests
-│   └── state.jsx             reducer + persistence (webos.* keys), theme engine
+│   ├── registry.js           app data: external defaults, store apps, plugin manifests;
+│   │                         every row carries description/developer/category/rating
+│   ├── state.jsx             reducer + persistence (webos.* keys), theme engine,
+│   │                         taskbar/desktop/widgets/volume/uiMode state, mobile detect
+│   └── wallpapers.js         CSS-only wallpaper pack + upload/URL dimming math
 ├── shell/                    window-system UI
-│   ├── Window.jsx            window chrome; routes plugin UI vs EmbedFrame
+│   ├── Window.jsx            window chrome; 8-direction resize; plugin vs EmbedFrame
 │   ├── EmbedFrame.jsx        iframe hosting + honest "open in new tab" panel
-│   ├── Taskbar.jsx StartMenu.jsx AppStore.jsx Settings.jsx
+│   ├── Taskbar.jsx           tray (volume/network popups via body portal), clock config;
+│   │                         position/autohide via body[data-tb]
+│   ├── StartMenu.jsx AppStore.jsx (ratings + detail view) Settings.jsx (control center)
+│   ├── settings/             Appearance.jsx + Panels.jsx (desktop/taskbar/widgets/
+│   │                         sound/network/apps/storage/about sections)
+│   ├── Properties.jsx        app property sheet (any icon/taskbar/titlebar right-click)
+│   ├── Sidebar.jsx           widget sidebar (weather/clock/battery/events/notes/storage,
+│   │                         enable + reorder persisted)
+│   ├── MobileDrawer.jsx      Android-style full-screen app grid for mobile mode
 │   ├── ContextMenu.jsx       global right-click system (data-cm="kind:arg")
 │   └── Calendar.jsx          clock popup with per-day events
 └── apps/                     first-party plugins — one directory per app
@@ -38,6 +50,10 @@ webos/src/
     │   ├── buffers.js      pure buffer reducer + localStorage persistence
     │   ├── language.js     ext→language map, theme + highlight style
     │   └── editor.css      scoped styles
+    ├── weather/   Open-Meteo client (keyless)
+    │   ├── manifest.js api.js (geocode + forecast + WMO map) WeatherApp.jsx
+    │   └── WxIcon.jsx      SVG glyphs — own module so the sidebar doesn't pull
+    │                        the app chunk into the shell bundle
     └── calculator/
         ├── manifest.js
         ├── Calculator.jsx    mode tabs + provider
@@ -51,6 +67,24 @@ webos/src/
         ├── modes/            Standard, Scientific, Graphing, Programmer, Converter, History
         └── graph/PlotCanvas.jsx
 ```
+
+### State surface (all `webos.*` localStorage, JSON)
+
+`installed` (store app ids; defaults ship, store apps do NOT preinstall — a
+one-time migration drops the old preinstalled list) · `theme` (preset, accent,
+wallpaper CSS/URL/dataURL, dim) · `desktop.order` + `desktop` (iconSize, sort) ·
+`taskbar` (position bottom|top, autohide, labels, clock24, showDate) · `widgets`
+(enabled ids in display order) · `volume` (level, muted; broadcast to apps as a
+`webos:volume` CustomEvent) · `uiMode` (auto|desktop|mobile) · `events` ·
+`notes` · `weather.loc` · plus per-app keys (`webos.calc.*`, `webos.editor.state`).
+
+### Tray popups and the backdrop-filter containing block
+
+The taskbar footer uses `backdrop-filter`, which makes it the *containing
+block* for `position: fixed` descendants — a popup rendered inside `<footer>`
+with `inset: 0` only covers the 52px bar (this was the calendar-won't-close
+regression). All tray popups now render through `createPortal(…, document.body)`
+(`#tb-portal`), and close via a document-level capture `pointerdown` listener.
 
 ## Plugin contract
 

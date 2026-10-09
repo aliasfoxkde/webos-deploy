@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useReducer } from 'react';
 import { allApps, findApp, DEFAULT_APPS, APP_INDEX } from './registry.js';
+import { wallpaperBackground } from './wallpapers.js';
 
 /* ---------- persistence helpers ---------- */
 function load(key, fallback) {
@@ -12,6 +13,19 @@ function load(key, fallback) {
 }
 function save(key, value) {
   try { localStorage.setItem(`webos.${key}`, JSON.stringify(value)); } catch { /* private mode */ }
+}
+
+/* One-time migration (2026-10-09): the old build preinstalled every store app.
+   Anyone carrying that stale `installed` list starts clean — only defaults are
+   on the desktop now, and store apps are installed deliberately. */
+function loadInstalled() {
+  const raw = load('installed', null);
+  if (raw === null) return [];
+  const known = new Set([
+    'globe', 'storyweaver', 'devopsquest', 'openzenith', 'sculptgl', 'svgedit',
+    'ide', 'opencad', 'sqlite', 'python', 'pyconsole', 'planly',
+  ]);
+  return Array.isArray(raw) ? raw.filter((id) => known.has(id)) : [];
 }
 
 /* ---------- theme presets ---------- */
@@ -42,16 +56,40 @@ export const THEME_PRESETS = {
 
 const DEFAULT_THEME = { preset: 'midnight', accent: '#38bdf8', wallpaper: '', dim: 1 };
 
+/* ---------- per-subsystem defaults ---------- */
+const DEFAULT_TASKBAR = { position: 'bottom', autohide: false, labels: true, clock24: false, showDate: true };
+const DEFAULT_WIDGETS = { enabled: ['weather', 'clock', 'battery', 'events', 'notes', 'storage'] };
+const DEFAULT_DESKTOP = { iconSize: 'md', sort: 'custom' };
+const DEFAULT_VOLUME = { level: 0.7, muted: false };
+
+// Widget ids the sidebar understands (Sidebar.jsx renders each; Settings
+// toggles them). Order of `enabled` = display order.
+export const WIDGET_IDS = ['weather', 'clock', 'battery', 'events', 'notes', 'storage'];
+
 /* ---------- reducer ---------- */
 const initial = () => ({
-  installed: load('installed', ['storyweaver', 'svgedit', 'python', 'pyconsole', 'sqlite', 'ide', 'globe', 'devopsquest', 'openzenith', 'sculptgl', 'opencad', 'planly']),
+  installed: loadInstalled(),
   theme: { ...DEFAULT_THEME, ...load('theme', {}) },
   events: load('events', {}),
+  order: load('desktop.order', []),
+  volume: { ...DEFAULT_VOLUME, ...load('volume', {}) },
+  widgets: { ...DEFAULT_WIDGETS, ...load('widgets', {}) },
+  taskbar: { ...DEFAULT_TASKBAR, ...load('taskbar', {}) },
+  desktop: { ...DEFAULT_DESKTOP, ...load('desktop', {}) },
+  uiMode: load('uiMode', 'auto'), // 'auto' | 'desktop' | 'mobile'
+  mobile: false, // derived at runtime, never persisted
   windows: [],
   zTop: 10,
   focused: null,
   seq: 1,
 });
+
+// Settings-object actions share one code path: patch a slice + persist.
+const patched = (state, key, patch) => {
+  const next = { ...state[key], ...patch };
+  save(key, next);
+  return { ...state, [key]: next };
+};
 
 function reducer(state, action) {
   switch (action.type) {
@@ -63,17 +101,23 @@ function reducer(state, action) {
       const id = state.seq;
       const n = state.windows.length;
       const off = (n % 6) * 28;
-      const mobile = window.innerWidth < 700;
       const def = APP_INDEX.find((a) => a.id === action.appId);
-      const w = mobile ? window.innerWidth : Math.min(def?.win?.w || 1120, window.innerWidth - 80 - off);
-      const h = mobile ? window.innerHeight - 52 : Math.min(def?.win?.h || 700, window.innerHeight - 130 - off);
-      const rect = mobile
-        ? { x: 0, y: 0, w: window.innerWidth, h: window.innerHeight - 52 }
-        : { x: Math.max(12, off + 60), y: Math.max(12, off + 30), w, h };
+      if (state.mobile) {
+        return {
+          ...state,
+          seq: id + 1,
+          windows: [...state.windows, { id, appId: action.appId, rect: { x: 0, y: 0, w: window.innerWidth, h: window.innerHeight - 56 }, z: state.zTop + 1, min: false, max: true }],
+          zTop: state.zTop + 1,
+          focused: id,
+        };
+      }
+      const w = Math.min(def?.win?.w || 1120, window.innerWidth - 80 - off);
+      const h = Math.min(def?.win?.h || 700, window.innerHeight - 130 - off);
+      const rect = { x: Math.max(12, off + 60), y: Math.max(12, off + 30), w, h };
       return {
         ...state,
         seq: id + 1,
-        windows: [...state.windows, { id, appId: action.appId, rect, z: state.zTop + 1, min: false, max: mobile }],
+        windows: [...state.windows, { id, appId: action.appId, rect, z: state.zTop + 1, min: false, max: false }],
         zTop: state.zTop + 1,
         focused: id,
       };
@@ -112,7 +156,12 @@ function reducer(state, action) {
     case 'uninstall': {
       const installed = state.installed.filter((id) => id !== action.appId);
       save('installed', installed);
-      return { ...state, installed, windows: state.windows.filter((w) => w.appId !== action.appId) };
+      return {
+        ...state,
+        installed,
+        windows: state.windows.filter((w) => w.appId !== action.appId),
+        order: state.order.filter((id) => id !== action.appId),
+      };
     }
     case 'setTheme': {
       const theme = { ...state.theme, ...action.patch };
@@ -130,6 +179,36 @@ function reducer(state, action) {
       save('events', events);
       return { ...state, events };
     }
+
+    /* -- desktop icon order -- */
+    case 'setOrder': {
+      const order = action.order;
+      save('desktop.order', order);
+      return { ...state, order, desktop: { ...state.desktop, sort: 'custom' } };
+    }
+    case 'sortDesktop': {
+      const byName = [...state.installed, ...DEFAULT_APPS.map((a) => a.id)]
+        .map((id) => allApps(state.installed).find((a) => a.id === id))
+        .filter(Boolean)
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map((a) => a.id);
+      const desktop = { ...state.desktop, sort: 'name' };
+      save('desktop', desktop);
+      save('desktop.order', byName);
+      return { ...state, order: byName, desktop };
+    }
+
+    /* -- settings-object patches -- */
+    case 'setVolume': return patched(state, 'volume', action.patch);
+    case 'setWidgets': return patched(state, 'widgets', action.patch);
+    case 'setTaskbar': return patched(state, 'taskbar', action.patch);
+    case 'setDesktop': return patched(state, 'desktop', action.patch);
+    case 'setUiMode': {
+      save('uiMode', action.mode);
+      return { ...state, uiMode: action.mode };
+    }
+    case 'setMobile':
+      return state.mobile === action.mobile ? state : { ...state, mobile: action.mobile };
     default:
       return state;
   }
@@ -138,10 +217,22 @@ function reducer(state, action) {
 /* ---------- context ---------- */
 const OSCtx = createContext(null);
 
+const coarse = () => window.matchMedia?.('(pointer: coarse)')?.matches ?? false;
+const autoMobile = () => coarse() || window.innerWidth < 700;
+
 export function OSProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, undefined, initial);
 
-  const apps = useMemo(() => allApps(state.installed), [state.installed]);
+  // Desktop app list: defaults + installed store apps, arranged by the saved
+  // order (unarranged ids keep registry order at the end).
+  const apps = useMemo(() => {
+    const list = allApps(state.installed);
+    if (state.desktop.sort === 'name') return [...list].sort((a, b) => a.name.localeCompare(b.name));
+    if (!state.order.length) return list;
+    const rank = new Map(state.order.map((id, i) => [id, i]));
+    return [...list].sort((a, b) => (rank.get(a.id) ?? 1e9) - (rank.get(b.id) ?? 1e9));
+  }, [state.installed, state.order, state.desktop.sort]);
+
   const api = useMemo(() => ({
     apps,
     findApp: (id) => findApp(apps, id),
@@ -156,10 +247,29 @@ export function OSProvider({ children }) {
     setTheme: (patch) => dispatch({ type: 'setTheme', patch }),
     addEvent: (date, text) => dispatch({ type: 'addEvent', date, text }),
     removeEvent: (date, index) => dispatch({ type: 'removeEvent', date, index }),
+    setOrder: (order) => dispatch({ type: 'setOrder', order }),
+    sortDesktop: () => dispatch({ type: 'sortDesktop' }),
+    setVolume: (patch) => dispatch({ type: 'setVolume', patch }),
+    setWidgets: (patch) => dispatch({ type: 'setWidgets', patch }),
+    setTaskbar: (patch) => dispatch({ type: 'setTaskbar', patch }),
+    setDesktop: (patch) => dispatch({ type: 'setDesktop', patch }),
+    setUiMode: (mode) => dispatch({ type: 'setUiMode', mode }),
     isDefault: (appId) => DEFAULT_APPS.some((a) => a.id === appId),
   }), [apps]);
 
-  // Apply theme to CSS custom properties.
+  /* -- mobile detection (auto mode follows device; explicit mode wins) -- */
+  useEffect(() => {
+    const apply = () => dispatch({ type: 'setMobile', mobile: state.uiMode === 'mobile' || (state.uiMode === 'auto' && autoMobile()) });
+    apply();
+    window.addEventListener('resize', apply);
+    window.matchMedia('(pointer: coarse)')?.addEventListener?.('change', apply);
+    return () => {
+      window.removeEventListener('resize', apply);
+      window.matchMedia('(pointer: coarse)')?.removeEventListener?.('change', apply);
+    };
+  }, [state.uiMode]);
+
+  /* -- theme + wallpaper to CSS -- */
   useEffect(() => {
     const p = THEME_PRESETS[state.theme.preset] || THEME_PRESETS.midnight;
     const root = document.documentElement.style;
@@ -168,11 +278,23 @@ export function OSProvider({ children }) {
     root.setProperty('--chrome', p.chrome);
     root.setProperty('--chrome-line', p.line);
     root.setProperty('--accent', state.theme.accent);
-    document.body.style.background = state.theme.wallpaper
-      ? `linear-gradient(rgba(0,0,0,${0.35 * (1 - state.theme.dim)}) , rgba(0,0,0,${0.35 * (1 - state.theme.dim)})), url("${state.theme.wallpaper}") center/cover no-fixed`
-      : p.bg;
+    document.body.style.background = wallpaperBackground(state.theme) || p.bg;
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', state.theme.preset === 'light' ? '#eef2f8' : '#0b0e14');
   }, [state.theme]);
+
+  /* -- taskbar layout to body attrs (position / autohide) -- */
+  useEffect(() => {
+    document.body.dataset.tb = state.taskbar.position;
+    document.body.toggleAttribute('data-tb-autohide', !!state.taskbar.autohide);
+    document.body.toggleAttribute('data-icons', false);
+    document.body.dataset.icons = state.desktop.iconSize;
+    document.body.dataset.mode = state.mobile ? 'mobile' : 'desktop';
+  }, [state.taskbar.position, state.taskbar.autohide, state.desktop.iconSize, state.mobile]);
+
+  /* -- volume broadcast: apps opt in by listening for the event -- */
+  useEffect(() => {
+    document.dispatchEvent(new CustomEvent('webos:volume', { detail: state.volume }));
+  }, [state.volume]);
 
   const value = useMemo(() => ({ ...state, ...api }), [state, api]);
   return <OSCtx.Provider value={value}>{children}</OSCtx.Provider>;

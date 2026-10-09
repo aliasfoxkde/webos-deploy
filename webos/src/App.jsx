@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useOS } from './os/state.jsx';
 import Window from './shell/Window.jsx';
 import Taskbar from './shell/Taskbar.jsx';
@@ -6,6 +6,9 @@ import StartMenu from './shell/StartMenu.jsx';
 import { useContextMenu } from './shell/ContextMenu.jsx';
 import AppStore from './shell/AppStore.jsx';
 import Settings from './shell/Settings.jsx';
+import Properties from './shell/Properties.jsx';
+import Sidebar from './shell/Sidebar.jsx';
+import MobileDrawer from './shell/MobileDrawer.jsx';
 import { PLUGIN_IDS } from './os/registry.js';
 
 /* Virtual apps that render in-window instead of an iframe. */
@@ -43,9 +46,15 @@ function VirtualWindow({ win }) {
   );
 }
 
+const DRAG_THRESHOLD = 6; // px of movement before a press becomes a drag
+
 export default function App() {
   const os = useOS();
   const [startOpen, setStartOpen] = useState(false);
+  const [propsId, setPropsId] = useState(null);
+  const [widgetsOpen, setWidgetsOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const drag = useRef(null); // { id, moved, order }
 
   // Context menu items per target kind.
   const buildItems = useCallback((kind, arg) => {
@@ -55,7 +64,10 @@ export default function App() {
           { label: 'Open Terminal', hint: 'shell + js', run: () => os.launch('terminal') },
           { label: 'App Store…', run: () => os.launch('store') },
           '-',
-          { label: 'Change theme…', run: () => os.launch('settings') },
+          { label: 'Sort icons by name', run: () => os.sortDesktop() },
+          { label: 'Rearrange freely', run: () => { os.setDesktop({ sort: 'custom' }); os.setOrder(os.apps.map((a) => a.id)); } },
+          '-',
+          { label: 'Display settings…', run: () => os.launch('settings') },
           { label: 'Toggle fullscreen', hint: 'F11', run: () => document.dispatchEvent(new CustomEvent('webos:fullscreen')) },
         ];
       case 'icon': {
@@ -66,6 +78,7 @@ export default function App() {
         ];
         if (app.url) items.push({ label: 'Open in new tab', hint: '↗', run: () => window.open(app.url, '_blank', 'noopener') });
         items.push('-');
+        items.push({ label: 'Properties', hint: 'details', run: () => setPropsId(app.id) });
         if (!os.isDefault(app.id)) {
           items.push({ label: 'Uninstall', run: () => os.uninstall(app.id) });
         } else {
@@ -81,6 +94,7 @@ export default function App() {
           { label: w.min ? 'Restore' : 'Minimize', run: () => os.minimize(w.id) },
           ...(app.url ? [{ label: 'Open in new tab', run: () => window.open(app.url, '_blank', 'noopener') }] : []),
           '-',
+          { label: 'Properties', run: () => setPropsId(app.id) },
           { label: 'Close window', run: () => os.close(w.id) },
         ];
       }
@@ -93,11 +107,13 @@ export default function App() {
           { label: w.max ? 'Restore' : 'Maximize', run: () => os.toggleMax(w.id) },
           ...(app.url ? [{ label: 'Open in new tab', run: () => window.open(app.url, '_blank', 'noopener') }] : []),
           '-',
+          { label: 'Properties', run: () => setPropsId(app.id) },
           { label: 'Close', run: () => os.close(w.id) },
         ];
       }
       case 'taskbar':
         return [
+          { label: 'Widgets', hint: os.widgets.enabled.length ? `${os.widgets.enabled.length} enabled` : 'off', run: () => setWidgetsOpen((v) => !v) },
           { label: 'App Store…', run: () => os.launch('store') },
           { label: 'Settings…', run: () => os.launch('settings') },
           '-',
@@ -106,6 +122,7 @@ export default function App() {
       case 'tray':
         return [
           { label: 'Toggle fullscreen', run: () => document.dispatchEvent(new CustomEvent('webos:fullscreen')) },
+          { label: 'Widgets', run: () => setWidgetsOpen((v) => !v) },
           { label: 'Settings…', run: () => os.launch('settings') },
         ];
       case 'clock':
@@ -138,6 +155,58 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [os.apps.length]);
 
+  /* -- desktop icon drag-to-rearrange --
+     Press moves after a 6px threshold (so plain clicks still launch); while
+     dragging, the hovered slot index is recomputed from live rects and the
+     order updates immediately, so the rest of the grid springs aside. */
+  const beginIconDrag = (e, id) => {
+    if (e.button !== 0 || os.mobile || os.desktop.sort === 'name') return;
+    const startX = e.clientX, startY = e.clientY;
+    let moved = false;
+    let lastTarget = -1;
+    const el = e.currentTarget;
+    const move = (ev) => {
+      if (!moved && Math.hypot(ev.clientX - startX, ev.clientY - startY) < DRAG_THRESHOLD) return;
+      moved = true;
+      el.classList.add('dragging');
+      try { el.setPointerCapture?.(ev.pointerId); } catch { /* synthetic pointer ids are not active */ }
+      const icons = [...document.querySelectorAll('#icon-grid .desk-icon')];
+      const target = icons.findIndex((n) => {
+        const r = n.getBoundingClientRect();
+        return ev.clientX >= r.left && ev.clientX <= r.right && ev.clientY >= r.top && ev.clientY <= r.bottom;
+      });
+      if (target < 0 || target === lastTarget) return;
+      lastTarget = target;
+      const ids = os.apps.map((a) => a.id);
+      const from = ids.indexOf(id);
+      if (from < 0) return;
+      ids.splice(from, 1);
+      const to = Math.max(0, Math.min(ids.length, target > from ? target - 1 : target));
+      ids.splice(to, 0, id);
+      if (ids.join() === os.apps.map((a) => a.id).join()) return; // no-op hover
+      drag.current = { order: ids };
+      os.setOrder(ids);
+    };
+    const up = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      el.classList.remove('dragging');
+      if (moved) {
+        e.preventDefault();
+        e.stopPropagation();
+        drag.current = { swallowed: true }; // swallow the click that follows
+        setTimeout(() => { drag.current = null; }, 0);
+      }
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  };
+
+  const iconClick = (id) => {
+    if (drag.current?.swallowed) return;
+    os.launch(id);
+  };
+
   const desktopApps = os.apps;
 
   return (
@@ -149,8 +218,8 @@ export default function App() {
               key={app.id}
               className="desk-icon"
               data-cm={`icon:${app.id}`}
-              onClick={() => os.launch(app.id)}
-              onDoubleClick={() => os.launch(app.id)}
+              onPointerDown={(e) => beginIconDrag(e, app.id)}
+              onClick={() => iconClick(app.id)}
               title={`${app.name} — ${app.tagline}${newTab(app) ? ' (opens in new tab)' : ''}`}
             >
               <img src={app.icon} alt="" />
@@ -171,7 +240,20 @@ export default function App() {
         startOpen={startOpen}
         openSettings={() => os.launch('settings')}
         openStore={() => os.launch('store')}
+        toggleWidgets={() => setWidgetsOpen((v) => !v)}
+        widgetsOpen={widgetsOpen}
       />
+      {widgetsOpen && <Sidebar onClose={() => setWidgetsOpen(false)} />}
+      {os.mobile && !drawerOpen && (
+        <button id="home-fab" onClick={() => setDrawerOpen(true)} title="All apps" aria-label="All apps">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round">
+            <rect x="3.5" y="3.5" width="7.4" height="7.4" rx="1.6" /><rect x="13.1" y="3.5" width="7.4" height="7.4" rx="1.6" />
+            <rect x="3.5" y="13.1" width="7.4" height="7.4" rx="1.6" /><rect x="13.1" y="13.1" width="7.4" height="7.4" rx="1.6" />
+          </svg>
+        </button>
+      )}
+      {drawerOpen && <MobileDrawer onClose={() => setDrawerOpen(false)} />}
+      {propsId && <Properties appId={propsId} onClose={() => setPropsId(null)} />}
       {menu}
     </>
   );

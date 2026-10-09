@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs><linearGradient id="g-weather" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#12222e"/><stop offset="1" stop-color="#0a1218"/>
+  </linearGradient></defs>
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="url(#g-weather)" stroke="#7dd3fc" stroke-width="2.5"/>
+  <circle cx="24" cy="22" r="7" fill="none" stroke="#fbbf24" stroke-width="3"/>
+  <path d="M24 8v3M24 33v3M10 22h3M35 22h3M14 12l2.2 2.2M31.8 29.8L34 32M34 12l-2.2 2.2M16.2 29.8L14 32" stroke="#fbbf24" stroke-width="2.6" stroke-linecap="round"/>
+  <path d="M22 46h20a7 7 0 0 0 1-13.9 10 10 0 0 0-19.2-2.8A6.6 6.6 0 0 0 22 46Z" fill="none" stroke="#7dd3fc" stroke-width="3" stroke-linejoin="round"/>
+</svg>
