@@ -1,0 +1,24 @@
+# Sibling app source repos — independent git checkouts, NOT part of this repo.
+/cadcraft/
+/designcraft/
+/gridcraft/
+/lightcraft/
+/pdfcraft/
+/photocraft/
+/vectorcraft/
+/wordcraft/
+/BrowserInBrowser/
+/lapce-ide/
+/zed/
+
+# Fetched upstream builds + release cache — synced from source by
+# packaging/fetch-apps.sh, never committed.
+/apps/
+/zips/
+/r2-blobs/
+
+# Build output & dependencies
+node_modules/
+/webos/dist/
+.wrangler/
+*.log

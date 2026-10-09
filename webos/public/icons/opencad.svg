@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs><linearGradient id="g-opencad" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#131a26"/><stop offset="1" stop-color="#0a0f18"/>
+  </linearGradient></defs>
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="url(#g-opencad)" stroke="#22d3ee" stroke-width="2.5"/>
+  <path d="M32 12l17 10v20l-17 10-17-10V22z" fill="none" stroke="#22d3ee" stroke-width="3" stroke-linejoin="round"/><path d="M32 12v20m0 0L15 22m17 10l17-10" fill="none" stroke="#22d3ee" stroke-width="2.4"/>
+</svg>

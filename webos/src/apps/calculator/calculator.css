@@ -1,0 +1,166 @@
+/* Calculator plugin styles — scoped to .calc so the shell stylesheet stays
+   generic. Accent follows the window's --win-accent. */
+.calc {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  background: #10141c; overflow: hidden;
+}
+.calc-tabs {
+  display: flex; gap: 2px; padding: 6px 8px 0; flex-wrap: wrap;
+  border-bottom: 1px solid var(--chrome-line);
+}
+.calc-tab {
+  border: 0; background: transparent; color: var(--text-dim);
+  font-size: 0.74rem; padding: 6px 10px 8px; cursor: pointer;
+  border-bottom: 2px solid transparent;
+}
+.calc-tab:hover { color: var(--text); }
+.calc-tab.on { color: var(--text); border-bottom-color: var(--win-accent, var(--accent)); }
+.calc-mode {
+  flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 8px;
+  padding: 10px; overflow-y: auto;
+}
+
+/* display */
+.calc-display { flex: 0 0 auto; }
+.calc-status { display: flex; gap: 8px; align-items: center; min-height: 18px; }
+.calc-ind {
+  font-size: 0.6rem; letter-spacing: 0.08em; color: var(--text-dim);
+  border: 1px solid var(--chrome-line); border-radius: 5px; padding: 1px 6px;
+}
+.calc-err { color: #f87171; font-size: 0.72rem; }
+.calc-entry {
+  width: 100%; text-align: right; font-size: 1.55rem; font-weight: 500;
+  background: transparent; border: 0; border-radius: 0; padding: 4px 2px 0;
+  color: var(--text); outline: none; user-select: text; -webkit-user-select: text;
+}
+.calc-entry::placeholder { color: var(--text-dim); opacity: 0.5; }
+.calc-preview {
+  min-height: 20px; text-align: right; color: var(--text-dim);
+  font-size: 0.95rem; padding-right: 2px; font-variant-numeric: tabular-nums;
+}
+
+/* keypad */
+.keypad { display: grid; gap: 5px; flex: 0 0 auto; }
+.key {
+  border: 1px solid var(--chrome-line); border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05); color: var(--text);
+  min-height: 40px; font-size: 0.92rem; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: 2px;
+}
+.key small { color: var(--text-dim); font-size: 0.6rem; margin-left: 3px; }
+.key:hover { background: rgba(255, 255, 255, 0.11); }
+.key:active { transform: scale(0.97); }
+.key.num { font-size: 1rem; }
+.key.op { background: rgba(255, 255, 255, 0.09); }
+.key.util { color: var(--text-dim); font-size: 0.8rem; }
+.key.util.danger { color: #f87171; }
+.key.mem { min-height: 28px; font-size: 0.68rem; color: var(--text-dim); }
+.key.eq { background: var(--win-accent, var(--accent)); border-color: transparent; color: #06121c; font-weight: 700; }
+.key.eq:hover { filter: brightness(1.12); background: var(--win-accent, var(--accent)); }
+.key.wide { grid-column: span 4; }
+.key.sci { min-height: 34px; font-size: 0.78rem; color: var(--text-dim); }
+.key.sci:hover { color: var(--text); }
+.key.sci.toggled { color: var(--win-accent, var(--accent)); border-color: var(--win-accent, var(--accent)); }
+
+/* history */
+.calc-history { flex: 0 0 auto; border-top: 1px solid var(--chrome-line); padding-top: 6px; }
+.calc-history summary {
+  cursor: pointer; font-size: 0.74rem; color: var(--text-dim);
+  display: flex; align-items: center; gap: 6px; list-style: none;
+}
+.calc-history summary::-webkit-details-marker { display: none; }
+.calc-history summary:hover { color: var(--text); }
+.calc-history summary .tb-btn { margin-left: auto; width: 22px; height: 20px; }
+.calc-history-list { max-height: 140px; overflow-y: auto; margin-top: 6px; display: flex; flex-direction: column; gap: 3px; }
+.calc-hist-row {
+  display: flex; justify-content: space-between; gap: 10px; align-items: baseline;
+  border: 0; border-radius: 7px; background: rgba(255,255,255,0.04);
+  padding: 5px 9px; font-size: 0.76rem; cursor: pointer; color: var(--text);
+  text-align: left;
+}
+.calc-hist-row:hover { background: rgba(255,255,255,0.09); }
+.calc-hist-row strong { font-variant-numeric: tabular-nums; }
+
+/* graphing */
+.graph-mode .fn-editor { display: flex; flex-direction: column; gap: 5px; }
+.fn-row {
+  display: flex; align-items: center; gap: 7px;
+  background: rgba(255,255,255,0.04); border: 1px solid var(--chrome-line);
+  border-radius: 9px; padding: 3px 4px 3px 10px;
+}
+.fn-row.bad { border-color: rgba(248, 113, 113, 0.6); }
+.fn-dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 9px; }
+.fn-eq { font-size: 0.74rem; color: var(--text-dim); }
+.fn-row input {
+  flex: 1; min-width: 0; background: transparent; border: 0; border-radius: 0;
+  outline: none; font-size: 0.82rem; font-family: ui-monospace, monospace; padding: 5px 2px;
+}
+.fn-row .tb-btn { width: 24px; height: 24px; }
+.fn-add { align-self: flex-start; padding: 4px 12px; font-size: 0.74rem; }
+
+.plot-wrap {
+  position: relative; flex: 1; min-height: 220px;
+  border: 1px solid var(--chrome-line); border-radius: 12px;
+  overflow: hidden; background:
+    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px) 0 0 / 100% 100%;
+  touch-action: none; cursor: crosshair;
+}
+.plot-canvas { position: absolute; inset: 0; display: block; }
+.plot-tools {
+  position: absolute; top: 8px; right: 8px; display: flex; flex-direction: column; gap: 3px;
+  background: var(--chrome); border: 1px solid var(--chrome-line); border-radius: 9px; padding: 3px;
+}
+.plot-tools .tb-btn { width: 26px; height: 24px; }
+.plot-trace {
+  position: absolute; top: 8px; left: 8px; pointer-events: none;
+  background: var(--chrome); border: 1px solid var(--chrome-line); border-radius: 9px;
+  padding: 6px 9px; font-size: 0.72rem; font-family: ui-monospace, monospace;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.trace-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; }
+.plot-hint { margin: 0; font-size: 0.64rem; text-align: center; }
+
+/* programmer */
+.prog-controls { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.seg { display: inline-flex; border: 1px solid var(--chrome-line); border-radius: 9px; overflow: hidden; }
+.seg-btn {
+  border: 0; background: transparent; color: var(--text-dim);
+  font-size: 0.7rem; padding: 5px 10px; cursor: pointer;
+}
+.seg-btn + .seg-btn { border-left: 1px solid var(--chrome-line); }
+.seg-btn:hover { color: var(--text); }
+.seg-btn.on { background: var(--win-accent, var(--accent)); color: #06121c; font-weight: 600; }
+.seg-btn.mini { padding: 2px 7px; font-size: 0.6rem; }
+.prog-bases { display: flex; flex-direction: column; gap: 4px; }
+.prog-base-row { display: flex; align-items: center; gap: 8px; }
+.prog-val {
+  flex: 1; font-family: ui-monospace, monospace; font-size: 0.78rem;
+  color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.prog-val.active { color: var(--text); }
+.prog-pad .key { min-height: 34px; font-size: 0.85rem; }
+
+/* converter */
+.conv-cats { display: flex; gap: 5px; flex-wrap: wrap; }
+.conv-cats .chip { padding: 4px 10px; font-size: 0.68rem; }
+.conv-io { display: flex; align-items: stretch; gap: 8px; }
+.conv-side { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.conv-side input { font-size: 1.05rem; text-align: center; }
+.conv-side select {
+  background: rgba(255,255,255,0.06); border: 1px solid var(--chrome-line);
+  border-radius: 8px; color: var(--text); padding: 6px; font: inherit; font-size: 0.78rem;
+}
+.conv-side select option { background: #10141c; }
+.conv-swap { align-self: center; font-size: 1rem; }
+.conv-result {
+  font-size: 1.05rem; text-align: center; padding: 7px 6px;
+  background: rgba(255,255,255,0.05); border: 1px solid var(--chrome-line); border-radius: 8px;
+  font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.conv-formula { text-align: center; margin: 0; }
+
+@media (max-height: 560px) {
+  .calc-mode { flex-direction: row; flex-wrap: wrap; align-content: flex-start; }
+  .calc-display { flex: 1 1 100%; }
+  .keypad { flex: 1 1 46%; }
+}

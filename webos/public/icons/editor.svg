@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs><linearGradient id="g-editor" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#131a26"/><stop offset="1" stop-color="#0a0f18"/>
+  </linearGradient></defs>
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="url(#g-editor)" stroke="#60a5fa" stroke-width="2.5"/>
+  <rect x="17" y="11" width="30" height="42" rx="5" fill="none" stroke="#60a5fa" stroke-width="3"/><path d="M28 27l-6 6 6 6M36 27l6 6-6 6" fill="none" stroke="#60a5fa" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

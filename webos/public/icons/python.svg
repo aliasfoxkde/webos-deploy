@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs><linearGradient id="g-python" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#131a26"/><stop offset="1" stop-color="#0a0f18"/>
+  </linearGradient></defs>
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="url(#g-python)" stroke="#eab308" stroke-width="2.5"/>
+  <rect x="18" y="14" width="28" height="16" rx="8" fill="none" stroke="#eab308" stroke-width="3"/><rect x="18" y="34" width="28" height="16" rx="8" fill="none" stroke="#eab308" stroke-width="3"/><circle cx="26" cy="22" r="2.2" fill="#eab308"/><circle cx="38" cy="42" r="2.2" fill="#eab308"/>
+</svg>

@@ -1,0 +1,97 @@
+/* Editor plugin styles — scoped under .editor. */
+.editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--panel);
+  color: var(--text);
+}
+
+.ed-toolbar {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--chrome-line);
+}
+
+.ed-flex { flex: 1; }
+
+.ed-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 0 6px;
+  border-bottom: 1px solid var(--chrome-line);
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.ed-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px 6px 10px;
+  font-size: 12px;
+  color: var(--text-dim);
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.ed-tab.on {
+  color: var(--text);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  border-color: var(--chrome-line);
+}
+
+.ed-tab input {
+  width: 110px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--accent);
+  color: var(--text);
+  font: inherit;
+  outline: none;
+}
+
+.ed-close {
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: 13px;
+  line-height: 1;
+  padding: 1px 3px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.ed-close:hover { background: rgba(255, 255, 255, 0.1); }
+
+.ed-host {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.ed-host .cm-editor { height: 100%; }
+.ed-host .cm-editor.cm-focused { outline: none; }
+
+.ed-status {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  padding: 4px 10px;
+  font-size: 11px;
+  color: var(--text-dim);
+  border-top: 1px solid var(--chrome-line);
+}
+
+.ed-status em {
+  font-style: normal;
+  color: #fbbf24;
+}
+
+.ed-msg { color: var(--accent); }

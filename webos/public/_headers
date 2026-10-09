@@ -1,0 +1,17 @@
+# Cloudflare Pages header rules. The site is 100% static (no _worker.js):
+# requests hit the Pages asset store directly — no Workers compute, no CPU.
+# Hashed vite assets are immutable; the shell must revalidate so updates ship.
+/*
+  X-Content-Type-Options: nosniff
+
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/icons/*
+  Cache-Control: public, max-age=604800
+
+/sw.js
+  Cache-Control: no-cache
+
+/index.html
+  Cache-Control: public, max-age=0, must-revalidate

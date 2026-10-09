@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs><linearGradient id="g-pyconsole" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#131a26"/><stop offset="1" stop-color="#0a0f18"/>
+  </linearGradient></defs>
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="url(#g-pyconsole)" stroke="#f97316" stroke-width="2.5"/>
+  <rect x="13" y="17" width="38" height="30" rx="5" fill="none" stroke="#f97316" stroke-width="3"/><path d="M13 25h38" stroke="#f97316" stroke-width="2.4"/><path d="M20 32l6 5-6 5" fill="none" stroke="#f97316" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M31 42h10" stroke="#f97316" stroke-width="2.8" stroke-linecap="round"/>
+</svg>

@@ -1,0 +1,24 @@
+{
+  "name": "ArtCraft WebOS",
+  "short_name": "WebOS",
+  "description": "A browser desktop for the ArtCraft apps and curated web apps.",
+  "id": "artcraft-webos",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#07090d",
+  "theme_color": "#0b0e14",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Terminal", "url": "./?open=terminal" },
+    { "name": "Calculator", "url": "./?open=calc" },
+    { "name": "App Store", "url": "./?open=store" },
+    { "name": "Settings", "url": "./?open=settings" }
+  ]
+}
