@@ -239,12 +239,173 @@ await shot('32-mobile-app');
 await evaluate(`window.__os?.setUiMode('auto')`);
 await sleep(300);
 
-// 13. persistence sanity: reload keeps installed store app + wallpaper
+// 13. virtual windows are movable (Settings + App Store were pinned before 2.2)
+await evaluate(`window.__os?.windows.forEach(w => window.__os.close(w.id)); window.__os?.launch('settings'); window.__os?.launch('store');`);
+await sleep(600);
+const settingsBefore = await evaluate(`window.__os.windows.find(w => w.appId === 'settings').rect`);
+// drag the Settings titlebar by (+320, +160)
+const moveWin = `
+(async () => {
+  const bar = document.querySelector('.win[aria-label="Settings"] .titlebar');
+  const r = bar.getBoundingClientRect();
+  const sx = r.left + r.width / 2, sy = r.top + 14;
+  bar.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerId: 5, clientX: sx, clientY: sy, button: 0 }));
+  await new Promise(r2 => setTimeout(r2, 60));
+  for (let i = 1; i <= 5; i++) {
+    window.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, pointerId: 5, clientX: sx + 64 * i, clientY: sy + 32 * i }));
+    await new Promise(r2 => setTimeout(r2, 50));
+  }
+  window.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId: 5, clientX: sx + 320, clientY: sy + 160 }));
+})()`;
+await evaluate(moveWin);
+await sleep(400);
+const settingsAfter = await evaluate(`window.__os.windows.find(w => w.appId === 'settings').rect`);
+console.log('settings moved:', JSON.stringify({ before: settingsBefore.result?.value, after: settingsAfter.result?.value,
+  moved: settingsBefore.result?.value.x !== settingsAfter.result?.value.x }));
+await shot('33-settings-moved');
+// same gesture on the App Store window
+const storeBefore = await evaluate(`window.__os.windows.find(w => w.appId === 'store').rect`);
+const moveStore = moveWin.replace('.win[aria-label="Settings"]', '.win[aria-label="App Store"]');
+await evaluate(moveStore);
+await sleep(400);
+const storeAfter = await evaluate(`window.__os.windows.find(w => w.appId === 'store').rect`);
+console.log('store moved:', storeBefore.result?.value.x !== storeAfter.result?.value.x);
+await shot('34-store-moved');
+
+// 14. multi-instance: two terminals
+await evaluate(`window.__os?.launch('terminal'); window.__os?.launch('terminal');`);
+await sleep(500);
+const terms = await evaluate(`window.__os.windows.filter(w => w.appId === 'terminal').length`);
+console.log('terminal windows (want 2):', terms.result?.value);
+await shot('35-multi-terminal');
+
+// 15. taskbar pinning: via icon menu, then drag-to-pin, then reorder
+await evaluate(`window.__os?.windows.forEach(w => window.__os.close(w.id)); document.querySelector('[data-tray="widgets"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));`);
+await sleep(400);
+// icon-menu pins use real icon rects (windows previously covered these points)
+const iconRects = await evaluate(`[...document.querySelectorAll('.desk-icon')].slice(0, 3).map(n => { const r = n.getBoundingClientRect(); return { x: r.left + 10, y: r.top + 10 }; })`);
+for (const p of iconRects.result.value.slice(0, 2)) {
+  await evaluate(`document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }));`);
+  await sleep(150);
+  await ctxAt(p.x, p.y);
+  await sleep(300);
+  await evaluate(`[...document.querySelectorAll('.ctx-item')].find(b => b.textContent.includes('Pin to taskbar'))?.click()`);
+  await sleep(250);
+}
+let pinCount = await evaluate(`document.querySelectorAll('#task-apps [data-pin]').length`);
+console.log('pinned via menu (want 2):', pinCount.result?.value);
+await shot('36-pinned');
+// drag a desktop icon onto the taskbar → pins it
+const dragPin = `
+(async () => {
+  const icon = [...document.querySelectorAll('.desk-icon')].find(i => i.title.startsWith('CADCraft')) || document.querySelectorAll('.desk-icon')[2];
+  const r = icon.getBoundingClientRect();
+  const sx = r.left + r.width / 2, sy = r.top + r.height / 2;
+  const tb = document.querySelector('#task-apps').getBoundingClientRect();
+  const dx = tb.left + tb.width / 2, dy = tb.top + tb.height / 2;
+  icon.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerId: 6, clientX: sx, clientY: sy, button: 0 }));
+  await new Promise(r2 => setTimeout(r2, 60));
+  for (let i = 1; i <= 6; i++) {
+    window.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, pointerId: 6, clientX: sx + (dx - sx) * i / 6, clientY: sy + (dy - sy) * i / 6 }));
+    await new Promise(r2 => setTimeout(r2, 50));
+  }
+  window.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId: 6, clientX: dx, clientY: dy }));
+})()`;
+const pinsBefore = await evaluate(`(window.__os.taskbar.pinned || []).length`);
+await evaluate(dragPin);
+await sleep(400);
+const pinsAfter = await evaluate(`(window.__os.taskbar.pinned || []).length`);
+console.log('drag-to-pin:', JSON.stringify({ before: pinsBefore.result?.value, after: pinsAfter.result?.value }));
+await shot('37-drag-pinned');
+// reorder pinned: drag the first pinned button onto the LAST (3 pinned → real move)
+const pinOrderBefore = await evaluate(`[...document.querySelectorAll('#task-apps [data-pin]')].map(b => b.title).join(',')`);
+const reorderPin = `
+(async () => {
+  const btns = [...document.querySelectorAll('#task-apps [data-pin]')];
+  const a = btns[0].getBoundingClientRect(), b = btns[btns.length - 1].getBoundingClientRect();
+  const sx = a.left + a.width / 2, sy = a.top + a.height / 2;
+  const dx = b.left + b.width / 2, dy = b.top + b.height / 2;
+  btns[0].dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerId: 7, clientX: sx, clientY: sy, button: 0 }));
+  await new Promise(r2 => setTimeout(r2, 60));
+  for (let i = 1; i <= 5; i++) {
+    window.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, pointerId: 7, clientX: sx + (dx - sx) * i / 5, clientY: sy + (dy - sy) * i / 5 }));
+    await new Promise(r2 => setTimeout(r2, 50));
+  }
+  window.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId: 7, clientX: dx, clientY: dy }));
+})()`;
+await evaluate(reorderPin);
+await sleep(400);
+const pinOrderAfter = await evaluate(`[...document.querySelectorAll('#task-apps [data-pin]')].map(b => b.title).join(',')`);
+console.log('pin reorder:', JSON.stringify({ before: pinOrderBefore.result?.value, after: pinOrderAfter.result?.value, changed: pinOrderBefore.result?.value !== pinOrderAfter.result?.value }));
+// unpin via the pinned button's own menu
+const firstPin = await evaluate(`(() => { const b = document.querySelector('#task-apps [data-pin]'); const r = b.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; })()`);
+await ctxAt(firstPin.result.value.x, firstPin.result.value.y);
+await sleep(300);
+await evaluate(`[...document.querySelectorAll('.ctx-item')].find(b => b.textContent.includes('Unpin from taskbar'))?.click()`);
+await sleep(250);
+const pinsUnpinned = await evaluate(`(window.__os.taskbar.pinned || []).length`);
+console.log('after unpin (want 2):', pinsUnpinned.result?.value);
+
+// 16. Add app… dialog → custom app lands on the desktop
+await evaluate(`document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }));`);
+await sleep(150);
+await ctxAt(700, 300);
+await sleep(300);
+await evaluate(`[...document.querySelectorAll('.ctx-item')].find(b => b.textContent.includes('Add app'))?.click()`);
+await sleep(350);
+await shot('38-addapp-dialog');
+await evaluate(`(() => {
+  const inputs = [...document.querySelectorAll('.addapp input')];
+  const set = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+  set.call(inputs[0], 'Test PWA');
+  inputs[0].dispatchEvent(new Event('input', { bubbles: true }));
+  set.call(inputs[1], 'https://example.com');
+  inputs[1].dispatchEvent(new Event('input', { bubbles: true }));
+  const ta = document.querySelector('.addapp textarea');
+  if (ta) { const sets = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set; sets.call(ta, 'My custom web app'); ta.dispatchEvent(new Event('input', { bubbles: true })); }
+})()`);
+await sleep(200);
+await evaluate(`[...document.querySelectorAll('.addapp .btn')].find(b => b.textContent === 'Add app')?.click()`);
+await sleep(350);
+const custom = await evaluate(`({ count: window.__os.userApps.length, onDesktop: [...document.querySelectorAll('.desk-icon .lbl')].some(n => n.textContent === 'Test PWA') })`);
+console.log('custom app:', JSON.stringify(custom.result?.value));
+await shot('39-custom-app');
+
+// 17. wallpaper image adjustments: fit=Tile + blur via the real controls
+await evaluate(`window.__os?.setTheme({ wallpaper: 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48"><rect width="48" height="48" fill="%23131a24"/><circle cx="24" cy="24" r="14" fill="%23223750"/></svg>') });`);
+await sleep(300);
+const wpLayer = await evaluate(`({ exists: !!document.querySelector('#wallpaper'), dim: document.querySelector('#wallpaper')?.style.background.includes('linear-gradient') })`);
+console.log('wallpaper layer:', JSON.stringify(wpLayer.result?.value));
+await evaluate(`window.__os?.launch('settings')`);
+await sleep(400);
+await evaluate(`[...document.querySelectorAll('.set-nav')].find(b => b.textContent.includes('Appearance'))?.click()`);
+await sleep(250);
+await evaluate(`[...document.querySelectorAll('.seg-row .chip')].find(b => b.textContent === 'Tile')?.click()`);
+await sleep(250);
+await evaluate(`(() => {
+  const blur = [...document.querySelectorAll('.wx-adj input[type="range"]')][2]; // Dim, Brightness, Blur, Saturation
+  const set = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+  set.call(blur, '8');
+  blur.dispatchEvent(new Event('input', { bubbles: true }));
+})()`);
+await sleep(300);
+await shot('40-wallpaper-tile');
+const adj = await evaluate(`({ fit: window.__os.theme.fit, layerFilter: document.querySelector('#wallpaper')?.style.filter || '' })`);
+console.log('adjustments:', JSON.stringify(adj.result?.value));
+
+// 18. store carries YouTube / Discord / Spotify
+await evaluate(`window.__os?.launch('store')`);
+await sleep(450);
+const media = await evaluate(`['YouTube', 'Discord', 'Spotify'].map(n => document.body.textContent.includes(n))`);
+console.log('store media apps (want [true,true,true]):', JSON.stringify(media.result?.value));
+await shot('41-store-media');
+
+// 19. persistence sanity: reload keeps installed store app + wallpaper + pins + custom app
 await evaluate(`location.reload()`);
 await sleep(2500);
-const persisted = await evaluate(`({ installed: window.__os?.installed, icons: document.querySelectorAll('.desk-icon').length, wallpaper: !!document.body.style.background })`);
+const persisted = await evaluate(`({ installed: window.__os?.installed, icons: document.querySelectorAll('.desk-icon').length, wallpaper: !!document.querySelector('#wallpaper'), pinned: window.__os?.taskbar.pinned?.length, userApps: window.__os?.userApps?.length })`);
 console.log('after reload:', JSON.stringify(persisted.result?.value));
-await shot('33-reload-persisted');
+await shot('42-reload-persisted');
 
 console.log('done');
 chrome.kill();

@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useEffect, useMemo, useReducer } from 'react';
 import { allApps, findApp, DEFAULT_APPS, APP_INDEX } from './registry.js';
-import { wallpaperBackground } from './wallpapers.js';
 
 /* ---------- persistence helpers ---------- */
 function load(key, fallback) {
@@ -54,10 +53,14 @@ export const THEME_PRESETS = {
   },
 };
 
-const DEFAULT_THEME = { preset: 'midnight', accent: '#38bdf8', wallpaper: '', dim: 1 };
+const DEFAULT_THEME = {
+  preset: 'midnight', accent: '#38bdf8', wallpaper: '', dim: 1,
+  // custom-image placement + adjustments (see os/wallpapers.js)
+  fit: 'fill', pos: 'center center', blur: 0, bright: 1, sat: 1,
+};
 
 /* ---------- per-subsystem defaults ---------- */
-const DEFAULT_TASKBAR = { position: 'bottom', autohide: false, labels: true, clock24: false, showDate: true };
+const DEFAULT_TASKBAR = { position: 'bottom', autohide: false, labels: true, clock24: false, showDate: true, pinned: [] };
 const DEFAULT_WIDGETS = { enabled: ['weather', 'clock', 'battery', 'events', 'notes', 'storage'] };
 const DEFAULT_DESKTOP = { iconSize: 'md', sort: 'custom' };
 const DEFAULT_VOLUME = { level: 0.7, muted: false };
@@ -69,6 +72,7 @@ export const WIDGET_IDS = ['weather', 'clock', 'battery', 'events', 'notes', 'st
 /* ---------- reducer ---------- */
 const initial = () => ({
   installed: loadInstalled(),
+  userApps: load('userapps', []), // custom apps added via right-click → Add app…
   theme: { ...DEFAULT_THEME, ...load('theme', {}) },
   events: load('events', {}),
   order: load('desktop.order', []),
@@ -94,10 +98,9 @@ const patched = (state, key, patch) => {
 function reducer(state, action) {
   switch (action.type) {
     case 'launch': {
-      const existing = state.windows.find((w) => w.appId === action.appId);
-      if (existing) {
-        return reducer({ ...state }, { type: 'focus', id: existing.id, unminimize: true });
-      }
+      // Every launch opens a NEW window — apps are multi-instance (multiple
+      // terminals, two browsers side by side, …). Taskbar buttons focus or
+      // minimize existing windows instead of launching.
       const id = state.seq;
       const n = state.windows.length;
       const off = (n % 6) * 28;
@@ -156,9 +159,37 @@ function reducer(state, action) {
     case 'uninstall': {
       const installed = state.installed.filter((id) => id !== action.appId);
       save('installed', installed);
+      const taskbar = { ...state.taskbar, pinned: (state.taskbar.pinned || []).filter((id) => id !== action.appId) };
+      save('taskbar', taskbar);
       return {
         ...state,
         installed,
+        taskbar,
+        windows: state.windows.filter((w) => w.appId !== action.appId),
+        order: state.order.filter((id) => id !== action.appId),
+      };
+    }
+
+    /* -- user-created apps (right-click → Add app…) -- */
+    case 'addUserApp': {
+      const userApps = [...state.userApps, action.app];
+      save('userapps', userApps);
+      return { ...state, userApps };
+    }
+    case 'updateUserApp': {
+      const userApps = state.userApps.map((a) => (a.id === action.app.id ? action.app : a));
+      save('userapps', userApps);
+      return { ...state, userApps };
+    }
+    case 'removeUserApp': {
+      const userApps = state.userApps.filter((a) => a.id !== action.appId);
+      save('userapps', userApps);
+      const taskbar = { ...state.taskbar, pinned: (state.taskbar.pinned || []).filter((id) => id !== action.appId) };
+      save('taskbar', taskbar);
+      return {
+        ...state,
+        userApps,
+        taskbar,
         windows: state.windows.filter((w) => w.appId !== action.appId),
         order: state.order.filter((id) => id !== action.appId),
       };
@@ -223,15 +254,15 @@ const autoMobile = () => coarse() || window.innerWidth < 700;
 export function OSProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, undefined, initial);
 
-  // Desktop app list: defaults + installed store apps, arranged by the saved
-  // order (unarranged ids keep registry order at the end).
+  // Desktop app list: defaults + installed store apps + user-created apps,
+  // arranged by the saved order (unarranged ids keep registry order at the end).
   const apps = useMemo(() => {
-    const list = allApps(state.installed);
+    const list = [...allApps(state.installed), ...state.userApps];
     if (state.desktop.sort === 'name') return [...list].sort((a, b) => a.name.localeCompare(b.name));
     if (!state.order.length) return list;
     const rank = new Map(state.order.map((id, i) => [id, i]));
     return [...list].sort((a, b) => (rank.get(a.id) ?? 1e9) - (rank.get(b.id) ?? 1e9));
-  }, [state.installed, state.order, state.desktop.sort]);
+  }, [state.installed, state.userApps, state.order, state.desktop.sort]);
 
   const api = useMemo(() => ({
     apps,
@@ -254,7 +285,11 @@ export function OSProvider({ children }) {
     setTaskbar: (patch) => dispatch({ type: 'setTaskbar', patch }),
     setDesktop: (patch) => dispatch({ type: 'setDesktop', patch }),
     setUiMode: (mode) => dispatch({ type: 'setUiMode', mode }),
+    addUserApp: (app) => dispatch({ type: 'addUserApp', app }),
+    updateUserApp: (app) => dispatch({ type: 'updateUserApp', app }),
+    removeUserApp: (appId) => dispatch({ type: 'removeUserApp', appId }),
     isDefault: (appId) => DEFAULT_APPS.some((a) => a.id === appId),
+    isCustom: (appId) => state.userApps.some((a) => a.id === appId),
   }), [apps]);
 
   /* -- mobile detection (auto mode follows device; explicit mode wins) -- */
@@ -278,7 +313,10 @@ export function OSProvider({ children }) {
     root.setProperty('--chrome', p.chrome);
     root.setProperty('--chrome-line', p.line);
     root.setProperty('--accent', state.theme.accent);
-    document.body.style.background = wallpaperBackground(state.theme) || p.bg;
+    // The preset bg stays on <body> as the base; an active wallpaper renders
+    // in the #wallpaper layer (see App.jsx) so filters (blur/brightness/
+    // saturation) can be applied to it — backgrounds can't take CSS filters.
+    document.body.style.background = p.bg;
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', state.theme.preset === 'light' ? '#eef2f8' : '#0b0e14');
   }, [state.theme]);
 

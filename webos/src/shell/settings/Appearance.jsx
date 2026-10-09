@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { useOS, ACCENTS, THEME_PRESETS } from '../../os/state.jsx';
-import { WALLPAPERS } from '../../os/wallpapers.js';
+import { WALLPAPERS, FITS, POSITIONS } from '../../os/wallpapers.js';
 
 // Uploaded wallpapers are data URLs in localStorage — cap them so the theme
 // key can never blow past quota (2.5MB compressed-ish JPEG territory).
@@ -111,16 +111,76 @@ export default function Appearance() {
           <input ref={fileRef} type="file" accept="image/*" hidden onChange={onUpload} />
         </div>
         {isCustom ? (
-          <div className="row">
-            <label className="dim">Dim image</label>
-            <input
-              type="range" min="0" max="1" step="0.05"
-              value={1 - t.dim}
-              onChange={(e) => os.setTheme({ dim: 1 - Number(e.target.value) })}
-            />
-            {(t.wallpaper.startsWith('http') || t.wallpaper.startsWith('data:')) && (
-              <button className="btn slim" onClick={() => os.setTheme({ wallpaper: '' })}>Clear</button>
+          <div className="wx-adj">
+            <div className="row">
+              <label className="dim">Placement</label>
+              <div className="seg-row">
+                {Object.entries(FITS).map(([id, f]) => (
+                  <button
+                    key={id}
+                    className={`chip ${(t.fit || 'fill') === id ? 'on' : ''}`}
+                    onClick={() => os.setTheme({ fit: id })}
+                    title={f.label}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {t.fit !== 'tile' && (
+              <div className="row">
+                <label className="dim">Focus</label>
+                <div className="pos-grid" role="group" aria-label="Image focus point">
+                  {POSITIONS.map((p) => (
+                    <button
+                      key={p}
+                      className={`pos-dot ${(t.pos || 'center center') === p ? 'on' : ''}`}
+                      onClick={() => os.setTheme({ pos: p })}
+                      aria-label={`focus ${p}`}
+                      title={p}
+                    />
+                  ))}
+                </div>
+              </div>
             )}
+            <div className="row">
+              <label className="dim">Dim overlay</label>
+              <input
+                type="range" min="0" max="1" step="0.05"
+                value={1 - t.dim}
+                onChange={(e) => os.setTheme({ dim: 1 - Number(e.target.value) })}
+              />
+            </div>
+            <div className="row">
+              <label className="dim">Brightness</label>
+              <input
+                type="range" min="0.3" max="1.4" step="0.05"
+                value={t.bright ?? 1}
+                onChange={(e) => os.setTheme({ bright: Number(e.target.value) })}
+              />
+            </div>
+            <div className="row">
+              <label className="dim">Blur</label>
+              <input
+                type="range" min="0" max="20" step="1"
+                value={t.blur ?? 0}
+                onChange={(e) => os.setTheme({ blur: Number(e.target.value) })}
+              />
+            </div>
+            <div className="row">
+              <label className="dim">Saturation</label>
+              <input
+                type="range" min="0" max="2" step="0.1"
+                value={t.sat ?? 1}
+                onChange={(e) => os.setTheme({ sat: Number(e.target.value) })}
+              />
+            </div>
+            <div className="row">
+              <button className="btn slim" onClick={() => os.setTheme({ fit: 'fill', pos: 'center center', dim: 1, bright: 1, blur: 0, sat: 1 })}>
+                Reset adjustments
+              </button>
+              <button className="btn slim danger" onClick={() => os.setTheme({ wallpaper: '' })}>Clear wallpaper</button>
+            </div>
           </div>
         ) : null}
         <p className="dim">Every preset wallpaper is drawn in CSS — no image assets, no third-party requests. Uploads stay in this browser’s local storage (≤ 2.5 MB).</p>

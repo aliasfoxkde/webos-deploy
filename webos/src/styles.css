@@ -552,3 +552,53 @@ body[data-mode="mobile"] #start-btn { display: none; } /* the FAB drawer replace
   .store-head { gap: 10px; }
   .store-search { width: 100%; }
 }
+
+/* -- wallpaper layer (filters need a real element; backgrounds can't take them) -- */
+#wallpaper {
+  position: fixed; inset: -28px; z-index: -1;
+  background-position: center; pointer-events: none;
+}
+
+/* -- wallpaper image adjustments (Appearance) -- */
+.wx-adj { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; padding: 12px; border: 1px solid var(--chrome-line); border-radius: 10px; }
+.pos-grid {
+  display: grid; grid-template-columns: repeat(3, 22px); grid-auto-rows: 22px;
+  gap: 4px; padding: 4px; border: 1px solid var(--chrome-line); border-radius: 8px;
+}
+.pos-dot { width: 100%; height: 100%; padding: 0; border: 0; border-radius: 50%; background: rgba(255, 255, 255, 0.14); cursor: pointer; }
+.pos-dot:hover { background: rgba(255, 255, 255, 0.30); }
+.pos-dot.on { background: var(--accent); }
+
+/* -- taskbar pinned apps -- */
+#task-apps { position: relative; }
+.task-app .pin-dot {
+  position: absolute; left: 50%; bottom: 2px; transform: translateX(-50%);
+  width: 4px; height: 4px; border-radius: 50%; background: var(--accent); opacity: 0.9;
+}
+.task-app.drop-hint { outline: 2px dashed var(--accent); outline-offset: -2px; }
+#task-apps.drop-hint::after {
+  content: ''; position: absolute; inset: 2px; border: 2px dashed var(--accent);
+  border-radius: 8px; pointer-events: none; opacity: 0.8;
+}
+
+/* -- Add-app dialog (custom PWA/web apps) -- */
+.addapp { width: min(460px, 92vw); }
+.addapp-form { display: flex; flex-direction: column; gap: 12px; padding: 4px 0 8px; }
+.addapp-form label { display: flex; flex-direction: column; gap: 5px; font-size: 0.8rem; color: var(--text-dim); }
+.addapp-form input:not([type='checkbox']):not([type='color']),
+.addapp-form textarea {
+  background: rgba(255, 255, 255, 0.06); border: 1px solid var(--chrome-line); border-radius: 8px;
+  color: var(--text); padding: 8px 10px; font: inherit; font-size: 0.85rem;
+}
+.addapp-form textarea { resize: vertical; }
+.addapp-iconrow { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: var(--text-dim); flex-wrap: wrap; }
+.addapp-iconrow input[type='url'], .addapp-iconrow input:not([type]) {
+  flex: 1 1 140px; min-width: 0;
+  background: rgba(255, 255, 255, 0.06); border: 1px solid var(--chrome-line); border-radius: 8px;
+  color: var(--text); padding: 7px 9px; font: inherit; font-size: 0.8rem;
+}
+.addapp-iconrow input[type='color'] { width: 34px; height: 30px; padding: 0; border: 1px solid var(--chrome-line); border-radius: 7px; background: none; }
+.addapp-iconrow .check { display: flex; align-items: center; gap: 6px; flex: 1 1 100%; color: var(--text); font-size: 0.8rem; cursor: pointer; }
+.addapp-iconrow .check .dim { font-size: 0.72rem; }
+
+.task-app { position: relative; } /* anchors the pin-dot indicator */

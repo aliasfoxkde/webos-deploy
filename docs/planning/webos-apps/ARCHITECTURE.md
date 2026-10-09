@@ -71,9 +71,14 @@ webos/src/
 ### State surface (all `webos.*` localStorage, JSON)
 
 `installed` (store app ids; defaults ship, store apps do NOT preinstall — a
-one-time migration drops the old preinstalled list) · `theme` (preset, accent,
-wallpaper CSS/URL/dataURL, dim) · `desktop.order` + `desktop` (iconSize, sort) ·
-`taskbar` (position bottom|top, autohide, labels, clock24, showDate) · `widgets`
+one-time migration drops the old preinstalled list) · `userapps` (custom apps
+created via right-click → Add app…: name, link, icon URL/dataURL, description,
+accent, embed preference) · `theme` (preset, accent, wallpaper CSS/URL/dataURL,
+dim, image fit/pos/blur/brightness/saturation — images render in the
+`#wallpaper` fixed layer so filters can apply) · `desktop.order` + `desktop`
+(iconSize, sort) · `taskbar` (position bottom|top, autohide, labels, clock24,
+showDate, pinned app ids — drag icons onto the bar to pin, drag within the bar
+to reorder) · `widgets`
 (enabled ids in display order) · `volume` (level, muted; broadcast to apps as a
 `webos:volume` CustomEvent) · `uiMode` (auto|desktop|mobile) · `events` ·
 `notes` · `weather.loc` · plus per-app keys (`webos.calc.*`, `webos.editor.state`).

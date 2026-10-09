@@ -165,6 +165,24 @@ export const STORE_APPS = [
     developer: 'Planly', category: 'Productivity', rating: 4.4, reviews: 47,
     description: 'Task boards, schedules, and habit tracking in a clean interface. Your plans persist in the browser.',
   },
+  {
+    id: 'youtube', name: 'YouTube', tagline: 'Video streaming', version: '1.0',
+    url: 'https://www.youtube.com/', icon: 'icons/youtube.svg', accent: '#f87171', embed: false,
+    developer: 'Google', category: 'Media', rating: 4.5, reviews: 812,
+    description: 'Watch, search, and subscribe. Opens in its own tab — YouTube forbids embedding inside other sites.',
+  },
+  {
+    id: 'discord', name: 'Discord', tagline: 'Chat & communities', version: '1.0',
+    url: 'https://discord.com/app', icon: 'icons/discord.svg', accent: '#818cf8', embed: false,
+    developer: 'Discord Inc.', category: 'Social', rating: 4.6, reviews: 640,
+    description: 'Voice, video, and text for your communities. Opens in its own tab — Discord forbids embedding.',
+  },
+  {
+    id: 'spotify', name: 'Spotify', tagline: 'Music & podcasts', version: '1.0',
+    url: 'https://open.spotify.com/', icon: 'icons/spotify.svg', accent: '#34d399', embed: false,
+    developer: 'Spotify AB', category: 'Media', rating: 4.7, reviews: 903,
+    description: 'Millions of songs and podcasts. Opens in its own tab — the Spotify player forbids embedding.',
+  },
 ];
 
 // All desktop categories across both catalogs (for store filtering).

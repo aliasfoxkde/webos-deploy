@@ -22,8 +22,12 @@ export default function Properties({ appId, onClose }) {
 
   const isPlugin = !app.url;
   const isStore = STORE_APPS.some((a) => a.id === app.id);
+  const isCustom = os.isCustom(app.id);
   const installed = isStore ? os.installed.includes(app.id) : true;
-  const kind = isPlugin ? 'System plugin' : isStore ? (installed ? 'Store app (installed)' : 'Store app') : 'External app';
+  const kind = isCustom ? 'Your app (custom link)'
+    : isPlugin ? 'System plugin'
+    : isStore ? (installed ? 'Store app (installed)' : 'Store app')
+    : 'External app';
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
@@ -68,6 +72,9 @@ export default function Properties({ appId, onClose }) {
           ) : null}
           {isStore && installed ? (
             <button className="btn danger" onClick={() => { os.uninstall(app.id); onClose(); }}>Uninstall</button>
+          ) : null}
+          {isCustom ? (
+            <button className="btn danger" onClick={() => { os.removeUserApp(app.id); onClose(); }}>Remove</button>
           ) : null}
           <span className="flex1" />
           <button className="btn" onClick={onClose}>Close</button>

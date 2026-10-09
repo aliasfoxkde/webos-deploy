@@ -18,8 +18,7 @@ const SECTIONS = [
 ];
 
 /* Settings is a full control center: left rail of sections, scrollable panel.
-   It renders inside a pinned VirtualWindow (immovable by design — it is the
-   system surface, like a phone's quick settings). */
+   It renders inside a VirtualWindow — movable and resizable like any window. */
 export default function Settings({ initial = 'appearance' }) {
   const [sec, setSec] = useState(initial);
   const Active = SECTIONS.find((s) => s.id === sec)?.body || Appearance;

@@ -7,9 +7,11 @@ import { useContextMenu } from './shell/ContextMenu.jsx';
 import AppStore from './shell/AppStore.jsx';
 import Settings from './shell/Settings.jsx';
 import Properties from './shell/Properties.jsx';
+import AddApp from './shell/AddApp.jsx';
 import Sidebar from './shell/Sidebar.jsx';
 import MobileDrawer from './shell/MobileDrawer.jsx';
 import { PLUGIN_IDS } from './os/registry.js';
+import { wallpaperLayer } from './os/wallpapers.js';
 
 /* Virtual apps that render in-window instead of an iframe. */
 const VIRTUAL = {
@@ -24,6 +26,28 @@ function VirtualWindow({ win }) {
   const os = useOS();
   const v = VIRTUAL[win.appId];
   const focused = os.focused === win.id;
+
+  // Same titlebar drag as Window.jsx — virtual windows (App Store, Settings)
+  // are ordinary movable windows.
+  const onTitlePointerDown = (e) => {
+    if (e.target.closest('.tb-btn') || win.max) return;
+    e.preventDefault();
+    const start = { x: e.clientX, y: e.clientY, rect: { ...win.rect } };
+    const move = (ev) => {
+      os.setRect(win.id, {
+        ...start.rect,
+        x: Math.max(-start.rect.w + 90, ev.clientX - (start.x - start.rect.x)),
+        y: Math.max(0, Math.min(window.innerHeight - 100, ev.clientY - (start.y - start.rect.y))),
+      });
+    };
+    const up = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  };
+
   const style = win.max
     ? { left: 0, top: 0, width: '100%', height: '100%', zIndex: win.z }
     : { left: win.rect.x, top: win.rect.y, width: win.rect.w, height: win.rect.h, zIndex: win.z };
@@ -35,7 +59,7 @@ function VirtualWindow({ win }) {
       onPointerDownCapture={() => os.focus(win.id)}
       aria-label={v.name}
     >
-      <header className="titlebar" onDoubleClick={() => os.toggleMax(win.id)}>
+      <header className="titlebar" onPointerDown={onTitlePointerDown} onDoubleClick={() => os.toggleMax(win.id)}>
         <span className="t">{v.name}</span>
         <button className="tb-btn min" title="Minimize" onClick={() => os.minimize(win.id)}>—</button>
         <button className="tb-btn max" title={win.max ? 'Restore' : 'Maximize'} onClick={() => os.toggleMax(win.id)}>{win.max ? '❐' : '□'}</button>
@@ -52,6 +76,7 @@ export default function App() {
   const os = useOS();
   const [startOpen, setStartOpen] = useState(false);
   const [propsId, setPropsId] = useState(null);
+  const [appDlg, setAppDlg] = useState(null); // null | 'new' | app row (edit)
   const [widgetsOpen, setWidgetsOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const drag = useRef(null); // { id, moved, order }
@@ -67,24 +92,41 @@ export default function App() {
           { label: 'Sort icons by name', run: () => os.sortDesktop() },
           { label: 'Rearrange freely', run: () => { os.setDesktop({ sort: 'custom' }); os.setOrder(os.apps.map((a) => a.id)); } },
           '-',
+          { label: 'Add app…', hint: 'PWA / link', run: () => setAppDlg('new') },
           { label: 'Display settings…', run: () => os.launch('settings') },
           { label: 'Toggle fullscreen', hint: 'F11', run: () => document.dispatchEvent(new CustomEvent('webos:fullscreen')) },
         ];
       case 'icon': {
         const app = os.findApp(arg);
         if (!app) return [];
+        const isPinned = (os.taskbar.pinned || []).includes(app.id);
         const items = [
           { label: `Open ${app.name}`, icon: app.icon, run: () => os.launch(app.id) },
         ];
         if (app.url) items.push({ label: 'Open in new tab', hint: '↗', run: () => window.open(app.url, '_blank', 'noopener') });
         items.push('-');
+        items.push({ label: isPinned ? 'Unpin from taskbar' : 'Pin to taskbar', run: () => togglePin(app.id) });
         items.push({ label: 'Properties', hint: 'details', run: () => setPropsId(app.id) });
-        if (!os.isDefault(app.id)) {
+        if (os.isCustom(app.id)) {
+          items.push({ label: 'Edit app…', run: () => setAppDlg(app) });
+          items.push({ label: 'Remove', run: () => os.removeUserApp(app.id) });
+        } else if (!os.isDefault(app.id)) {
           items.push({ label: 'Uninstall', run: () => os.uninstall(app.id) });
         } else {
           items.push({ label: `${app.name} (system app)`, disabled: true });
         }
         return items;
+      }
+      case 'pin': {
+        const app = os.findApp(arg);
+        if (!app) return [];
+        return [
+          { label: `Open ${app.name}`, icon: app.icon, run: () => os.launch(app.id) },
+          ...(app.url ? [{ label: 'Open in new tab', hint: '↗', run: () => window.open(app.url, '_blank', 'noopener') }] : []),
+          '-',
+          { label: 'Unpin from taskbar', run: () => togglePin(arg) },
+          { label: 'Properties', hint: 'details', run: () => setPropsId(app.id) },
+        ];
       }
       case 'taskapp': {
         const w = os.windows.find((x) => x.id === Number(arg));
@@ -133,6 +175,11 @@ export default function App() {
   }, [os]);
   const { menu } = useContextMenu(buildItems);
 
+  const togglePin = (appId) => {
+    const cur = os.taskbar.pinned || [];
+    os.setTaskbar({ pinned: cur.includes(appId) ? cur.filter((id) => id !== appId) : [...cur, appId] });
+  };
+
   // Close start menu on any outside click; expose os for VirtualWindow buttons.
   useEffect(() => {
     const h = () => setStartOpen(false);
@@ -158,18 +205,28 @@ export default function App() {
   /* -- desktop icon drag-to-rearrange --
      Press moves after a 6px threshold (so plain clicks still launch); while
      dragging, the hovered slot index is recomputed from live rects and the
-     order updates immediately, so the rest of the grid springs aside. */
+     order updates immediately, so the rest of the grid springs aside.
+     Dropping onto the taskbar pins the app instead of reordering. */
   const beginIconDrag = (e, id) => {
     if (e.button !== 0 || os.mobile || os.desktop.sort === 'name') return;
     const startX = e.clientX, startY = e.clientY;
     let moved = false;
     let lastTarget = -1;
+    let overTaskbar = false;
     const el = e.currentTarget;
     const move = (ev) => {
       if (!moved && Math.hypot(ev.clientX - startX, ev.clientY - startY) < DRAG_THRESHOLD) return;
       moved = true;
       el.classList.add('dragging');
       try { el.setPointerCapture?.(ev.pointerId); } catch { /* synthetic pointer ids are not active */ }
+      const tb = document.querySelector('#taskbar');
+      const tbr = tb?.getBoundingClientRect();
+      const nowOver = !!tbr && ev.clientY >= tbr.top && ev.clientY <= tbr.bottom;
+      if (nowOver !== overTaskbar) {
+        overTaskbar = nowOver;
+        document.querySelector('#task-apps')?.classList.toggle('drop-hint', overTaskbar);
+      }
+      if (overTaskbar) return; // hovering the bar: pin on drop, don't reorder
       const icons = [...document.querySelectorAll('#icon-grid .desk-icon')];
       const target = icons.findIndex((n) => {
         const r = n.getBoundingClientRect();
@@ -187,10 +244,31 @@ export default function App() {
       drag.current = { order: ids };
       os.setOrder(ids);
     };
-    const up = () => {
+    const up = (ev) => {
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);
       el.classList.remove('dragging');
+      document.querySelector('#task-apps')?.classList.remove('drop-hint');
+      if (moved && overTaskbar) {
+        // Insert by hovered pinned slot when one is under the pointer.
+        const cur = os.taskbar.pinned || [];
+        if (!cur.includes(id)) {
+          const btns = [...document.querySelectorAll('#task-apps [data-pin]')];
+          const hit = btns.findIndex((n) => {
+            const r = n.getBoundingClientRect();
+            return ev.clientX >= r.left && ev.clientX <= r.right;
+          });
+          const next = [...cur];
+          if (hit >= 0) next.splice(btns[hit].dataset.pin | 0, 0, id);
+          else next.push(id);
+          os.setTaskbar({ pinned: next });
+        }
+        e.preventDefault();
+        e.stopPropagation();
+        drag.current = { swallowed: true }; // swallow the click that follows
+        setTimeout(() => { drag.current = null; }, 0);
+        return;
+      }
       if (moved) {
         e.preventDefault();
         e.stopPropagation();
@@ -209,8 +287,12 @@ export default function App() {
 
   const desktopApps = os.apps;
 
+  // Wallpaper renders in its own fixed layer (behind everything, slightly
+  // oversized) so custom images can take blur/brightness/saturation filters.
+  const wp = wallpaperLayer(os.theme);
   return (
     <>
+      {wp && <div id="wallpaper" aria-hidden="true" style={wp} />}
       <main id="desktop" data-cm="desktop">
         <section id="icon-grid" aria-label="Applications">
           {desktopApps.map((app) => (
@@ -254,6 +336,7 @@ export default function App() {
       )}
       {drawerOpen && <MobileDrawer onClose={() => setDrawerOpen(false)} />}
       {propsId && <Properties appId={propsId} onClose={() => setPropsId(null)} />}
+      {appDlg && <AddApp app={appDlg === 'new' ? null : appDlg} onClose={() => setAppDlg(null)} />}
       {menu}
     </>
   );

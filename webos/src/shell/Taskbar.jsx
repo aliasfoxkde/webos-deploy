@@ -116,7 +116,73 @@ export default function Taskbar({ openStart, startOpen, openSettings, openStore,
 
   const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: !os.taskbar.clock24 });
   const date = now.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
-  const taskWindows = os.windows.map((w) => ({ w, app: os.findApp(w.appId) })).filter((x) => x.app);
+
+  /* -- pinned apps -- */
+  const swallowed = useRef(false); // swallow the click that follows a pin drag
+  const pinnedIds = os.taskbar.pinned || [];
+  const pinned = pinnedIds.map((id) => os.findApp(id)).filter(Boolean);
+  const winsByApp = new Map();
+  for (const w of os.windows) {
+    if (!winsByApp.has(w.appId)) winsByApp.set(w.appId, []);
+    winsByApp.get(w.appId).push(w);
+  }
+  // Running windows of pinned apps live inside the pinned button (dot
+  // indicator); the open-windows section lists only unpinned apps.
+  const taskWindows = os.windows
+    .map((w) => ({ w, app: os.findApp(w.appId) }))
+    .filter((x) => x.app && !pinnedIds.includes(x.w.appId));
+
+  const clickPinned = (appId) => {
+    const wins = winsByApp.get(appId) || [];
+    if (!wins.length) {
+      os.launch(appId);
+      return;
+    }
+    const w = wins[0];
+    if (os.focused === w.id && !w.min) os.minimize(w.id);
+    else { os.minimize(w.id, true); os.focus(w.id); }
+  };
+
+  // Press-and-move reorders pinned icons (same threshold pattern as desktop
+  // icons so plain clicks still open/launch).
+  const beginPinDrag = (e, appId) => {
+    if (e.button !== 0 || os.mobile) return;
+    const startX = e.clientX, startY = e.clientY;
+    let moved = false;
+    let lastTarget = -1;
+    const el = e.currentTarget;
+    const order = () => [...pinnedIds];
+    const move = (ev) => {
+      if (!moved && Math.hypot(ev.clientX - startX, ev.clientY - startY) < 6) return;
+      moved = true;
+      el.classList.add('dragging');
+      try { el.setPointerCapture?.(ev.pointerId); } catch { /* synthetic pointer ids are not active */ }
+      const btns = [...document.querySelectorAll('#task-apps [data-pin]')];
+      const target = btns.findIndex((n) => {
+        const r = n.getBoundingClientRect();
+        return ev.clientX >= r.left && ev.clientX <= r.right;
+      });
+      if (target < 0 || target === lastTarget) return;
+      lastTarget = target;
+      const ids = order();
+      const from = ids.indexOf(appId);
+      if (from < 0) return;
+      ids.splice(from, 1);
+      ids.splice(Math.max(0, Math.min(ids.length, target > from ? target - 1 : target)), 0, appId);
+      if (ids.join() !== pinnedIds.join()) os.setTaskbar({ pinned: ids });
+    };
+    const up = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      el.classList.remove('dragging');
+      if (moved) {
+        swallowed.current = true; // swallow the click that follows the drag
+        setTimeout(() => { swallowed.current = false; }, 0);
+      }
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  };
 
   const trayBtn = (id, title, glyph) => (
     <button
@@ -140,6 +206,24 @@ export default function Taskbar({ openStart, startOpen, openSettings, openStore,
           <img src="icons/logo.svg" alt="" />{os.taskbar.labels && <span>Start</span>}
         </button>
         <div id="task-apps">
+          {pinned.map((app) => {
+            const wins = winsByApp.get(app.id) || [];
+            const focused = wins.some((w) => os.focused === w.id && !w.min);
+            return (
+              <button
+                key={`pin-${app.id}`}
+                className={`task-app ${focused ? 'focused' : ''}`}
+                data-cm={`pin:${app.id}`}
+                data-pin={pinnedIds.indexOf(app.id)}
+                onClick={() => { if (!swallowed.current) clickPinned(app.id); }}
+                onPointerDown={(e) => beginPinDrag(e, app.id)}
+                title={app.name}
+              >
+                <img src={app.icon} alt="" />{os.taskbar.labels && <span>{app.name}</span>}
+                {!!wins.length && <span className="pin-dot" />}
+              </button>
+            );
+          })}
           {taskWindows.map(({ w, app }) => (
             <button
               key={w.id}
