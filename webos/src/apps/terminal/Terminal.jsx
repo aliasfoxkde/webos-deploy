@@ -1,27 +1,41 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useOS } from '../../os/state.jsx';
 import { kvGet, kvSet } from '../../os/db.js';
 import wasmUrl from 'sql.js/dist/sql-wasm.wasm?url';
+import { Terminal as XTerm } from '@xterm/xterm';
+import { FitAddon } from '@xterm/addon-fit';
+import '@xterm/xterm/css/xterm.css';
+import { VERSION } from '../../version.js';
 
-/* Built-in terminal: shell-style commands over the OS itself, plus raw JS
-   evaluation as the pass-through escape hatch. */
+/* Built-in terminal 3.0 — xterm.js frontend (lazy chunk) over the `wosh`
+   shell: a real command language that mutates OS state (apps, windows,
+   settings paths, theme/persona, SQLite), with tab completion, ↑/↓ history,
+   Ctrl+C/Ctrl+L. Unknown input still evaluates as JavaScript — the
+   pass-through escape hatch. Craft-app MCP bridge lands in 3.1 once the web
+   builds expose a control channel (audited: vectorcraft-web has none today,
+   wasm can't listen on sockets); commands keep an MCP-shaped envelope. */
+
 const HELP = [
-  'help                 this text',
-  'apps                 list installed apps',
-  'open <id>            launch an app (e.g. open gridcraft)',
-  'close <id>           close its window',
-  'install <id>         install a store app',
-  'uninstall <id>       remove a store app',
-  'store                open the App Store',
-  'settings             open Settings',
-  'theme <preset>       midnight | ocean | forest | sunset | light',
-  'accent <color>       set accent (name or #hex, e.g. accent emerald)',
-  'wallpaper <url>      set a wallpaper image ("" to clear)',
-  'sqlite <sql>         run SQL on the persistent webos database',
-  'fullscreen           toggle fullscreen',
-  'date | echo | uname | whoami | neofetch',
-  'clear                clear the screen',
-  '<anything else>      evaluated as JavaScript',
+  'wosh — the WebOS shell. Everything here mutates the real OS.',
+  '  help                    this text',
+  '  apps                    list installed apps',
+  '  open|launch <id>        launch an app (multi-instance)',
+  '  close <id>|all          close windows by app id',
+  '  windows                 list open windows',
+  '  install|uninstall <id>  manage store apps',
+  '  store | settings [sec]  open the App Store / Settings (deep-link a section)',
+  '  get <path>              read a settings path (try: get ui.scale)',
+  '  set <path> <value>      write one (set taskbar.position top)',
+  '  persona [id]            show or switch the OS persona',
+  '  theme <preset>          midnight | ocean | forest | sunset | light',
+  '  accent <color|#hex>     set the accent color',
+  '  wallpaper <url>         wallpaper image ("" clears)',
+  '  volume <0-100>          master volume',
+  '  os | os.status          system status',
+  '  sqlite <sql>            SQL on the persistent OS database',
+  '  history | fullscreen | date | echo | uname | whoami | neofetch',
+  '  clear                   clear the screen        (Ctrl+L)',
+  '  <anything else>         evaluated as JavaScript — `os` is in scope',
 ];
 
 const NAMED = {
@@ -30,9 +44,38 @@ const NAMED = {
   blue: '#60a5fa', indigo: '#818cf8', violet: '#a78bfa', purple: '#c084fc', magenta: '#e879f9', pink: '#f472b6',
 };
 
-/* -- sqlite: real SQLite (sql.js WASM) over a database that persists to
-   IndexedDB after every statement. The module + wasm load lazily on first
-   use so the terminal chunk stays light. -- */
+const PERSONA_IDS = ['win', 'mac', 'linux', 'bsd', 'android', 'tui'];
+const THEME_PRESETS = ['midnight', 'ocean', 'forest', 'sunset', 'light'];
+
+/* Settings paths for get/set. `set` returns the applied (coerced) value so
+   the shell can echo truth without racing React's next render. */
+const SETTINGS_PATHS = {
+  'persona': { get: (o) => o.persona, set: (o, v) => { const x = String(v); o.setPersona(x); return x; } },
+  'theme.preset': { get: (o) => o.theme.preset, set: (o, v) => { const x = String(v); o.setTheme({ preset: x, wallpaper: '' }); return x; } },
+  'theme.accent': { get: (o) => o.theme.accent, set: (o, v) => { const x = String(v); o.setTheme({ accent: x }); return x; } },
+  'theme.wallpaper': { get: (o) => o.theme.wallpaper, set: (o, v) => { const x = String(v); o.setTheme({ wallpaper: x }); return x; } },
+  'ui.scale': { get: (o) => o.ui.scale, set: (o, v) => { const x = num(v, 1, 0.85, 1.25); o.setUi({ scale: x }); return x; } },
+  'ui.anim': { get: (o) => o.ui.anim, set: (o, v) => { const x = bool(v); o.setUi({ anim: x }); return x; } },
+  'ui.transparency': { get: (o) => o.ui.transparency, set: (o, v) => { const x = num(v, 1, 0.5, 1.2); o.setUi({ transparency: x }); return x; } },
+  'ui.radius': { get: (o) => o.ui.radius, set: (o, v) => { const x = String(v); o.setUi({ radius: x }); return x; } },
+  'ui.blur': { get: (o) => o.ui.blur, set: (o, v) => { const x = String(v); o.setUi({ blur: x }); return x; } },
+  'ui.focusHover': { get: (o) => o.ui.focusHover, set: (o, v) => { const x = bool(v); o.setUi({ focusHover: x }); return x; } },
+  'taskbar.position': { get: (o) => o.taskbar.position, set: (o, v) => { const x = v === 'top' ? 'top' : 'bottom'; o.setTaskbar({ position: x }); return x; } },
+  'taskbar.align': { get: (o) => o.taskbar.align, set: (o, v) => { const x = v === 'center' ? 'center' : 'left'; o.setTaskbar({ align: x }); return x; } },
+  'taskbar.iconSize': { get: (o) => o.taskbar.iconSize, set: (o, v) => { const x = ['sm', 'md', 'lg'].includes(v) ? v : 'md'; o.setTaskbar({ iconSize: x }); return x; } },
+  'taskbar.autohide': { get: (o) => o.taskbar.autohide, set: (o, v) => { const x = bool(v); o.setTaskbar({ autohide: x }); return x; } },
+  'taskbar.labels': { get: (o) => o.taskbar.labels, set: (o, v) => { const x = bool(v); o.setTaskbar({ labels: x }); return x; } },
+  'taskbar.clock24': { get: (o) => o.taskbar.clock24, set: (o, v) => { const x = bool(v); o.setTaskbar({ clock24: x }); return x; } },
+  'taskbar.showDate': { get: (o) => o.taskbar.showDate, set: (o, v) => { const x = bool(v); o.setTaskbar({ showDate: x }); return x; } },
+  'desktop.iconSize': { get: (o) => o.desktop.iconSize, set: (o, v) => { const x = ['sm', 'md', 'lg'].includes(v) ? v : 'md'; o.setDesktop({ iconSize: x }); return x; } },
+  'desktop.gap': { get: (o) => o.desktop.gap, set: (o, v) => { const x = ['compact', 'normal', 'roomy'].includes(v) ? v : 'normal'; o.setDesktop({ gap: x }); return x; } },
+  'volume.master': { get: (o) => o.volume.master, set: (o, v) => { const x = num(v, 80, 0, 100); o.setVolume({ master: x }); return x; } },
+  'volume.mute': { get: (o) => o.volume.mute, set: (o, v) => { const x = bool(v); o.setVolume({ mute: x }); return x; } },
+};
+const num = (v, d, lo, hi) => Math.min(hi, Math.max(lo, Number.isFinite(Number(v)) ? Number(v) : d));
+const bool = (v) => v === true || v === 'true' || v === 'on' || v === '1';
+
+/* -- SQLite (sql.js) over the IndexedDB-persistent OS database -- */
 const SQL_DB_KEY = 'sqlite.db';
 const fmtVal = (v) => (v === null ? 'NULL' : v instanceof Uint8Array ? `<blob ${v.length}B>` : String(v));
 const renderTable = (r) => {
@@ -41,169 +84,289 @@ const renderTable = (r) => {
   return rows.map((row) => row.map((cell, c) => String(cell ?? '').padEnd(w[c])).join(' | ')).join('\n');
 };
 
+const C = { prompt: '\x1b[38;5;81m', dim: '\x1b[90m', err: '\x1b[91m', ok: '\x1b[92m', reset: '\x1b[0m' };
+
 export default function Terminal() {
+  const hostRef = useRef(null);
+  const osRef = useRef(null); // latest OS context for the imperative shell
+  const sqlRef = useRef(null);
   const os = useOS();
-  const [lines, setLines] = useState(() => [
-    { t: 'out', s: 'ArtCraft WebOS Terminal — type `help` for commands, anything else runs as JavaScript.' },
-  ]);
-  const [input, setInput] = useState('');
-  const [hist, setHist] = useState([]);
-  const [hIdx, setHIdx] = useState(-1);
-  const endRef = useRef(null);
-  const inputRef = useRef(null);
-  const sqlRef = useRef(null); // opened SQL.Database, kept for the session
+  osRef.current = os;
 
-  useEffect(() => { endRef.current?.scrollIntoView({ block: 'end' }); }, [lines]);
+  useEffect(() => {
+    const term = new XTerm({
+      cursorBlink: true,
+      allowTransparency: true,
+      fontFamily: '"JetBrains Mono", ui-monospace, Menlo, Consolas, monospace',
+      fontSize: 13,
+      theme: { background: 'rgba(0,0,0,0)', foreground: '#d7e2f0', cursor: '#38bdf8', selectionBackground: 'rgba(56,189,248,0.3)' },
+    });
+    const fit = new FitAddon();
+    term.loadAddon(fit);
+    term.open(hostRef.current);
+    try { fit.fit(); } catch { /* zero-size host before layout */ }
+    const ro = new ResizeObserver(() => { try { fit.fit(); } catch { /* hidden */ } });
+    ro.observe(hostRef.current);
 
-  const push = (t, s) => setLines((ls) => [...ls.slice(-400), { t, s }]);
+    const out = (s = '') => term.write(`${s}\r\n`);
+    const PROMPT = `${C.prompt}❯${C.reset} `;
+    let buf = '';
+    let hist = [];
+    let hIdx = -1;
+    let busy = false;
+    const redraw = () => { term.write(`\r\x1b[K${PROMPT}${buf}`); };
+    term.writeln(`ArtCraft WebOS shell ${C.dim}(wosh 1.0)${C.reset} — type ${C.ok}help${C.reset} for commands.`);
+    term.write(PROMPT);
 
-  const sqlReady = async () => {
-    if (sqlRef.current) return sqlRef.current;
-    push('out', 'loading sql.js…');
-    const initSqlJs = (await import('sql.js')).default;
-    const SQL = await initSqlJs({ locateFile: () => wasmUrl });
-    const saved = await kvGet(SQL_DB_KEY);
-    sqlRef.current = saved ? new SQL.Database(saved) : new SQL.Database();
-    return sqlRef.current;
-  };
+    const candidates = (part) => {
+      const o = osRef.current;
+      const cmds = ['help', 'apps', 'open', 'launch', 'close', 'windows', 'install', 'uninstall', 'store', 'settings', 'get', 'set', 'persona', 'personas', 'theme', 'accent', 'wallpaper', 'volume', 'os', 'sqlite', 'history', 'fullscreen', 'date', 'echo', 'uname', 'whoami', 'neofetch', 'clear'];
+      const words = part.split(/\s+/);
+      const last = words[words.length - 1];
+      let pool = cmds;
+      if (words.length >= 2) {
+        const head = words[0];
+        if (head === 'open' || head === 'launch' || head === 'close' || head === 'install' || head === 'uninstall') pool = o.apps.map((a) => a.id);
+        else if (head === 'set' || head === 'get') pool = Object.keys(SETTINGS_PATHS);
+        else if (head === 'persona') pool = PERSONA_IDS;
+        else if (head === 'theme') pool = THEME_PRESETS;
+        else if (head === 'settings') pool = ['appearance', 'desktop', 'taskbar', 'widgets', 'sound', 'network', 'apps', 'storage', 'about'];
+        else pool = [];
+      }
+      return pool.filter((c) => c.startsWith(last));
+    };
 
-  const runSql = async (sql) => {
-    if (!sql.trim()) {
-      push('out', 'usage: sqlite <sql>  — e.g. sqlite CREATE TABLE t (id INTEGER, name TEXT)');
-      push('out', 'one persistent database (IndexedDB, survives reloads) for the whole OS.');
-      return;
-    }
-    try {
-      const db = await sqlReady();
-      const results = db.exec(sql);
-      if (!results.length) push('out', 'ok');
-      results.forEach((r) => push('out', renderTable(r)));
-      const bytes = db.export();
-      await kvSet(SQL_DB_KEY, bytes);
-      push('out', `— saved (${bytes.length} bytes → IndexedDB ${SQL_DB_KEY})`);
-    } catch (err) {
-      push('err', String(err.message || err));
-    }
-  };
+    const complete = () => {
+      const part = buf;
+      const hits = candidates(part);
+      const words = part.split(/\s+/);
+      const last = words[words.length - 1] || '';
+      if (hits.length === 1) {
+        const insert = hits[0].slice(last.length);
+        if (!insert) return;
+        buf += insert + ' ';
+        redraw();
+      } else if (hits.length > 1) {
+        // longest common prefix first, then list the options
+        let lcp = hits[0];
+        for (const h of hits) { let i = 0; while (i < lcp.length && lcp[i] === h[i]) i++; lcp = lcp.slice(0, i); }
+        if (lcp.length > last.length) { buf += lcp.slice(last.length); redraw(); return; }
+        out();
+        out(hits.join('  '));
+        redraw();
+      }
+    };
 
-  function run(raw) {
-    const cmd = raw.trim();
-    push('in', cmd);
-    if (!cmd) return;
-    const [head, ...rest] = cmd.split(/\s+/);
-    const arg = rest.join(' ');
-    switch (head) {
-      case 'help': HELP.forEach((l) => push('out', l)); return;
-      case 'clear': setLines([]); return;
-      case 'date': push('out', new Date().toString()); return;
-      case 'echo': push('out', arg); return;
-      case 'whoami': push('out', 'webos-user'); return;
-      case 'uname': push('out', 'ArtCraft WebOS 2.0 (browser) — ' + navigator.userAgent.slice(0, 60) + '…'); return;
-      case 'neofetch':
-        [
-          '        ▄▄▄▄▄▄▄        webos@browser',
-          '     ▄█████████▄      ---------------',
-          '   ▄███  WEBOS  ███▄   OS: ArtCraft WebOS 2.0',
-          '   ███  ▄▄▄▄▄▄▄  ███   Shell: wosh 0.2',
-          '   ███  ███████  ███   Apps: ' + os.apps.length + ' installed',
-          '   ▀███  ▀▀▀▀▀▀▀  ███▀  Windows: ' + os.windows.length + ' open',
-          '     ▀█████████▀      Accent: ' + os.theme.accent,
-          '        ▀▀▀▀▀▀▀        Theme: ' + os.theme.preset,
-        ].forEach((l) => push('out', l));
-        return;
-      case 'apps':
-        os.apps.forEach((a) => push('out', `${a.id.padEnd(14)} ${a.name}  —  ${a.tagline}${a.embed ? '' : '  (new tab only)'}`));
-        return;
-      case 'open': {
-        const app = os.findApp(arg);
-        if (!app) { push('err', `no such app: ${arg}`); return; }
-        os.launch(app.id); push('out', `launching ${app.name}…`);
+    const setPath = (path, value) => {
+      const o = osRef.current;
+      const entry = SETTINGS_PATHS[path];
+      if (!entry) { out(`${C.err}unknown settings path: ${path}${C.reset}`); out(`${C.dim}paths: ${Object.keys(SETTINGS_PATHS).join(' ')}${C.reset}`); return; }
+      try { out(`${C.ok}${path} = ${entry.set(o, value)}${C.reset}`); }
+      catch (err) { out(`${C.err}${String(err.message || err)}${C.reset}`); }
+    };
+
+    const sqlReady = async () => {
+      if (sqlRef.current) return sqlRef.current;
+      out(`${C.dim}loading sql.js…${C.reset}`);
+      const initSqlJs = (await import('sql.js')).default;
+      const SQL = await initSqlJs({ locateFile: () => wasmUrl });
+      const saved = await kvGet(SQL_DB_KEY);
+      sqlRef.current = saved ? new SQL.Database(saved) : new SQL.Database();
+      return sqlRef.current;
+    };
+
+    const runSql = async (sql) => {
+      const o = osRef.current;
+      if (!sql.trim()) {
+        out('usage: sqlite <sql>  — e.g. sqlite CREATE TABLE t (id INTEGER, name TEXT)');
+        out(`${C.dim}one persistent database (IndexedDB, survives reloads) for the whole OS.${C.reset}`);
         return;
       }
-      case 'close': {
-        const w = os.windows.find((x) => x.appId === arg);
-        if (!w) { push('err', `not running: ${arg}`); return; }
-        os.close(w.id); push('out', `closed ${arg}`);
-        return;
+      try {
+        const db = await sqlReady();
+        const results = db.exec(sql);
+        if (!results.length) out('ok');
+        results.forEach((r) => out(renderTable(r)));
+        const bytes = db.export();
+        await kvSet(SQL_DB_KEY, bytes);
+        out(`${C.dim}— saved (${bytes.length} bytes → IndexedDB ${SQL_DB_KEY})${C.reset}`);
+      } catch (err) {
+        out(`${C.err}${String(err.message || err)}${C.reset}`);
       }
-      case 'install': os.install(arg); push('out', `installed ${arg}`); return;
-      case 'uninstall': os.uninstall(arg); push('out', `uninstalled ${arg}`); return;
-      case 'store': os.launch('store'); return;
-      case 'settings': os.launch('settings'); return;
-      case 'fullscreen': document.dispatchEvent(new CustomEvent('webos:fullscreen')); push('out', 'toggled fullscreen'); return;
-      case 'theme':
-        if (['midnight', 'ocean', 'forest', 'sunset', 'light'].includes(arg)) { os.setTheme({ preset: arg, wallpaper: '' }); push('out', `theme: ${arg}`); }
-        else push('err', 'themes: midnight ocean forest sunset light');
-        return;
-      case 'accent': {
-        const c = NAMED[arg] || (/^#[0-9a-fA-F]{3,8}$/.test(arg) ? arg : null);
-        if (!c) { push('err', 'usage: accent <name|#hex>  (' + Object.keys(NAMED).join(' ') + ')'); return; }
-        os.setTheme({ accent: c }); push('out', `accent: ${c}`);
-        return;
-      }
-      case 'wallpaper':
-        os.setTheme({ wallpaper: arg });
-        push('out', arg ? 'wallpaper set' : 'wallpaper cleared');
-        return;
-      case 'sqlite':
-        runSql(arg);
-        return;
-      default: {
-        // Pass-through: evaluate as JavaScript in a scoped function.
-        try {
-          const fn = new Function(`"use strict"; return (${cmd});`);
-          let v;
-          try { v = fn(); } catch { v = new Function(`"use strict"; ${cmd}`)(); }
-          push('out', typeof v === 'string' ? v : String(v));
-        } catch (err) {
-          push('err', String(err.message || err));
+    };
+
+    const run = async (raw) => {
+      const o = osRef.current;
+      const cmd = raw.trim();
+      if (!cmd) return;
+      const [head, ...rest] = cmd.split(/\s+/);
+      const arg = rest.join(' ');
+      switch (head) {
+        case 'help': HELP.forEach((l) => out(l)); return;
+        case 'clear': term.clear(); term.write('\x1b[2J\x1b[H'); return;
+        case 'date': out(new Date().toString()); return;
+        case 'echo': out(arg); return;
+        case 'whoami': out('webos-user'); return;
+        case 'uname': out(`ArtCraft WebOS (browser) — ${navigator.userAgent.slice(0, 72)}…`); return;
+        case 'history': hist.forEach((h, i) => out(`${C.dim}${String(i + 1).padStart(3)}${C.reset}  ${h}`)); return;
+        case 'neofetch':
+          [
+            '        ▄▄▄▄▄▄▄        webos@browser',
+            '     ▄█████████▄      ---------------',
+            '   ▄███  WEBOS  ███▄   OS: ArtCraft WebOS',
+            '   ███  ▄▄▄▄▄▄▄  ███   Shell: wosh 1.0 (xterm.js)',
+            '   ███  ███████  ███   Persona: ' + o.persona,
+            '   ▀███  ▀▀▀▀▀▀▀  ███▀  Apps: ' + o.apps.length + ' installed · ' + o.windows.length + ' windows open',
+            '     ▀█████████▀      Accent: ' + o.theme.accent + ' · Theme: ' + o.theme.preset,
+            '        ▀▀▀▀▀▀▀        UI: scale ' + o.ui.scale + ' · radius ' + (o.ui.radius || 'default'),
+          ].forEach((l) => out(l));
+          return;
+        case 'os': {
+          const st = {
+            version: VERSION, persona: o.persona, theme: o.theme.preset, accent: o.theme.accent,
+            apps: o.apps.length, windows: o.windows.map((w) => ({ id: w.id, app: w.appId, min: !!w.min, max: !!w.max })),
+            ui: o.ui, taskbar: { position: o.taskbar.position, align: o.taskbar.align, iconSize: o.taskbar.iconSize },
+            volume: o.volume, mobile: o.mobile,
+          };
+          out(JSON.stringify(st, null, 2).replace(/\n/g, '\r\n'));
+          return;
+        }
+        case 'apps':
+          o.apps.forEach((a) => out(`${a.id.padEnd(14)} ${a.name}  —  ${a.tagline}${a.embed ? '' : '  (new tab only)'}`));
+          return;
+        case 'open':
+        case 'launch': {
+          const app = o.findApp(arg);
+          if (!app) { out(`${C.err}no such app: ${arg}${C.reset}`); return; }
+          o.launch(app.id); out(`launching ${app.name}…`);
+          return;
+        }
+        case 'close': {
+          if (arg === 'all') { o.windows.forEach((w) => o.close(w.id)); out('closed everything'); return; }
+          const targets = o.windows.filter((x) => x.appId === arg);
+          if (!targets.length) { out(`${C.err}not running: ${arg}${C.reset}`); return; }
+          targets.forEach((w) => o.close(w.id));
+          out(`closed ${targets.length} × ${arg}`);
+          return;
+        }
+        case 'windows':
+          if (!o.windows.length) { out('no windows open'); return; }
+          o.windows.forEach((w) => out(
+            `${String(w.id).padStart(3)}  ${w.appId.padEnd(14)} ${w.min ? 'min' : w.max ? 'max' : '   '}  ${Math.round(w.rect.w)}×${Math.round(w.rect.h)} @ ${Math.round(w.rect.x)},${Math.round(w.rect.y)}`
+          ));
+          return;
+        case 'install':
+          if (!o.findApp(arg)) { out(`${C.err}no such store app: ${arg}${C.reset}`); return; }
+          o.install(arg); out(`installed ${arg}`);
+          return;
+        case 'uninstall': o.uninstall(arg); out(`uninstalled ${arg}`); return;
+        case 'store': o.launch('store'); return;
+        case 'settings':
+          o.launch('settings', arg ? { initial: arg } : undefined);
+          out(arg ? `settings → ${arg}` : 'opening settings…');
+          return;
+        case 'get': {
+          const entry = SETTINGS_PATHS[arg];
+          if (!entry) { out(`${C.err}unknown settings path: ${arg}${C.reset}`); out(`${C.dim}paths: ${Object.keys(SETTINGS_PATHS).join(' ')}${C.reset}`); return; }
+          out(`${arg} = ${entry.get(o)}`);
+          return;
+        }
+        case 'set': {
+          const sp = arg.indexOf(' ');
+          if (sp < 0) { out('usage: set <path> <value>  — e.g. set ui.scale 1.1'); return; }
+          setPath(arg.slice(0, sp), arg.slice(sp + 1).trim());
+          return;
+        }
+        case 'persona':
+          if (!arg) { out(`persona: ${o.persona} ${C.dim}(one of ${PERSONA_IDS.join(' ')})${C.reset}`); return; }
+          if (!PERSONA_IDS.includes(arg)) { out(`${C.err}personas: ${PERSONA_IDS.join(' ')}${C.reset}`); return; }
+          o.setPersona(arg); out(`persona: ${arg}`);
+          return;
+        case 'personas': out(PERSONA_IDS.join(' ')); return;
+        case 'theme':
+          if (!THEME_PRESETS.includes(arg)) { out(`${C.err}themes: ${THEME_PRESETS.join(' ')}${C.reset}`); return; }
+          o.setTheme({ preset: arg, wallpaper: '' }); out(`theme: ${arg}`);
+          return;
+        case 'accent': {
+          const c = NAMED[arg] || (/^#[0-9a-fA-F]{3,8}$/.test(arg) ? arg : null);
+          if (!c) { out(`${C.err}usage: accent <name|#hex>  (${Object.keys(NAMED).join(' ')})${C.reset}`); return; }
+          o.setTheme({ accent: c }); out(`accent: ${c}`);
+          return;
+        }
+        case 'wallpaper':
+          o.setTheme({ wallpaper: arg });
+          out(arg ? 'wallpaper set' : 'wallpaper cleared');
+          return;
+        case 'volume': {
+          if (!arg.trim()) { out('usage: volume <0-100>'); return; }
+          const v = num(arg, -1, 0, 100);
+          if (v < 0) { out('usage: volume <0-100>'); return; }
+          o.setVolume({ master: v, mute: false }); out(`volume: ${v}`);
+          return;
+        }
+        case 'fullscreen': document.dispatchEvent(new CustomEvent('webos:fullscreen')); out('toggled fullscreen'); return;
+        case 'sqlite': await runSql(arg); return;
+        default: {
+          // Pass-through: evaluate as JavaScript with the live OS in scope.
+          try {
+            const fn = new Function('os', `"use strict"; return (${cmd});`);
+            let v;
+            try { v = fn(o); } catch { v = new Function('os', `"use strict"; ${cmd}`)(o); }
+            out(typeof v === 'string' ? v : JSON.stringify(v, null, 2)?.replace(/\n/g, '\r\n'));
+          } catch (err) {
+            out(`${C.err}${String(err.message || err)}${C.reset}`);
+          }
         }
       }
-    }
-  }
+    };
 
-  const onKey = (e) => {
-    if (e.key === 'Enter') {
-      run(input);
-      if (input.trim()) setHist((h) => [...h, input]);
-      setHIdx(-1);
-      setInput('');
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      const i = hIdx < 0 ? hist.length - 1 : Math.max(0, hIdx - 1);
-      if (hist[i] !== undefined) { setHIdx(i); setInput(hist[i]); }
-    } else if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      if (hIdx >= 0 && hIdx < hist.length - 1) { setHIdx(hIdx + 1); setInput(hist[hIdx + 1]); }
-      else { setHIdx(-1); setInput(''); }
-    } else if (e.key === 'l' && e.ctrlKey) {
-      e.preventDefault(); setLines([]);
-    }
-  };
+    const disposeData = term.onData((data) => {
+      if (busy && data !== '\x03') return;
+      // escape sequences arrive as one data event — handle before char loop
+      if (data === '\x1b[A' || data === '\x1b[B') {
+        if (data === '\x1b[A') {
+          const i = hIdx < 0 ? hist.length - 1 : Math.max(0, hIdx - 1);
+          if (hist[i] !== undefined) { hIdx = i; buf = hist[i]; redraw(); }
+        } else if (hIdx >= 0) {
+          if (hIdx < hist.length - 1) { hIdx += 1; buf = hist[hIdx]; }
+          else { hIdx = -1; buf = ''; }
+          redraw();
+        }
+        return;
+      }
+      if (data.startsWith('\x1b')) return; // other sequences (arrows, paste prefixes) — ignored
+      for (const ch of data) {
+        if (ch === '\r') {
+          term.write('\r\n');
+          const line = buf;
+          buf = '';
+          hIdx = -1;
+          if (line.trim()) hist = [...hist, line].slice(-100);
+          // serialize commands: sqlite loads are async; don't interleave input
+          busy = true;
+          Promise.resolve(run(line)).finally(() => { busy = false; term.write(PROMPT); });
+          return; // rest of a pasted batch after Enter is dropped — acceptable
+        } else if (ch === '\x7f') {
+          if (buf.length) { buf = buf.slice(0, -1); redraw(); }
+        } else if (ch === '\x03') {
+          term.write('^C\r\n');
+          buf = '';
+          hIdx = -1;
+          if (!busy) term.write(PROMPT);
+        } else if (ch === '\x0c') {
+          term.clear(); term.write('\x1b[2J\x1b[H'); redraw();
+        } else if (ch === '\t') {
+          complete();
+        } else if (ch >= ' ') {
+          buf += ch;
+          term.write(ch);
+        }
+      }
+    });
 
-  return (
-    <div className="terminal" onClick={() => inputRef.current?.focus()}>
-      <div className="t-scroll">
-        {lines.map((l, i) => (
-          <div key={i} className={`t-line ${l.t}`}>
-            {l.t === 'in' ? <span className="t-prompt">❯</span> : null}
-            <span className={l.t === 'err' ? 't-err' : undefined}>{l.s}</span>
-          </div>
-        ))}
-        <div className="t-line in">
-          <span className="t-prompt">❯</span>
-          <input
-            ref={inputRef}
-            value={input}
-            spellCheck={false}
-            autoFocus
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={onKey}
-            aria-label="terminal input"
-          />
-        </div>
-        <div ref={endRef} />
-      </div>
-    </div>
-  );
+    term.focus();
+    return () => { ro.disconnect(); disposeData.dispose(); term.dispose(); };
+  }, []);
+
+  return <div className="terminal xterm-host" ref={hostRef} aria-label="terminal" />;
 }

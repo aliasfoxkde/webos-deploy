@@ -1048,6 +1048,73 @@ await sleep(2500);
 const back = await evaluate(`({ menu: !!document.getElementById('start-menu'), boot: !!document.body })`);
 console.log('power on → reloaded, start menu closed:', JSON.stringify(back.result?.value));
 
+// 32. wosh — the xterm.js shell
+const typeLine = async (text) => {
+  for (const ch of text) {
+    await send('Input.dispatchKeyEvent', { type: 'keyDown', text: ch, unmodifiedText: ch, key: ch }, sessionId);
+    await send('Input.dispatchKeyEvent', { type: 'keyUp', key: ch }, sessionId);
+  }
+  await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, text: '\r' }, sessionId);
+  await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 }, sessionId);
+  await sleep(350);
+};
+await evaluate(`window.__os.launch('terminal')`);
+await sleep(1200);
+const termRect = await evaluate(`(() => { const w = [...document.querySelectorAll('.win')].find(w => w.getAttribute('aria-label') === 'Terminal'); const r = w.getBoundingClientRect(); return { x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2) }; })()`);
+await clickAt(termRect.result.value.x, termRect.result.value.y);
+await sleep(300);
+await typeLine('help');
+const helpOut = await evaluate(`document.querySelector('.xterm-rows')?.textContent.includes('wosh — the WebOS shell')`);
+console.log('terminal help (want true):', helpOut.result?.value);
+await shot('40-terminal');
+// get/set on a settings path — mutates real OS state
+await typeLine('set ui.scale 1.15');
+const setOut = await evaluate(`({
+  said: document.querySelector('.xterm-rows')?.textContent.includes('ui.scale = 1.15'),
+  stored: JSON.parse(localStorage.getItem('webos.ui')).scale,
+  font: getComputedStyle(document.documentElement).fontSize,
+})`);
+console.log('wosh set ui.scale (want true/1.15/18px):', JSON.stringify(setOut.result?.value));
+await typeLine('get ui.scale');
+const getOut = await evaluate(`document.querySelector('.xterm-rows')?.textContent.includes('ui.scale = 1.15')`);
+console.log('wosh get ui.scale (want true):', getOut.result?.value);
+// tab completion: "set taskbar.pos" + Tab completes to taskbar.position
+const typeText = async (text) => {
+  for (const ch of text) {
+    await send('Input.dispatchKeyEvent', { type: 'keyDown', text: ch, unmodifiedText: ch, key: ch }, sessionId);
+    await send('Input.dispatchKeyEvent', { type: 'keyUp', key: ch }, sessionId);
+  }
+  await sleep(200);
+};
+await typeText('set taskbar.pos');
+await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 }, sessionId);
+await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 }, sessionId);
+await sleep(200);
+const afterTab = await evaluate(`document.querySelector('.xterm-rows')?.textContent.split('\\n').filter(Boolean).at(-1)`);
+console.log('buffer line after Tab (want … set taskbar.position ):', JSON.stringify(afterTab.result?.value));
+await typeText('top'); // completion already appended the separating space
+await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, text: '\r' }, sessionId);
+await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 }, sessionId);
+await sleep(400);
+const tabDone = await evaluate(`({ said: document.querySelector('.xterm-rows')?.textContent.includes('taskbar.position = top'), stored: JSON.parse(localStorage.getItem('webos.taskbar')).position })`);
+console.log('tab completion → set taskbar.position top:', JSON.stringify(tabDone.result?.value));
+// persona switch from the shell
+await typeLine('persona tui');
+await sleep(300);
+const personaOut = await evaluate(`({ attr: document.body.dataset.persona, said: document.querySelector('.xterm-rows')?.textContent.includes('persona: tui') })`);
+console.log('wosh persona tui (want tui/true):', JSON.stringify(personaOut.result?.value));
+await shot('41-terminal-tui');
+await typeLine('persona win');
+await typeLine('set ui.scale 1');
+await typeLine('windows');
+const winList = await evaluate(`document.querySelector('.xterm-rows')?.textContent.includes('terminal')`);
+console.log('wosh windows lists terminal (want true):', winList.result?.value);
+// close all — including the terminal itself
+await typeLine('close all');
+await sleep(400);
+const allClosed = await evaluate(`document.querySelectorAll('#windows .win').length`);
+console.log('wosh close all → 0 windows (want 0):', allClosed.result?.value);
+
 console.log('done');
 clearTimeout(watchdog);
 killTree();

@@ -315,3 +315,32 @@ overlay in App.jsx — honest about being a browser page, "Power on" reloads).
 - **Persona styling stays CSS-only**: `body[data-persona]` rules — win =
   centered 580px panel, linux/bsd = left-anchored, mac = raised over the
   dock, tui = full-width monospace column.
+
+## Terminal 3.0 — wosh on xterm.js (2.9.0)
+
+`src/apps/terminal/Terminal.jsx` is now an xterm.js frontend (MIT,
+`@xterm/xterm` + `@xterm/addon-fit`, imported by the already-lazy Terminal
+chunk — xterm downloads only on first launch) driving `wosh`, a real command
+language over the OS: `help apps open|launch close windows install|uninstall
+store settings [section] get/set <path> <value> persona[s] theme accent
+wallpaper volume os sqlite history fullscreen date echo uname whoami neofetch
+clear`, plus tab completion (commands, app ids, settings paths, personas,
+themes, settings sections), ↑/↓ history (last 100), Ctrl+C (cancel line) and
+Ctrl+L (clear). Unknown input still evaluates as JavaScript with the live OS
+context in scope — the escape hatch. Every command mutates real OS state;
+`set` echoes the coerced value returned by the setter (never a stale render
+read). Command execution is serialized (`busy` gate) so async commands like
+`sqlite` (sql.js, lazy) can't interleave with input.
+
+**Craft MCP bridge — audit result (3.1, blocked upstream):** the web craft
+builds have NO control surface today. `vectorcraft/apps/vectorcraft-web/src/
+main.rs` documents it: "no TCP control server (browsers can't listen on
+sockets)" — and there is no postMessage/JS bridge either. Until the craft
+repos add a web channel (a `window.postMessage` bridge in the eframe web
+runner is the natural shape), `craft <app> <command>` can't exist. The wosh
+command envelope is deliberately MCP-shaped (`{ method, params }` over
+`get/set` paths) so an external AI client can drive the same surface, and a
+future bridge drops in without changing the shell.
+
+**v86 Linux mode** stays tracked for 3.1 (CDN-fetched image at the user's
+request; keeps CSR purity).
