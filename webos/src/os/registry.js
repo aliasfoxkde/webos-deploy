@@ -253,6 +253,12 @@ export const STORE_APPS = [
     developer: 'Ivan Kutskir', category: 'Photo', rating: 4.7, reviews: 421,
     description: 'A full photo editor that opens PSD, XCF, Sketch and RAW files in the browser — layers, masks, filters, and PSD-compatible export. Free with ads.',
   },
+  {
+    id: 'bridge-demo', name: 'Bridge Demo', tagline: 'File-storage fixture', version: '1.0',
+    url: 'bridge-demo.html', icon: 'icons/custom.svg', accent: '#38bdf8', embed: true,
+    developer: 'ArtCraft', category: 'Tools', rating: null, reviews: 0,
+    description: 'Developer fixture for the WebOS file-storage bridge: a same-origin page that lists, saves, opens and deletes files under /Apps/bridge-demo/ via the webos:file-* postMessage protocol. Useful as a working reference for embedding your own app.',
+  },
 ];
 
 // All desktop categories across both catalogs (for store filtering).

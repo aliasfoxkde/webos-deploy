@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Bridge Demo — WebOS file storage fixture</title>
+<style>
+  :root { color-scheme: dark; }
+  body {
+    margin: 0; padding: 24px; background: #0b0f16; color: #dbe4ee;
+    font: 14px/1.5 system-ui, sans-serif;
+  }
+  h1 { font-size: 1.1rem; margin: 0 0 4px; }
+  p.dim { opacity: .65; margin-top: 0; }
+  .row { display: flex; gap: 8px; margin: 14px 0; flex-wrap: wrap; }
+  input, button, textarea {
+    font: inherit; color: inherit;
+    background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.15);
+    border-radius: 7px; padding: 6px 10px;
+  }
+  button { cursor: pointer; }
+  button:hover { background: rgba(255,255,255,.12); }
+  button.accent { background: #38bdf8; color: #04121c; font-weight: 600; border-color: transparent; }
+  textarea { width: 100%; min-height: 120px; resize: vertical; }
+  ul { padding-left: 18px; }
+  li { margin: 2px 0; }
+  code { background: rgba(255,255,255,.08); padding: 1px 5px; border-radius: 4px; }
+  #out { white-space: pre-wrap; opacity: .8; min-height: 1.4em; }
+</style>
+</head>
+<body>
+  <h1>File-storage bridge demo</h1>
+  <p class="dim">
+    Same-origin fixture for the <code>webos:file-*</code> postMessage bridge.
+    Files land in <code>/Apps/bridge-demo/</code> on the WebOS disk — check the Files app.
+    Run standalone (not embedded), requests time out and every button says so.
+  </p>
+
+  <div class="row">
+    <input id="name" value="notes/hello.txt" aria-label="File name" />
+    <button id="save" class="accent">Save</button>
+    <button id="open">Open</button>
+    <button id="del">Delete</button>
+    <button id="list">List</button>
+  </div>
+  <textarea id="text" aria-label="File contents" placeholder="File contents to save, or where an opened file appears"></textarea>
+  <div class="row"><span id="out" role="status"></span></div>
+
+  <p class="dim">Stored files for this app:</p>
+  <ul id="files"><li>— press List —</li></ul>
+
+<script type="module">
+  // Minimal bridge client: one postMessage per request, matched by requestId.
+  // Embedded apps on OTHER origins do exactly this (targeting window.parent);
+  // this fixture is same-origin, so it also works when opened in a plain tab.
+  const out = document.getElementById('out');
+  const listEl = document.getElementById('files');
+  const nameEl = document.getElementById('name');
+  const textEl = document.getElementById('text');
+  let seq = 0;
+
+  function request(type, payload = {}) {
+    const requestId = `demo-${++seq}`;
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        window.removeEventListener('message', onMsg);
+        reject(new Error('bridge timeout — are you running embedded in WebOS?'));
+      }, 3000);
+      const onMsg = (event) => {
+        const r = event.data;
+        if (!r || r.source !== 'webos-host' || r.requestId !== requestId) return;
+        clearTimeout(timer);
+        window.removeEventListener('message', onMsg);
+        if (r.ok) resolve(r.payload);
+        else reject(new Error(r.error ?? 'bridge error'));
+      };
+      window.addEventListener('message', onMsg);
+      window.parent.postMessage({ source: 'webos-app', requestId, type, ...payload }, '*');
+    });
+  }
+
+  const show = (msg) => { out.textContent = String(msg); };
+
+  async function refresh() {
+    const { files } = await request('webos:file-list');
+    listEl.replaceChildren(...(files.length
+      ? files.map((f) => {
+          const li = document.createElement('li');
+          li.textContent = `${f.path} — ${f.size} B`;
+          return li;
+        })
+      : [Object.assign(document.createElement('li'), { textContent: '(no files yet)' })]));
+    return files;
+  }
+
+  document.getElementById('save').onclick = async () => {
+    try {
+      const blob = new Blob([textEl.value], { type: 'text/plain' });
+      const r = await request('webos:file-save', { path: nameEl.value, blob });
+      show(`saved ${r.path} (${r.size} B)`);
+      await refresh();
+    } catch (e) { show(e.message); }
+  };
+
+  document.getElementById('open').onclick = async () => {
+    try {
+      const r = await request('webos:file-open', { path: nameEl.value });
+      textEl.value = await r.blob.text();
+      show(`opened ${r.path} (${r.size} B, ${r.type})`);
+    } catch (e) { show(e.message); }
+  };
+
+  document.getElementById('del').onclick = async () => {
+    try {
+      const r = await request('webos:file-delete', { path: nameEl.value });
+      show(`deleted ${r.path}`);
+      await refresh();
+    } catch (e) { show(e.message); }
+  };
+
+  document.getElementById('list').onclick = () => refresh().then((f) => show(`${f.length} file(s)`), (e) => show(e.message));
+
+  refresh().catch(() => {});
+</script>
+</body>
+</html>
