@@ -269,3 +269,28 @@ apps without a manifest fall back to the 1120×700 default.
 2. Register in `apps/manifests.js` + `apps/components.js`
 3. Icon at `public/icons/<name>.svg` (rounded square + accent glyph family)
 4. `npm run build`, screenshot-verify in `vite preview`, deploy
+
+## AI chat — the adapter seam (2.7.0)
+
+`src/apps/chat/` is a full plugin app (manifest/Chat.jsx/chat.css) plus a
+sidebar widget and a start-menu "✦ Ask AI" hook — but **it ships with no
+model and must never fake one**. The honesty rule is product-level: the app
+badges itself "No model configured", shows a `.c-note` banner, and the echo
+adapter's reply says exactly what is missing and where to wire a provider.
+
+- **Adapter contract** (`adapters.js`): `{ id, label, ready(): bool,
+  run(messages, { signal }): AsyncGenerator<string> }`. `run()` yields text
+  chunks; Chat.jsx renders them as they arrive and persists the finished
+  message once (not per chunk). `ADAPTERS` + `adapterById()` (selected via
+  `webos.chat.adapter`, default `echo`). Wiring a real provider = one new
+  file entry, no component changes.
+- **History** (`store.js`): `webos.chat.history` (localStorage, capped at
+  100 messages), written once per completed exchange; `saveHistory()`
+  broadcasts `webos:chat` so the sidebar widget and app window stay in sync
+  without a shared store. `onHistory(fn)` returns an unsubscribe.
+- **Sidebar widget** (Sidebar.jsx `ChatWidget`): last 3 messages truncated
+  to 90 chars, "Open AI Chat" + Clear (clears the whole thread — both
+  surfaces re-render from the same event).
+- Sending aborts cleanly: Stop uses an `AbortController`; aborted runs keep
+  the user message and mark partial assistant text "(stopped)". Errors append
+  an "The adapter failed — …" assistant message instead of throwing.

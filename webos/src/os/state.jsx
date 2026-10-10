@@ -67,13 +67,13 @@ const DEFAULT_UI = { scale: 1, anim: true, transparency: 1, radius: '', blur: ''
 
 /* ---------- per-subsystem defaults ---------- */
 const DEFAULT_TASKBAR = { position: 'bottom', align: 'left', iconSize: 'md', autohide: false, labels: true, clock24: false, showDate: true, pinned: [] };
-const DEFAULT_WIDGETS = { enabled: ['weather', 'clock', 'battery', 'events', 'notes', 'storage'] };
+const DEFAULT_WIDGETS = { enabled: ['weather', 'clock', 'battery', 'events', 'notes', 'storage', 'chat'] };
 const DEFAULT_DESKTOP = { iconSize: 'md', gap: 'normal', sort: 'custom' };
 const DEFAULT_VOLUME = { level: 0.7, muted: false };
 
 // Widget ids the sidebar understands (Sidebar.jsx renders each; Settings
 // toggles them). Order of `enabled` = display order.
-export const WIDGET_IDS = ['weather', 'clock', 'battery', 'events', 'notes', 'storage'];
+export const WIDGET_IDS = ['weather', 'clock', 'battery', 'events', 'notes', 'storage', 'chat'];
 
 /* -- desktop icon groups --
    An app leaving the system (uninstall / removed custom app) leaves its

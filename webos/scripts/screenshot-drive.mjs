@@ -923,6 +923,58 @@ await evaluate(`(() => { const ui = JSON.parse(localStorage.getItem('webos.ui'))
 await evaluate(`location.reload()`);
 await sleep(2500);
 
+// 30. AI chat — launch from the start menu's "Ask AI" hook
+await evaluate(`document.getElementById('start-btn')?.click()`);
+await sleep(400);
+const askAi = await evaluate(`(() => { const b = [...document.querySelectorAll('#start-menu .sm-ai')][0]; if (!b) return null; b.click(); return b.textContent.trim(); })()`);
+await sleep(700);
+console.log('start menu Ask AI row:', JSON.stringify(askAi.result?.value));
+const chatWin = await evaluate(`(() => { const w = [...document.querySelectorAll('.win')].find(w => w.getAttribute('aria-label') === 'AI Chat'); return w ? { id: Number(w.dataset.id), state: w.querySelector('.c-state')?.textContent, note: w.querySelector('.c-note')?.textContent.slice(0, 40) } : null; })()`);
+console.log('chat window + honesty badge:', JSON.stringify(chatWin.result?.value));
+await shot('34-chat');
+// send a message: native textarea setter + input event, then Enter keydown
+await evaluate(`(() => {
+  const w = [...document.querySelectorAll('.win')].find(w => w.getAttribute('aria-label') === 'AI Chat');
+  const ta = w.querySelector('.c-entry textarea');
+  const set = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set;
+  set.call(ta, 'Hello, WebOS! Are you a real model?');
+  ta.dispatchEvent(new Event('input', { bubbles: true }));
+  ta.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+  return 'sent';
+})()`);
+await sleep(700);
+const reply = await evaluate(`(() => {
+  const w = [...document.querySelectorAll('.win')].find(w => w.getAttribute('aria-label') === 'AI Chat');
+  const msgs = [...w.querySelectorAll('.c-msg .c-bubble')];
+  return { count: msgs.length, last: msgs.at(-1)?.textContent.slice(0, 60) };
+})()`);
+console.log('chat reply (want honest no-model text):', JSON.stringify(reply.result?.value));
+await shot('35-chat-reply');
+// history persists across reload
+await evaluate(`location.reload()`);
+await sleep(2500);
+await evaluate(`(() => { const w = [...document.querySelectorAll('.desk-icon')].find(i => i.title?.startsWith('AI Chat')) || document.querySelector('#dock [data-app="chat"]'); if (w) w.click(); })()`);
+await sleep(700);
+const hist = await evaluate(`(() => {
+  const w = [...document.querySelectorAll('.win')].find(w => w.getAttribute('aria-label') === 'AI Chat');
+  return { stored: JSON.parse(localStorage.getItem('webos.chat.history') || '[]').length, shown: w ? w.querySelectorAll('.c-msg').length : -1 };
+})()`);
+console.log('chat history persisted (want stored>=2, shown>=2):', JSON.stringify(hist.result?.value));
+// sidebar widget mirrors the thread
+await evaluate(`document.querySelector('[data-tray="widgets"]')?.click()`);
+await sleep(500);
+const widget = await evaluate(`(() => {
+  const el = document.querySelector('.widget-chat');
+  return el ? { msgs: el.querySelectorAll('.widget-chat-msg').length, first: el.querySelector('.widget-chat-msg')?.textContent.slice(0, 30) } : null;
+})()`);
+console.log('sidebar chat widget syncs:', JSON.stringify(widget.result?.value));
+await shot('36-chat-widget');
+// clear history from the widget
+await evaluate(`(() => { const b = [...document.querySelectorAll('.widget-chat ~ .row .btn, .widget .row .btn')].find(b => b.textContent.trim() === 'Clear'); if (b) b.click(); return !!b; })()`);
+await sleep(300);
+const cleared = await evaluate(`({ stored: JSON.parse(localStorage.getItem('webos.chat.history') || '[]').length, widget: document.querySelector('.widget-chat')?.querySelectorAll('.widget-chat-msg').length ?? 0 })`);
+console.log('cleared (want stored 0):', JSON.stringify(cleared.result?.value));
+
 console.log('done');
 clearTimeout(watchdog);
 killTree();

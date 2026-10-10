@@ -14,4 +14,5 @@ export const APP_COMPONENTS = {
   editor: lazy(() => import('./editor/Editor.jsx')),
   weather: lazy(() => import('./weather/WeatherApp.jsx')),
   files: lazy(() => import('./files/Files.jsx')),
+  chat: lazy(() => import('./chat/Chat.jsx')),
 };

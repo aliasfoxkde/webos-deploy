@@ -1,0 +1,32 @@
+.chat { display: flex; flex-direction: column; height: 100%; background: #10141c; }
+.c-bar { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--chrome-line); }
+.c-name { font-weight: 600; font-size: 0.86rem; }
+.c-state {
+  font-size: 0.66rem; padding: 2px 9px; border-radius: 20px;
+  border: 1px solid rgba(251, 191, 36, 0.5); color: #fbbf24; background: rgba(251, 191, 36, 0.08);
+}
+.c-state.ok { border-color: rgba(52, 211, 153, 0.5); color: #34d399; background: rgba(52, 211, 153, 0.08); }
+.c-note {
+  margin: 10px 14px 0; padding: 8px 12px; font-size: 0.72rem; line-height: 1.55; color: var(--text-dim);
+  border: 1px solid var(--chrome-line); border-radius: 10px; background: rgba(255, 255, 255, 0.03);
+}
+.c-thread { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.c-empty { margin: auto; text-align: center; font-size: 0.82rem; line-height: 1.9; color: var(--text); }
+.c-msg { display: flex; flex-direction: column; gap: 3px; max-width: 82%; }
+.c-msg.user { align-self: flex-end; align-items: flex-end; }
+.c-who { font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); }
+.c-bubble {
+  padding: 8px 12px; border-radius: 12px; font-size: 0.8rem; line-height: 1.55;
+  background: rgba(255, 255, 255, 0.07); border: 1px solid var(--chrome-line);
+  white-space: pre-wrap; word-break: break-word; user-select: text; -webkit-user-select: text;
+}
+.c-msg.user .c-bubble { background: color-mix(in srgb, var(--accent) 16%, transparent); border-color: color-mix(in srgb, var(--accent) 35%, transparent); }
+.c-typing { color: var(--text-dim); font-size: 0.8rem; padding: 0 4px 4px; }
+.c-entry { display: flex; gap: 8px; padding: 10px 14px 12px; border-top: 1px solid var(--chrome-line); }
+.c-entry textarea {
+  flex: 1; resize: none; max-height: 120px; background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--chrome-line); border-radius: 10px; color: var(--text);
+  font: inherit; font-size: 0.82rem; padding: 8px 10px; user-select: text; -webkit-user-select: text;
+}
+.c-entry textarea:focus { outline: 1px solid var(--accent); }
+.c-entry .btn { align-self: flex-end; }

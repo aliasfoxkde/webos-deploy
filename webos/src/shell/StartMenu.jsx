@@ -17,6 +17,7 @@ export default function StartMenu({ open, onClose, openStore, openSettings }) {
       </div>
       <div className="sm-links">
         <div className="sm-section">System</div>
+        <button className="sm-link sm-ai" onClick={() => { onClose(); os.launch('chat'); }}>✦ Ask AI<span className="sub">assistant · no model configured yet</span></button>
         <button className="sm-link" onClick={() => { onClose(); openStore(); }}>🛍 App Store{STORE_APPS.length ? ` · ${STORE_APPS.length} apps` : ''}</button>
         <button className="sm-link" onClick={() => { onClose(); openSettings(); }}>⚙ Settings &amp; personalization</button>
         <button className="sm-link" onClick={() => { onClose(); os.launch('terminal'); }}>❯ Terminal</button>

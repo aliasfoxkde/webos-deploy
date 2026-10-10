@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useOS, WIDGET_IDS } from '../os/state.jsx';
 import { loadLoc, fetchWeather, wmo, loadUnits, saveUnits, fmtTemp } from '../apps/weather/api.js';
 import WxIcon from '../apps/weather/WxIcon.jsx';
+import { loadHistory, clearHistory, onHistory } from '../apps/chat/store.js';
 
 /* --- individual widgets --- */
 
@@ -156,6 +157,31 @@ function StorageWidget() {
   );
 }
 
+function ChatWidget() {
+  const os = useOS();
+  const [msgs, setMsgs] = useState(loadHistory);
+  useEffect(() => onHistory(() => setMsgs(loadHistory())), []);
+  const last = msgs.slice(-3);
+  return (
+    <div className="widget">
+      <div className="widget-title">AI Chat</div>
+      {last.length ? (
+        <div className="widget-chat">
+          {last.map((m, i) => (
+            <div key={m.id || i} className={`widget-chat-msg ${m.role}`}>{m.text.length > 90 ? `${m.text.slice(0, 90)}…` : m.text}</div>
+          ))}
+        </div>
+      ) : (
+        <span className="dim">No conversation yet.</span>
+      )}
+      <div className="row">
+        <button className="btn slim accent" onClick={() => os.launch('chat')}>Open AI Chat</button>
+        {msgs.length > 0 && <button className="btn slim" onClick={() => clearHistory()}>Clear</button>}
+      </div>
+    </div>
+  );
+}
+
 const WIDGET_BODIES = {
   weather: WeatherWidget,
   clock: ClockWidget,
@@ -163,11 +189,12 @@ const WIDGET_BODIES = {
   events: EventsWidget,
   notes: NotesWidget,
   storage: StorageWidget,
+  chat: ChatWidget,
 };
 
 const WIDGET_LABELS = {
   weather: 'Weather', clock: 'Clock', battery: 'Battery',
-  events: "Today's events", notes: 'Notes', storage: 'Storage',
+  events: "Today's events", notes: 'Notes', storage: 'Storage', chat: 'AI Chat',
 };
 
 /* --- the sidebar panel: right-edge, editable enable/order --- */
