@@ -544,3 +544,44 @@ Driver step 37 asserts per-persona hero radius/display, kicker, button label
 and radius for all five skins; step 36 drives the saver (section deep link,
 FX preview + z-index + pointerdown dismissal, clock preview, and the photos
 kind is probed separately: slider gating, slideshow advance, dismissal).
+
+### Real utilities in wosh: coreutils.wasm (3.4.0)
+
+The terminal gains a real-utility layer: `webos/vendor/coreutils.wasm` is the
+uutils coreutils multicall binary (wasm32-wasip1, MIT — attribution row in
+`docs/ATTRIBUTION.md`), 78 utilities (`ls`, `cat`, `wc`, `seq`, `sort`,
+`sha256sum`, …) listed by the new `utils` help command. `rustybox` (the other
+candidate) was audited and rejected: it is a c2rust mechanical transpile of
+GPL-2.0 BusyBox with `llvm_asm!` and a Linux syscall layer — no wasm target
+and a license conflict with the clean-room rules.
+
+Layers (all in `src/apps/terminal/`):
+
+- **wasi.js** — hand-rolled WASI preview1 shim over an in-memory disk
+  (`MemFS`, ~300 lines, no deps): preopen root at fd 3, fd table, stat/dirent
+  layouts, `poll_oneoff` fires immediately (sleep is a no-op), fd_write caps
+  at 128 KB stdout / 16 KB stderr (`{wasiCap}` throw traps runaway streams
+  like `yes`; the runner reports `truncated`). Preview1 gotcha encoded in a
+  comment at `path_open`: oflags/fdflags are **scalar** parameters — only the
+  opened-fd out-param is a memory pointer.
+- **coreutils.js** — one lazy fetch + `WebAssembly.compile`, then **async
+  `WebAssembly.instantiate` per run** (Chrome forbids sync
+  `new WebAssembly.Instance` on the main thread once wire bytes exceed 8 MB;
+  this module is ~10.3 MB). Fresh instance per invocation resets globals; a
+  wasm trap surfaces as exit 134 with the trap text on stderr. The disk is
+  seeded from the Files store before the first run and written back after
+  any run that mutated it — reference comparison against the seeded byte
+  arrays decides exactly which files/dirs to put or delete.
+- **Terminal.jsx** — dispatch order: wosh builtins first (echo/date/pwd stay
+  OS-wired), then the wasm utility, then the JS-eval fallback.
+  `coreutils <util> …` forces the wasm path past a shadowing builtin.
+
+Path model (v1, documented in the shell help): the disk root `/` **is** the
+Files store root, so relative arguments resolve there and absolute paths
+(`/Home/notes.txt`) always work; there is no `cd`/`pwd` state yet. stdin is
+empty (reads hit EOF), unix-gated utilities (chmod, df, du, env, kill, stat)
+are absent from the default-features build. Driver step 38 seeds files via
+IndexedDB, types real keystrokes at xterm, and asserts wasm output
+(`seq`, `ls`, `cat`, `wc`), the builtin-precedence escape hatch, write-back
+persistence (the `mkdir`'d directory is read back from IndexedDB), and the
+JS-eval fallback.

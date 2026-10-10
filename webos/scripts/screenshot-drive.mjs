@@ -1395,6 +1395,82 @@ for (const [pid, chipLabel] of [['mac', 'macOS'], ['linux', 'GNOME / Linux'], ['
   await sleep(300);
 }
 
+// 38. wosh × coreutils.wasm: real keystrokes into xterm — utils listing,
+// wasm dispatch over the seeded Files disk, write-back persistence, and the
+// JS-eval escape hatch. Seed the virtual disk first (clean slate wiped it).
+console.log('seed files:', JSON.stringify(await evalAsync(`
+  await new Promise((res, rej) => {
+    const o = indexedDB.open('webos', 1);
+    o.onsuccess = () => {
+      const db = o.result;
+      const t = db.transaction('files', 'readwrite');
+      t.objectStore('files').put({ path: '/Home/notes.txt', blob: new Blob(['alpha\\nbeta\\n'], { type: 'text/plain' }), type: 'text/plain', size: 12, mtime: Date.now() });
+      t.objectStore('files').put({ path: '/Home/dir', dir: true, mtime: Date.now() });
+      t.oncomplete = () => { db.close(); res('seeded'); };
+      t.onerror = () => rej(t.error);
+    };
+    o.onerror = () => rej(o.error);
+  });
+  return 'done';
+`)));
+// restore win persona (step 37 left tui) via Settings → Appearance
+await evaluate(`window.__os.launch('settings', { initial: 'appearance' })`);
+await sleep(600);
+await evaluate(`[...document.querySelectorAll('.win [role="radio"]')].find((b) => b.textContent.trim() === 'Windows')?.click()`);
+await sleep(400);
+await evaluate(`[...document.querySelectorAll('.win')].forEach((w) => window.__os.close(Number(w.dataset.id)))`);
+await sleep(300);
+await evaluate(`window.__os.launch('terminal')`);
+await sleep(1500); // lazy xterm chunk
+const pressEnter = async () => {
+  await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, text: '\r' }, sessionId);
+  await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 }, sessionId);
+};
+const termRows = () => evaluate(`[...document.querySelectorAll('.xterm-rows > div')].map((r) => r.textContent.trim()).filter(Boolean)`);
+const runLine = async (line, waitMs) => {
+  await typeText(line);
+  await pressEnter();
+  await sleep(waitMs || 900);
+};
+await runLine('utils', 1200);
+await shot('54-wosh-utils');
+await runLine('seq 1 5', 5000); // first util: fetches + compiles the 10MB wasm
+await runLine('ls Home', 1200);
+await runLine('cat Home/notes.txt', 1200);
+await runLine('wc -l Home/notes.txt', 1200);
+await runLine('coreutils echo forced', 1200);
+await runLine('mkdir Home/work', 1200);
+await runLine('ls Home', 1200);
+const wosh = await termRows();
+await runLine('1+1', 600); // JS-eval escape hatch still intact
+const rows = await termRows();
+const workRow = await evalAsync(`
+  const rec = await Promise.race([
+    new Promise((res, rej) => {
+      const o = indexedDB.open('webos', 1);
+      o.onblocked = () => res({ probe: 'open-blocked' });
+      o.onerror = () => rej(o.error);
+      o.onsuccess = () => {
+        try {
+          const db = o.result;
+          const t = db.transaction('files', 'readonly');
+          const g = t.objectStore('files').get('/Home/work');
+          g.onsuccess = () => { db.close(); res(g.result); };
+          g.onerror = () => rej(g.error);
+        } catch (e) { res({ probe: 'onsuccess-throw ' + ((e && e.message) || e) }); }
+      };
+    }),
+    new Promise((res) => setTimeout(() => res({ probe: 'stuck-no-callback' }), 2500)),
+  ]);
+  if (rec && rec.probe) return rec;
+  return { found: !!rec, dir: !!rec?.dir, path: rec?.path || null };
+`);
+console.log('wosh rows:', JSON.stringify({ rows: wosh, work: workRow.v ?? workRow }));
+console.log('js eval 1+1 (want a row "2"):', rows.result?.value.includes('2') ? 'OK' : 'FAIL');
+await shot('55-wosh-coreutils');
+await evaluate(`[...document.querySelectorAll('.win')].forEach((w) => window.__os.close(Number(w.dataset.id)))`);
+await sleep(200);
+
 console.log('done');
 clearTimeout(watchdog);
 killTree();

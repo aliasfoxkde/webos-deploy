@@ -6,14 +6,17 @@ import { Terminal as XTerm } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
 import { VERSION } from '../../version.js';
+import { UTIL_NAMES, runUtil } from './coreutils.js';
 
-/* Built-in terminal 3.0 — xterm.js frontend (lazy chunk) over the `wosh`
+/* Built-in terminal 3.4 — xterm.js frontend (lazy chunk) over the `wosh`
    shell: a real command language that mutates OS state (apps, windows,
-   settings paths, theme/persona, SQLite), with tab completion, ↑/↓ history,
-   Ctrl+C/Ctrl+L. Unknown input still evaluates as JavaScript — the
-   pass-through escape hatch. Craft-app MCP bridge lands in 3.1 once the web
-   builds expose a control channel (audited: vectorcraft-web has none today,
-   wasm can't listen on sockets); commands keep an MCP-shaped envelope. */
+   settings paths, theme/persona, SQLite), runs real utilities through the
+   bundled uutils coreutils.wasm (see coreutils.js — the Files-app disk is
+   the preopen root), with tab completion, ↑/↓ history, Ctrl+C/Ctrl+L.
+   Unknown input still evaluates as JavaScript — the pass-through escape
+   hatch. Craft-app MCP bridge lands in 3.1 once the web builds expose a
+   control channel (audited: vectorcraft-web has none today, wasm can't
+   listen on sockets); commands keep an MCP-shaped envelope. */
 
 const HELP = [
   'wosh — the WebOS shell. Everything here mutates the real OS.',
@@ -33,6 +36,10 @@ const HELP = [
   '  volume <0-100>          master volume',
   '  os | os.status          system status',
   '  sqlite <sql>            SQL on the persistent OS database',
+  '  utils                   list the bundled coreutils utilities',
+  '  <util> [args…]          run a real utility (ls, cat, wc, seq, sort, sha256sum…)',
+  '  coreutils <util> …      force the wasm multicall past the builtins',
+  `                          (${UTIL_NAMES.size} utilities; files = the Files-app disk: try ls Home)`,
   '  history | fullscreen | date | echo | uname | whoami | neofetch',
   '  clear                   clear the screen        (Ctrl+L)',
   '  <anything else>         evaluated as JavaScript — `os` is in scope',
@@ -124,7 +131,7 @@ export default function Terminal() {
 
     const candidates = (part) => {
       const o = osRef.current;
-      const cmds = ['help', 'apps', 'open', 'launch', 'close', 'windows', 'install', 'uninstall', 'store', 'settings', 'get', 'set', 'persona', 'personas', 'theme', 'accent', 'wallpaper', 'volume', 'os', 'sqlite', 'history', 'fullscreen', 'date', 'echo', 'uname', 'whoami', 'neofetch', 'clear'];
+      const cmds = ['help', 'apps', 'open', 'launch', 'close', 'windows', 'install', 'uninstall', 'store', 'settings', 'get', 'set', 'persona', 'personas', 'theme', 'accent', 'wallpaper', 'volume', 'os', 'sqlite', 'utils', 'coreutils', 'history', 'fullscreen', 'date', 'echo', 'uname', 'whoami', 'neofetch', 'clear', ...UTIL_NAMES];
       const words = part.split(/\s+/);
       const last = words[words.length - 1];
       let pool = cmds;
@@ -310,7 +317,30 @@ export default function Terminal() {
         }
         case 'fullscreen': document.dispatchEvent(new CustomEvent('webos:fullscreen')); out('toggled fullscreen'); return;
         case 'sqlite': await runSql(arg); return;
+        case 'utils': {
+          const names = [...UTIL_NAMES];
+          for (let i = 0; i < names.length; i += 8) out(names.slice(i, i + 8).join('  '));
+          out(`${C.dim}${names.length} utilities via vendor/coreutils.wasm (uutils, MIT) — wosh builtins keep precedence; escape hatch: coreutils <util>${C.reset}`);
+          return;
+        }
         default: {
+          // Real utilities through coreutils.wasm; `coreutils <util>` forces
+          // the multicall past shadowing builtins (echo, date, uname…).
+          const util = head === 'coreutils' ? rest[0] : head;
+          const utilArgs = head === 'coreutils' ? rest.slice(1) : rest;
+          if (head === 'coreutils' && !util) { out('usage: coreutils <util> [args…] — try utils for the list'); return; }
+          if (util && (UTIL_NAMES.has(util) || head === 'coreutils')) {
+            try {
+              const r = await runUtil(util, utilArgs);
+              if (r.stdout) out(r.stdout.replace(/\n$/, '').replace(/\n/g, '\r\n'));
+              if (r.stderr) out(`${C.err}${r.stderr.replace(/\n$/, '').replace(/\n/g, '\r\n')}${C.reset}`);
+              if (r.truncated) out(`${C.dim}— output truncated${C.reset}`);
+              else if (r.code) out(`${C.dim}exit ${r.code}${C.reset}`);
+            } catch (err) {
+              out(`${C.err}coreutils: ${String(err.message || err)}${C.reset}`);
+            }
+            return;
+          }
           // Pass-through: evaluate as JavaScript with the live OS in scope.
           try {
             const fn = new Function('os', `"use strict"; return (${cmd});`);

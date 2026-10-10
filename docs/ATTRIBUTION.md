@@ -48,3 +48,13 @@ Third-party web apps listed in the App Store are linked, not bundled: each
 entry embeds the public site in an iframe and stores only its public name,
 URL, tagline, and a WebOS-drawn icon (never the vendor's logo). Trademarks
 belong to their owners; listing is referential.
+
+## Terminal utilities (`webos/vendor/`)
+
+| Path | Source | License |
+|---|---|---|
+| `webos/vendor/coreutils.wasm` | aliasfoxkde/coreutils (uutils coreutils), built from source at `apps/coreutils` for `wasm32-wasip1` | MIT (`webos/vendor/coreutils-LICENSE`) |
+
+The binary is a build artifact of the checked-out fork (uutils upstream
+https://github.com/uutils/coreutils); the MIT license text ships alongside
+it. It is loaded lazily by the Terminal app when a utility is first invoked.
