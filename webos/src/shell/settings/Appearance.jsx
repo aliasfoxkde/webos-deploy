@@ -92,6 +92,66 @@ export default function Appearance() {
       </section>
 
       <section>
+        <h3>Window chrome</h3>
+        <p className="dim" style={{ marginTop: -6 }}>
+          “Persona default” follows the current OS persona (macOS puts buttons on
+          the left, GNOME centers the title, tiling WMs drop the shadow…).
+        </p>
+        <div className="row">
+          <label className="dim">Window buttons</label>
+          <div className="seg-row" role="radiogroup" aria-label="Window button side">
+            {[['', 'Persona default'], ['left', 'Left'], ['right', 'Right']].map(([v, label]) => (
+              <button
+                key={v || 'auto'}
+                role="radio" aria-checked={(os.ui.tbSide || '') === v}
+                className={`chip ${(os.ui.tbSide || '') === v ? 'on' : ''}`}
+                onClick={() => os.setUi({ tbSide: v })}
+              >{label}</button>
+            ))}
+          </div>
+        </div>
+        <div className="row">
+          <label className="dim">Title alignment</label>
+          <div className="seg-row" role="radiogroup" aria-label="Title alignment">
+            {[['', 'Persona default'], ['left', 'Left'], ['center', 'Center']].map(([v, label]) => (
+              <button
+                key={v || 'auto'}
+                role="radio" aria-checked={(os.ui.titleAlign || '') === v}
+                className={`chip ${(os.ui.titleAlign || '') === v ? 'on' : ''}`}
+                onClick={() => os.setUi({ titleAlign: v })}
+              >{label}</button>
+            ))}
+          </div>
+        </div>
+        <div className="row">
+          <label className="dim">Interface font</label>
+          <div className="seg-row" role="radiogroup" aria-label="Interface font">
+            {[['', 'Persona default'], ['rounded', 'Rounded'], ['mono', 'Mono'], ['serif', 'Serif']].map(([v, label]) => (
+              <button
+                key={v || 'auto'}
+                role="radio" aria-checked={(os.ui.font || '') === v}
+                className={`chip ${(os.ui.font || '') === v ? 'on' : ''}`}
+                onClick={() => os.setUi({ font: v })}
+              >{label}</button>
+            ))}
+          </div>
+        </div>
+        <div className="row">
+          <label className="dim">Window shadow</label>
+          <div className="seg-row" role="radiogroup" aria-label="Window shadow">
+            {[['', 'Persona default'], ['off', 'Off'], ['soft', 'Soft'], ['deep', 'Deep']].map(([v, label]) => (
+              <button
+                key={v || 'auto'}
+                role="radio" aria-checked={(os.ui.shadow || '') === v}
+                className={`chip ${(os.ui.shadow || '') === v ? 'on' : ''}`}
+                onClick={() => os.setUi({ shadow: v })}
+              >{label}</button>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section>
         <h3>Theme</h3>
         <div className="preset-row">
           {Object.entries(THEME_PRESETS).map(([id, p]) => (
@@ -250,7 +310,7 @@ export default function Appearance() {
             </div>
           </div>
         ) : null}
-        <p className="dim">Every preset wallpaper is drawn in CSS — no image assets, no third-party requests. Uploads stay in this browser’s local storage (≤ 2.5 MB).</p>
+        <p className="dim">Bundled photos are CC-licensed (docs/ATTRIBUTION.md); CSS packs and FX wallpapers are drawn in code. Custom uploads stay in this browser’s local storage (≤ 2.5 MB) — nothing is sent anywhere.</p>
       </section>
     </>
   );

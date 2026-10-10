@@ -659,52 +659,137 @@ body[data-mode="mobile"] #start-btn { display: none; } /* the FAB drawer replace
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35) inset;
 }
 
-/* ---- OS personas (body[data-persona], see os/personas.js) ---- */
-/* Chrome vars per persona; everything else rides the existing theme vars. */
-body[data-persona="mac"] { --radius: 10px; --chrome-blur: 24px; }
-body[data-persona="linux"] { --radius: 8px; --chrome-blur: 10px; }
-body[data-persona="bsd"] { --radius: 3px; --chrome-blur: 0px; }
-body[data-persona="android"] { --radius: 18px; --chrome-blur: 18px; }
+/* ---- OS personas (body[data-persona], see os/personas.js) ----
+   Systematic per-persona skin. Persona-scoped rules are wrapped in
+   :where(body[data-persona=…]) so they carry ZERO specificity for the
+   attribute — any user override from Settings → Appearance (the
+   body[data-tbside] / [data-titlealign] / [data-font] / [data-shadow]
+   block below) wins a plain specificity tie, by design. Empty knob value
+   ("" = persona default) never matches a [data-*="value"] selector. */
+
+/* -- persona design tokens -- */
+:where(body[data-persona="win"]) { --radius: 12px; --chrome-blur: 16px; --ctl-radius: 9px; --menu-radius: 12px; }
+:where(body[data-persona="mac"]) { --radius: 10px; --chrome-blur: 26px; --ctl-radius: 9px; --menu-radius: 14px; }
+:where(body[data-persona="linux"]) { --radius: 8px; --chrome-blur: 10px; --ctl-radius: 999px; --menu-radius: 12px; }
+:where(body[data-persona="bsd"]) { --radius: 3px; --chrome-blur: 0px; --ctl-radius: 3px; --menu-radius: 3px; }
+:where(body[data-persona="android"]) { --radius: 18px; --chrome-blur: 18px; --ctl-radius: 999px; --menu-radius: 22px; }
+:where(body[data-persona="tui"]) { --radius: 0px; --chrome-blur: 0px; --ctl-radius: 0px; --menu-radius: 0px; }
+/* the mono UI font must OUTRANK the base `body` rule — everything inside
+   :where() is specificity 0, so the attribute goes on the outside here
+   (user `data-font` rules below still win the later-in-file tie) */
 body[data-persona="tui"] {
-  --radius: 0px; --chrome-blur: 0px;
   font-family: ui-monospace, "Cascadia Mono", "JetBrains Mono", Menlo, Consolas, monospace;
 }
+/* controls + menus consume the tokens (persona-shaped, one rule each) */
+.chip, .btn { border-radius: var(--ctl-radius, 9px); }
+.ctx-menu, .gp, #start-menu, #snap-preview { border-radius: var(--menu-radius, 12px); }
 
-/* mac — traffic lights LEFT (close/min/max, colored), title shifts right */
-body[data-persona="mac"] .titlebar { padding-left: 10px; }
-body[data-persona="mac"] .tb-btn { order: 0; }
-body[data-persona="mac"] .tb-btn.close { order: 1; background: #ff5f57; color: #4a0004; }
-body[data-persona="mac"] .tb-btn.min { order: 2; background: #febc2e; color: #6b4200; }
-body[data-persona="mac"] .tb-btn.max { order: 3; background: #28c840; color: #07530f; }
-body[data-persona="mac"] .tb-btn.close:hover { background: #ff7b74; }
-body[data-persona="mac"] .tb-btn.min:hover { background: #ffd061; color: #6b4200; }
-body[data-persona="mac"] .tb-btn.max:hover { background: #4cd964; color: #07530f; }
-body[data-persona="mac"] .titlebar .t { order: 4; text-align: right; }
-
-/* linux (GNOME) — headerbar feel: title centered, buttons calm */
-body[data-persona="linux"] .titlebar { position: relative; }
-body[data-persona="linux"] .titlebar .t {
+/* -- mac — traffic lights left (dot buttons), centered title, floating dock -- */
+:where(body[data-persona="mac"]) .titlebar { padding-left: 12px; position: relative; }
+:where(body[data-persona="mac"]) .titlebar > img { display: none; }
+:where(body[data-persona="mac"]) .titlebar .t {
   position: absolute; left: 50%; transform: translateX(-50%);
-  flex: none; max-width: 46%;
+  flex: none; max-width: 46%; text-align: center; font-weight: 600;
 }
-body[data-persona="linux"] .win.focused { border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+:where(body[data-persona="mac"]) .tb-btn { width: 13px; height: 13px; padding: 0; border-radius: 50%; font-size: 0; color: transparent; }
+:where(body[data-persona="mac"]) .tb-btn:hover { color: rgba(0, 0, 0, 0.55); font-size: 0.5rem; }
+:where(body[data-persona="mac"]) .tb-btn.close { order: 1; background: #ff5f57; }
+:where(body[data-persona="mac"]) .tb-btn.min { order: 2; background: #febc2e; }
+:where(body[data-persona="mac"]) .tb-btn.max { order: 3; background: #28c840; }
+:where(body[data-persona="mac"]) .tb-btn.close:hover { background: #ff7b74; }
+:where(body[data-persona="mac"]) .tb-btn.min:hover { background: #ffd061; }
+:where(body[data-persona="mac"]) .tb-btn.max:hover { background: #4cd964; }
+:where(body[data-persona="mac"]) .tb-btn.ext { background: transparent; border: 1px solid var(--chrome-line); font-size: 0.7rem; }
+:where(body[data-persona="mac"]) .tb-btn.ext:hover { color: var(--text); font-size: 0.7rem; }
+/* floating dock — plain attrs: these must outrank the generic
+   body[data-tb]/[data-tb-autohide] #taskbar transforms (specificity) */
+body[data-persona="mac"] #taskbar {
+  left: 50%; right: auto; bottom: 8px; width: max-content; max-width: calc(100vw - 24px);
+  height: 56px; padding: 0 12px; transform: translateX(-50%);
+  border: 1px solid var(--chrome-line); border-radius: 18px;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.5);
+}
+body[data-persona="mac"][data-tb="top"] #taskbar { top: 8px; bottom: auto; }
+:where(body[data-persona="mac"]) #task-apps { flex: 0 1 auto; min-width: 90px; }
+body[data-persona="mac"][data-tb-autohide] #taskbar { transform: translate(-50%, calc(100% + 8px - 5px)); }
+body[data-persona="mac"][data-tb-autohide][data-tb="top"] #taskbar { transform: translate(-50%, calc(-100% - 8px + 5px)); }
+body[data-persona="mac"][data-tb-autohide] #taskbar:hover,
+body[data-persona="mac"][data-tb-autohide] #taskbar:focus-within { transform: translateX(-50%); }
 
-/* bsd (tiling WM) — borders + gaps instead of shadows, mono accents */
-body[data-persona="bsd"] .win { box-shadow: none; border-color: rgba(255, 255, 255, 0.16); }
-body[data-persona="bsd"] .win.focused { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
-body[data-persona="bsd"] .titlebar .t { font-family: ui-monospace, Menlo, Consolas, monospace; }
-body[data-persona="bsd"] .taskbar { border-radius: 0; }
+/* -- linux (GNOME) — headerbar: centered title, pill buttons, calm focus -- */
+:where(body[data-persona="linux"]) .titlebar { position: relative; }
+:where(body[data-persona="linux"]) .titlebar .t {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  flex: none; max-width: 46%; text-align: center; font-weight: 600;
+}
+:where(body[data-persona="linux"]) .tb-btn { width: 26px; height: 26px; border-radius: 999px; }
+:where(body[data-persona="linux"]) .win.focused { border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+:where(body[data-persona="linux"]) .win.focused .titlebar { background: rgba(255, 255, 255, 0.06); }
 
-/* android — pill taskbar, round buttons, softer edges everywhere */
-body[data-persona="android"] .taskbar { border-radius: 22px 22px 0 0; }
-body[data-persona="android"] .tb-btn { border-radius: 12px; }
-body[data-persona="android"] .desk-icon { border-radius: 16px; }
+/* -- bsd (tiling WM) — hairline borders, zero radii, mono, no shadows -- */
+:where(body[data-persona="bsd"]) .win { box-shadow: none; border-color: rgba(255, 255, 255, 0.16); }
+:where(body[data-persona="bsd"]) .win.focused { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+:where(body[data-persona="bsd"]) .titlebar { background: transparent; }
+:where(body[data-persona="bsd"]) .titlebar .t { font-family: ui-monospace, Menlo, Consolas, monospace; }
+:where(body[data-persona="bsd"]) .tb-btn { border-radius: 0; }
+:where(body[data-persona="bsd"]) .desk-icon, :where(body[data-persona="bsd"]) .sm-search,
+:where(body[data-persona="bsd"]) #start-btn, :where(body[data-persona="bsd"]) .task-app,
+:where(body[data-persona="bsd"]) .tray-btn, :where(body[data-persona="bsd"]) input { border-radius: 3px; }
 
-/* tui — flat panels, hairline borders, mono is inherited from body */
-body[data-persona="tui"] .win { box-shadow: none; border-color: color-mix(in srgb, var(--accent) 40%, transparent); }
-body[data-persona="tui"] .taskbar, body[data-persona="tui"] .gp,
-body[data-persona="tui"] #snap-preview { border-radius: 0; }
-body[data-persona="tui"] .tb-btn { border-radius: 0; }
+/* -- android — floating pill dock, round everything, Material You edges -- */
+body[data-persona="android"] #taskbar {
+  left: 12px; right: 12px; bottom: 10px; height: 58px; padding: 0 14px;
+  border: 1px solid var(--chrome-line); border-top: 1px solid var(--chrome-line);
+  border-radius: 29px; box-shadow: 0 10px 32px rgba(0, 0, 0, 0.45);
+}
+body[data-persona="android"][data-tb="top"] #taskbar { top: 10px; bottom: auto; }
+body[data-persona="android"][data-tb-autohide] #taskbar { transform: translateY(calc(100% + 10px - 5px)); }
+body[data-persona="android"][data-tb-autohide][data-tb="top"] #taskbar { transform: translateY(calc(-100% - 10px + 5px)); }
+body[data-persona="android"][data-tb-autohide] #taskbar:hover,
+body[data-persona="android"][data-tb-autohide] #taskbar:focus-within { transform: none; }
+:where(body[data-persona="android"]) .tb-btn { border-radius: 50%; }
+:where(body[data-persona="android"]) .desk-icon { border-radius: 16px; }
+:where(body[data-persona="android"]) .sm-search, :where(body[data-persona="android"]) .sm-user { border-radius: 999px; }
+:where(body[data-persona="android"]) #start-menu { bottom: 84px; border-radius: 24px; }
+
+/* -- tui — flat mono panels, hairline accent borders, CRT scanlines -- */
+:where(body[data-persona="tui"]) .win { box-shadow: none; border-color: color-mix(in srgb, var(--accent) 40%, transparent); }
+:where(body[data-persona="tui"]) .titlebar { background: transparent; }
+:where(body[data-persona="tui"]) .tb-btn { border-radius: 0; border: 1px solid var(--chrome-line); }
+:where(body[data-persona="tui"]) #taskbar { background: rgba(5, 8, 12, 0.92); }
+:where(body[data-persona="tui"]) #start-btn, :where(body[data-persona="tui"]) .task-app,
+:where(body[data-persona="tui"]) .tray-btn { border-radius: 0; }
+:where(body[data-persona="tui"])::after {
+  content: ""; position: fixed; inset: 0; z-index: 1500; pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.14) 0 1px, transparent 1px 3px);
+}
+
+/* ---- user chrome overrides (Settings → Appearance; beat persona defaults) -- */
+body[data-tbside="left"] .titlebar { flex-direction: row-reverse; }
+body[data-tbside="left"] .titlebar .t { text-align: right; }
+body[data-tbside="left"] .titlebar > img { order: 10; }
+/* row-reverse lays items out from the right edge — flip the button orders so
+   every persona still shows close, min, max from the left */
+body[data-tbside="left"] .titlebar .tb-btn.close { order: 3; }
+body[data-tbside="left"] .titlebar .tb-btn.min { order: 2; }
+body[data-tbside="left"] .titlebar .tb-btn.max { order: 1; }
+/* forcing buttons right on mac must undo its order-based left placement */
+body[data-persona="mac"][data-tbside="right"] :where(.tb-btn.close, .tb-btn.min, .tb-btn.max) { order: 0; }
+body[data-titlealign="left"] .titlebar { position: static; }
+body[data-titlealign="left"] .titlebar .t { position: static; transform: none; flex: 1; max-width: none; text-align: left; font-weight: inherit; }
+/* mac keeps its buttons left via order — undo that when the title goes left */
+body[data-persona="mac"][data-titlealign="left"] :where(.tb-btn.close, .tb-btn.min, .tb-btn.max) { order: 0; }
+body[data-titlealign="center"] .titlebar { position: relative; }
+body[data-titlealign="center"] .titlebar .t {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  flex: none; max-width: 46%; text-align: center; font-weight: 600;
+}
+body[data-font="rounded"] { font-family: ui-rounded, "SF Pro Rounded", "Nunito", "Varela Round", system-ui, sans-serif; }
+body[data-font="mono"] { font-family: ui-monospace, "Cascadia Mono", "JetBrains Mono", Menlo, Consolas, monospace; }
+body[data-font="serif"] { font-family: Georgia, "Iowan Old Style", "Palatino Linotype", "Times New Roman", serif; }
+body[data-shadow="off"] .win, body[data-shadow="off"] .gp, body[data-shadow="off"] #start-menu { box-shadow: none; }
+body[data-shadow="soft"] .win { box-shadow: 0 10px 28px rgba(0, 0, 0, 0.32); }
+body[data-shadow="deep"] .win { box-shadow: 0 30px 80px rgba(0, 0, 0, 0.75); }
 
 /* ---- welcome screen (first run; Settings → About reopens) ---- */
 .welcome {

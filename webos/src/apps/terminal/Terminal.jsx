@@ -60,6 +60,10 @@ const SETTINGS_PATHS = {
   'ui.radius': { get: (o) => o.ui.radius, set: (o, v) => { const x = String(v); o.setUi({ radius: x }); return x; } },
   'ui.blur': { get: (o) => o.ui.blur, set: (o, v) => { const x = String(v); o.setUi({ blur: x }); return x; } },
   'ui.focusHover': { get: (o) => o.ui.focusHover, set: (o, v) => { const x = bool(v); o.setUi({ focusHover: x }); return x; } },
+  'ui.tbSide': { get: (o) => o.ui.tbSide, set: (o, v) => { const x = ['left', 'right'].includes(v) ? v : ''; o.setUi({ tbSide: x }); return x || '(persona)'; } },
+  'ui.titleAlign': { get: (o) => o.ui.titleAlign, set: (o, v) => { const x = ['left', 'center'].includes(v) ? v : ''; o.setUi({ titleAlign: x }); return x || '(persona)'; } },
+  'ui.font': { get: (o) => o.ui.font, set: (o, v) => { const x = ['rounded', 'mono', 'serif'].includes(v) ? v : ''; o.setUi({ font: x }); return x || '(persona)'; } },
+  'ui.shadow': { get: (o) => o.ui.shadow, set: (o, v) => { const x = ['off', 'soft', 'deep'].includes(v) ? v : ''; o.setUi({ shadow: x }); return x || '(persona)'; } },
   'taskbar.position': { get: (o) => o.taskbar.position, set: (o, v) => { const x = v === 'top' ? 'top' : 'bottom'; o.setTaskbar({ position: x }); return x; } },
   'taskbar.align': { get: (o) => o.taskbar.align, set: (o, v) => { const x = v === 'center' ? 'center' : 'left'; o.setTaskbar({ align: x }); return x; } },
   'taskbar.iconSize': { get: (o) => o.taskbar.iconSize, set: (o, v) => { const x = ['sm', 'md', 'lg'].includes(v) ? v : 'md'; o.setTaskbar({ iconSize: x }); return x; } },
@@ -69,8 +73,8 @@ const SETTINGS_PATHS = {
   'taskbar.showDate': { get: (o) => o.taskbar.showDate, set: (o, v) => { const x = bool(v); o.setTaskbar({ showDate: x }); return x; } },
   'desktop.iconSize': { get: (o) => o.desktop.iconSize, set: (o, v) => { const x = ['sm', 'md', 'lg'].includes(v) ? v : 'md'; o.setDesktop({ iconSize: x }); return x; } },
   'desktop.gap': { get: (o) => o.desktop.gap, set: (o, v) => { const x = ['compact', 'normal', 'roomy'].includes(v) ? v : 'normal'; o.setDesktop({ gap: x }); return x; } },
-  'volume.master': { get: (o) => o.volume.master, set: (o, v) => { const x = num(v, 80, 0, 100); o.setVolume({ master: x }); return x; } },
-  'volume.mute': { get: (o) => o.volume.mute, set: (o, v) => { const x = bool(v); o.setVolume({ mute: x }); return x; } },
+  'volume.master': { get: (o) => Math.round((o.volume.muted ? 0 : o.volume.level) * 100), set: (o, v) => { const x = num(v, 70, 0, 100); o.setVolume({ level: x / 100, muted: false }); return x; } },
+  'volume.mute': { get: (o) => o.volume.muted, set: (o, v) => { const x = bool(v); o.setVolume({ muted: x }); return x; } },
 };
 const num = (v, d, lo, hi) => Math.min(hi, Math.max(lo, Number.isFinite(Number(v)) ? Number(v) : d));
 const bool = (v) => v === true || v === 'true' || v === 'on' || v === '1';

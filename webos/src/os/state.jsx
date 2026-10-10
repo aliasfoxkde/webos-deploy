@@ -16,6 +16,15 @@ function save(key, value) {
   try { localStorage.setItem(`webos.${key}`, JSON.stringify(value)); } catch { /* private mode */ }
 }
 
+/* Factory reset: drop every webos.* key and reload (Settings → Storage and
+   Settings → About share this one implementation). */
+export const factoryReset = () => {
+  try {
+    Object.keys(localStorage).filter((k) => k.startsWith('webos.')).forEach((k) => localStorage.removeItem(k));
+  } catch { /* private mode */ }
+  location.reload();
+};
+
 /* One-time migration (2026-10-09): the old build preinstalled every store app.
    Anyone carrying that stale `installed` list starts clean — only defaults are
    on the desktop now, and store apps are installed deliberately. */
@@ -62,8 +71,9 @@ const DEFAULT_THEME = {
 };
 
 /* Granular interface controls (Settings → Appearance / Desktop / Taskbar).
-   `radius`/`blur` of '' mean "follow the persona default". */
-const DEFAULT_UI = { scale: 1, anim: true, transparency: 1, radius: '', blur: '', focusHover: false };
+   `radius`/`blur` of '' mean "follow the persona default" — same convention
+   for the chrome knobs added in 3.1: tbSide, titleAlign, font, shadow. */
+const DEFAULT_UI = { scale: 1, anim: true, transparency: 1, radius: '', blur: '', focusHover: false, tbSide: '', titleAlign: '', font: '', shadow: '' };
 
 /* ---------- per-subsystem defaults ---------- */
 const DEFAULT_TASKBAR = { position: 'bottom', align: 'left', iconSize: 'md', autohide: false, labels: true, clock24: false, showDate: true, pinned: [] };
@@ -336,6 +346,21 @@ function reducer(state, action) {
       return { ...state, persona: p.id, theme, taskbar };
     }
 
+    /* -- Settings → About → "Reset look & layout": every styling surface
+          back to factory, keeping apps, files, groups, events, pins -- */
+    case 'resetLook': {
+      const theme = { ...DEFAULT_THEME };
+      const ui = { ...DEFAULT_UI };
+      const taskbar = { ...DEFAULT_TASKBAR, pinned: state.taskbar.pinned };
+      const desktop = { ...DEFAULT_DESKTOP };
+      const widgets = { ...DEFAULT_WIDGETS };
+      const volume = { ...DEFAULT_VOLUME };
+      [ ['theme', theme], ['ui', ui], ['taskbar', taskbar], ['desktop', desktop], ['widgets', widgets], ['volume', volume] ]
+        .forEach(([k, v]) => save(k, v));
+      save('persona', 'win');
+      return { ...state, persona: 'win', theme, ui, taskbar, desktop, widgets, volume };
+    }
+
     /* -- settings-object patches -- */
     case 'setUi': return patched(state, 'ui', action.patch);
     case 'setVolume': return patched(state, 'volume', action.patch);
@@ -396,6 +421,7 @@ export function OSProvider({ children }) {
     setWidgets: (patch) => dispatch({ type: 'setWidgets', patch }),
     setTaskbar: (patch) => dispatch({ type: 'setTaskbar', patch }),
     setDesktop: (patch) => dispatch({ type: 'setDesktop', patch }),
+    resetLook: () => dispatch({ type: 'resetLook' }),
     setUiMode: (mode) => dispatch({ type: 'setUiMode', mode }),
     addUserApp: (app) => dispatch({ type: 'addUserApp', app }),
     updateUserApp: (app) => dispatch({ type: 'updateUserApp', app }),
@@ -446,6 +472,12 @@ export function OSProvider({ children }) {
     else document.body.style.removeProperty('--radius');
     if (state.ui.blur !== '' && state.ui.blur != null) document.body.style.setProperty('--chrome-blur', `${state.ui.blur}px`);
     else document.body.style.removeProperty('--chrome-blur');
+    // Chrome knobs (3.1): empty string = persona default, so the attribute
+    // carries "" and no [data-*="value"] CSS rule can match it.
+    document.body.dataset.tbside = state.ui.tbSide || '';
+    document.body.dataset.titlealign = state.ui.titleAlign || '';
+    document.body.dataset.font = state.ui.font || '';
+    document.body.dataset.shadow = state.ui.shadow || '';
   }, [state.ui]);
 
   /* -- taskbar layout to body attrs (position / autohide) -- */

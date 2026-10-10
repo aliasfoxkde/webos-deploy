@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useOS, WIDGET_IDS } from '../../os/state.jsx';
+import { useOS, WIDGET_IDS, factoryReset } from '../../os/state.jsx';
 import { VERSION } from '../../version.js';
 
 /* --- Desktop: icon size + arrangement --- */
@@ -278,10 +278,7 @@ export function StoragePanel() {
             className="btn danger"
             onClick={() => {
               if (!confirm('Reset ALL WebOS data (apps, theme, files-in-editor, notes)? This cannot be undone.')) return;
-              Object.keys(localStorage).filter((k) => k.startsWith('webos.')).forEach((k) => {
-                try { localStorage.removeItem(k); } catch { /* noop */ }
-              });
-              location.reload();
+              factoryReset();
             }}
           >
             Reset WebOS data
@@ -321,20 +318,53 @@ export function AppsPanel() {
 
 /* --- About --- */
 export function AboutPanel() {
+  const os = useOS();
   return (
-    <section>
-      <h3>About WebOS</h3>
-      <dl className="props-grid">
-        <dt>Shell</dt><dd>WebOS {VERSION} (Vite + React, fully client-rendered)</dd>
-        <dt>Apps</dt><dd>Bundled plugins + external web apps, installed per browser</dd>
-        <dt>Privacy</dt><dd>No analytics, no server-side state, no accounts</dd>
-        <dt>Deep links</dt><dd><code>?open=&lt;app-id&gt;</code> launches any app — e.g. <code>?open=weather</code></dd>
-      </dl>
-      <div className="row">
-        <button className="btn" onClick={() => window.dispatchEvent(new Event('webos:welcome'))}>Show welcome screen…</button>
-        <a className="btn" href="https://github.com/aliasfoxkde/webos-deploy" target="_blank" rel="noopener noreferrer">Source ↗</a>
-        <a className="btn" href="https://getartcraft.com/" target="_blank" rel="noopener noreferrer">ArtCraft ↗</a>
-      </div>
-    </section>
+    <>
+      <section>
+        <h3>About WebOS</h3>
+        <dl className="props-grid">
+          <dt>Shell</dt><dd>WebOS {VERSION} (Vite + React, fully client-rendered)</dd>
+          <dt>Persona</dt><dd>{os.persona}</dd>
+          <dt>Apps</dt><dd>Bundled plugins + external web apps, installed per browser</dd>
+          <dt>Privacy</dt><dd>No analytics, no server-side state, no accounts</dd>
+          <dt>Deep links</dt><dd><code>?open=&lt;app-id&gt;</code> launches any app — e.g. <code>?open=weather</code></dd>
+        </dl>
+        <div className="row">
+          <button className="btn" onClick={() => window.dispatchEvent(new Event('webos:welcome'))}>Show welcome screen…</button>
+          <a className="btn" href="https://github.com/aliasfoxkde/webos-deploy" target="_blank" rel="noopener noreferrer">Source ↗</a>
+          <a className="btn" href="https://getartcraft.com/" target="_blank" rel="noopener noreferrer">ArtCraft ↗</a>
+        </div>
+      </section>
+      <section>
+        <h3>Reset</h3>
+        <p className="dim" style={{ marginTop: -6 }}>
+          Restore every styling surface — persona, theme, wallpaper, chrome knobs,
+          taskbar and desktop layout — to factory defaults. Installed apps, pinned
+          icons, icon groups, files and events are kept.
+        </p>
+        <div className="row">
+          <button
+            className="btn"
+            onClick={() => {
+              if (!confirm('Reset look & layout to defaults? Apps, pins, groups and files are kept.')) return;
+              os.resetLook();
+            }}
+          >
+            Reset look &amp; layout
+          </button>
+          <button
+            className="btn danger"
+            onClick={() => {
+              if (!confirm('Reset ALL WebOS data (apps, theme, files, notes)? This cannot be undone.')) return;
+              factoryReset();
+            }}
+          >
+            Factory reset…
+          </button>
+        </div>
+        <p className="dim">{os.apps.length} apps installed · {os.windows.length} windows open</p>
+      </section>
+    </>
   );
 }

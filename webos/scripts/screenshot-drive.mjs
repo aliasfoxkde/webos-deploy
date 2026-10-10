@@ -1163,6 +1163,65 @@ await evaluate(`[...document.querySelectorAll('.win .preset')].find(p => p.textC
 await sleep(400);
 await evaluate(`[...document.querySelectorAll('.win')].forEach(w => window.__os.close(Number(w.dataset.id)))`);
 
+// 34. persona look & feel + chrome knobs + About → Reset look & layout
+const radiusFor = () => evaluate(`getComputedStyle(document.querySelector('.desk-icon')).borderRadius`);
+const personas = ['win', 'mac', 'linux', 'bsd', 'android', 'tui'];
+for (const id of personas) {
+  await evaluate(`window.__os.setPersona('${id}')`);
+  await sleep(450);
+  const st = await evaluate(`(() => {
+    const cs = getComputedStyle(document.body);
+    return {
+      persona: document.body.dataset.persona,
+      tb: document.body.dataset.tb,
+      radiusVar: cs.getPropertyValue('--radius').trim(),
+      fontFamily: cs.fontFamily.slice(0, 30),
+    };
+  })()`);
+  console.log(`persona ${id}:`, JSON.stringify(st.result?.value));
+  await shot(`45-persona-${id}`);
+}
+// chrome knobs — set, verify CSS reacts, verify About reset clears them
+await evaluate(`window.__os.launch('calc')`);
+await sleep(600);
+await evaluate(`window.__os.setUi({ font: 'mono' })`);
+await evaluate(`window.__os.setUi({ shadow: 'off' })`);
+await evaluate(`window.__os.setUi({ tbSide: 'left' })`);
+await evaluate(`window.__os.setUi({ titleAlign: 'center' })`);
+await sleep(400);
+const knobs = await evaluate(`(() => {
+  const win = [...document.querySelectorAll('.win')].at(-1);
+  return {
+    font: getComputedStyle(document.body).fontFamily.includes('mono') ? 'mono' : 'other',
+    shadow: getComputedStyle(win).boxShadow,
+    tbFlow: getComputedStyle(win.querySelector('.titlebar')).flexDirection,
+    title: getComputedStyle(win.querySelector('.titlebar .t')).position,
+    attrs: ['tbside', 'titlealign', 'font', 'shadow'].map(k => document.body.dataset[k] || '-').join(','),
+  };
+})()`);
+console.log('chrome knobs applied (mono/none/row-reverse/absolute):', JSON.stringify(knobs.result?.value));
+await shot('46-knobs');
+// About → Reset look & layout (confirm auto-accepted)
+await evaluate(`window.confirm = () => true`);
+await evaluate(`window.__os.launch('settings', { initial: 'about' })`);
+await sleep(700);
+await evaluate(`[...document.querySelectorAll('.win .btn')].find(b => b.textContent.includes('Reset look'))?.click()`);
+await sleep(500);
+const afterReset = await evaluate(`(() => {
+  const win = [...document.querySelectorAll('.win')].at(-1);
+  return {
+    persona: document.body.dataset.persona,
+    theme: JSON.parse(localStorage.getItem('webos.theme')).preset,
+    scale: JSON.parse(localStorage.getItem('webos.ui')).scale,
+    fontAttr: document.body.dataset.font || '(empty)',
+    shadow: win ? getComputedStyle(win).boxShadow.slice(0, 30) : '(no win)',
+    flow: win ? getComputedStyle(win.querySelector('.titlebar')).flexDirection : '',
+  };
+})()`);
+console.log('after Reset look & layout (win/midnight/1/(empty)/shadowed/row):', JSON.stringify(afterReset.result?.value));
+await evaluate(`window.__os.closeAll ? window.__os.closeAll() : [...document.querySelectorAll('.win')].forEach(w => window.__os.close(Number(w.dataset.id)))`);
+await sleep(300);
+
 console.log('done');
 clearTimeout(watchdog);
 killTree();

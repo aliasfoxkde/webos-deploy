@@ -389,3 +389,53 @@ run embedded (`embed: true`). Icons are WebOS-drawn glyphs in the house style
 (64×64 rounded rect, dark gradient, accent line art) — never vendor marks;
 names and links are referential. Rejected: `play2048.co` (frame-ancestors
 allow-list blocks us).
+
+### 3.1.0 — systematic persona skins, chrome knobs, look & layout reset
+
+**Persona skins became systematic.** Every persona now sets four design
+tokens (`--radius`, `--chrome-blur`, `--ctl-radius`, `--menu-radius`) and a
+`.chip/.btn` + `.ctx-menu/.gp/#start-menu/#snap-preview` consumer pair turns
+them into per-persona control shaping. On top sit persona-specific chrome
+skins: mac (traffic-light dot buttons, absolutely centred title, floating
+centred dock), linux (GNOME headerbar: centred title, pill buttons, calm
+focus ring), bsd (hairline borders, zero radii, mono titles, no shadows),
+android (inset pill dock, round buttons, 999 px search/user pills), tui (flat
+mono panels, accent borders, CRT scanline overlay). Floating docks carry
+their own autohide transforms — the combined
+`translate(-50%, …)`/inset-pill variants must exist per persona because the
+generic `body[data-tb-autohide] #taskbar` rules would otherwise win or
+mis-place them.
+
+**Specificity contract (learned the hard way).** Persona skin rules wrap the
+persona attribute in `:where(...)` — `:where(body[data-persona="mac"]) .tb-btn`
+— so only the part OUTSIDE contributes specificity and explicit user-override
+rules (`body[data-tbside="left"] …`, `body[data-font="mono"]`, declared later
+in the file) always win ties. The trap: when the rule has NOTHING outside the
+`:where()` (e.g. `:where(body[data-persona="tui"]) { font-family: … }`) the
+whole selector is specificity **zero** and loses to the base `body` rule
+(0,0,1) regardless of source order — the tui mono UI font silently never
+applied until the attribute was moved outside (`body[data-persona="tui"] { …
+}`). Custom-property-only blocks keep the `:where()` form; anything that must
+outrank an element/class base rule does not.
+
+**Chrome knobs.** Four user knobs follow the empty-string-means-persona
+convention: `ui.tbSide` (window buttons left/right), `ui.titleAlign`,
+`ui.font` (rounded/mono/serif stacks), `ui.shadow` (off/soft/deep), each
+rendered as `data-*` on `<body>` and overridable per persona. All four are
+exposed in Settings → Appearance ("Window chrome") and as terminal
+`wosh` paths (`ui.tbSide`, `ui.titleAlign`, `ui.font`, `ui.shadow`), plus the
+pre-existing `volume.master`/`volume.mute` paths were fixed (they read/wrote
+nonexistent `master`/`mute` keys instead of `level`/`muted`).
+
+**Reset surfaces.** Settings → About gained "Reset look & layout"
+(persona, theme, ui, taskbar-position, desktop, widgets, volume slices back
+to their `DEFAULT_*` consts — installed apps, pins, groups, files kept) and
+"Factory reset…" (wipe every `webos.*` localStorage key + reload), the latter
+shared with the Storage panel via the exported `factoryReset()` in
+`state.jsx` — one implementation, two entries.
+
+Validation: `scripts/screenshot-drive.mjs` steps 34–35 sweep all six personas
+(dataset + `--radius` + computed font per persona, screenshots), apply the
+four knobs to a live window (flex-direction, title position, box-shadow,
+font), then drive About → "Reset look & layout" with an auto-accepted confirm
+and assert the state slices land back on defaults.
