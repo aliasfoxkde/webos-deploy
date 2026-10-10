@@ -81,7 +81,21 @@ showDate, pinned app ids — drag icons onto the bar to pin, drag within the bar
 to reorder) · `widgets`
 (enabled ids in display order) · `volume` (level, muted; broadcast to apps as a
 `webos:volume` CustomEvent) · `uiMode` (auto|desktop|mobile) · `events` ·
-`notes` · `weather.loc` · plus per-app keys (`webos.calc.*`, `webos.editor.state`).
+`notes` · `weather.loc` + `weather.units` (metric|imperial; app and sidebar
+widget flip together via the `webos:units` event) · plus per-app keys
+(`webos.calc.*`, `webos.editor.state`).
+
+### Window tiling (snapping)
+
+`os/snap.js` defines the zone geometry: drag a titlebar within 12px of a
+screen edge to tile (left/right halves), into a corner for quarters, or to
+the top edge to maximize. While dragging, `#snap-preview` (body portal)
+outlines the target. Tiled windows carry `snap` (zone) + `pre` (floating
+rect): dragging a tiled window tears it off at its pre-snap size, and
+Win-style keys (Meta+Arrow / Ctrl+Alt+Arrow on the focused window) snap left
+half, right half, maximize (Up), and untile/unmaximize or minimize (Down).
+Both `Window.jsx` and the `VirtualWindow` share one move-drag implementation
+(`shell/winDrag.js`) — including tear-off of maximized windows.
 
 ### Tray popups and the backdrop-filter containing block
 

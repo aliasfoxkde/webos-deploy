@@ -207,14 +207,11 @@ body[data-tb="top"] .tb-pop { top: 60px; }
 .vol-actions .btn { padding: 6px 12px; font-size: 0.78rem; flex: 1; }
 .net-pop { width: 270px; padding: 14px; }
 
-/* ---- calendar popup ---- */
-.calendar {
-  width: 320px; padding: 14px;
-  background: var(--chrome); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
-  border: 1px solid var(--chrome-line); border-radius: 14px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
-  animation: win-in 0.15s ease;
-}
+/* ---- calendar popup ----
+   Lives inside .cal-pop.tb-pop, which owns the panel chrome (background,
+   border, radius, shadow) — the calendar itself draws nothing or the popup
+   shows a double border. */
+.calendar { width: auto; padding: 0; }
 .cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
 .cal-head strong { font-size: 0.95rem; }
 .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
@@ -602,3 +599,12 @@ body[data-mode="mobile"] #start-btn { display: none; } /* the FAB drawer replace
 .addapp-iconrow .check .dim { font-size: 0.72rem; }
 
 .task-app { position: relative; } /* anchors the pin-dot indicator */
+
+/* ---- snap / tile preview (drag window to a screen edge) ---- */
+#snap-preview {
+  position: fixed; z-index: 540; pointer-events: none;
+  border: 2px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  border-radius: 10px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35) inset;
+}

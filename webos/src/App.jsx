@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useOS } from './os/state.jsx';
 import Window from './shell/Window.jsx';
 import Taskbar from './shell/Taskbar.jsx';
@@ -10,6 +11,8 @@ import Properties from './shell/Properties.jsx';
 import AddApp from './shell/AddApp.jsx';
 import Sidebar from './shell/Sidebar.jsx';
 import MobileDrawer from './shell/MobileDrawer.jsx';
+import { startMoveDrag } from './shell/winDrag.js';
+import { zoneRect } from './os/snap.js';
 import { PLUGIN_IDS } from './os/registry.js';
 import { wallpaperLayer } from './os/wallpapers.js';
 
@@ -26,26 +29,15 @@ function VirtualWindow({ win }) {
   const os = useOS();
   const v = VIRTUAL[win.appId];
   const focused = os.focused === win.id;
+  const [hint, setHint] = useState(null); // snap zone under the pointer while dragging
 
-  // Same titlebar drag as Window.jsx — virtual windows (App Store, Settings)
-  // are ordinary movable windows.
+  // Same shared drag as Window.jsx — virtual windows (App Store, Settings)
+  // are ordinary movable windows with snapping and tear-off.
   const onTitlePointerDown = (e) => {
-    if (e.target.closest('.tb-btn') || win.max) return;
+    if (e.target.closest('.tb-btn')) return;
     e.preventDefault();
-    const start = { x: e.clientX, y: e.clientY, rect: { ...win.rect } };
-    const move = (ev) => {
-      os.setRect(win.id, {
-        ...start.rect,
-        x: Math.max(-start.rect.w + 90, ev.clientX - (start.x - start.rect.x)),
-        y: Math.max(0, Math.min(window.innerHeight - 100, ev.clientY - (start.y - start.rect.y))),
-      });
-    };
-    const up = () => {
-      window.removeEventListener('pointermove', move);
-      window.removeEventListener('pointerup', up);
-    };
-    window.addEventListener('pointermove', move);
-    window.addEventListener('pointerup', up);
+    os.focus(win.id);
+    startMoveDrag(e, win, os, setHint);
   };
 
   const style = win.max
@@ -66,6 +58,10 @@ function VirtualWindow({ win }) {
         <button className="tb-btn close" title="Close" onClick={() => os.close(win.id)}>✕</button>
       </header>
       <div className="win-body virtual">{v.render()}</div>
+      {hint && hint !== 'top' && createPortal(
+        <div id="snap-preview" style={{ ...zoneRect(hint) }} aria-hidden="true" />,
+        document.body
+      )}
     </section>
   );
 }
@@ -194,6 +190,26 @@ export default function App() {
     window.addEventListener('keydown', h);
     return () => window.removeEventListener('keydown', h);
   }, []);
+
+  // Window tiling keys: Meta+Arrow or Ctrl+Alt+Arrow on the focused window —
+  // Left/Right = half, Up = maximize, Down = untile/unmaximize, else minimize.
+  useEffect(() => {
+    const h = (e) => {
+      const mod = e.metaKey || (e.ctrlKey && e.altKey);
+      if (!mod || !['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) return;
+      const w = os.windows.find((x) => x.id === os.focused);
+      if (!w || w.min) return;
+      e.preventDefault();
+      if (e.key === 'ArrowLeft') os.snap(w.id, 'left');
+      else if (e.key === 'ArrowRight') os.snap(w.id, 'right');
+      else if (e.key === 'ArrowUp') os.toggleMax(w.id);
+      else if (w.max) os.toggleMax(w.id);
+      else if (w.snap) os.restore(w.id);
+      else os.minimize(w.id);
+    };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+  }, [os]);
 
   // Deep link: ?open=<app-id>
   useEffect(() => {

@@ -88,6 +88,34 @@ export const DEFAULT_APPS = [
   // bundled Editor plugin is the OS IDE. Fork release notes document this:
   // github.com/aliasfoxkde/lapce-ide/releases/tag/v0.4.6-webos
 
+  // -- web essentials, on the desktop out of the box --
+  // All four services send X-Frame-Options/CSP frame-ancestors, so they ship
+  // embed: false — the OS gives each an honest launch panel / new-tab open.
+  {
+    id: 'youtube', name: 'YouTube', tagline: 'Video streaming', version: '1.0',
+    url: 'https://www.youtube.com/', icon: 'icons/youtube.svg', accent: '#f87171', embed: false,
+    developer: 'Google', category: 'Media', rating: 4.5, reviews: 812,
+    description: 'Watch, search, and subscribe. Opens in its own tab — YouTube forbids embedding inside other sites.',
+  },
+  {
+    id: 'discord', name: 'Discord', tagline: 'Chat & communities', version: '1.0',
+    url: 'https://discord.com/app', icon: 'icons/discord.svg', accent: '#818cf8', embed: false,
+    developer: 'Discord Inc.', category: 'Social', rating: 4.6, reviews: 640,
+    description: 'Voice, video, and text for your communities. Opens in its own tab — Discord forbids embedding.',
+  },
+  {
+    id: 'spotify', name: 'Spotify', tagline: 'Music & podcasts', version: '1.0',
+    url: 'https://open.spotify.com/', icon: 'icons/spotify.svg', accent: '#34d399', embed: false,
+    developer: 'Spotify AB', category: 'Media', rating: 4.7, reviews: 903,
+    description: 'Millions of songs and podcasts. Opens in its own tab — the Spotify player forbids embedding.',
+  },
+  {
+    id: 'chatgpt', name: 'ChatGPT', tagline: 'AI assistant', version: '1.0',
+    url: 'https://chatgpt.com/', icon: 'icons/chatgpt.svg', accent: '#10a37f', embed: false,
+    developer: 'OpenAI', category: 'Tools', rating: 4.8, reviews: 1204,
+    description: 'Conversational AI assistant for writing, coding, and research. Opens in its own tab — ChatGPT forbids embedding.',
+  },
+
   // -- bundled plugin apps (src/apps/) --
   ...PLUGIN_APPS,
 ];
@@ -164,24 +192,6 @@ export const STORE_APPS = [
     url: 'https://planly.site/', icon: 'icons/planly.svg', accent: '#4ade80', embed: true,
     developer: 'Planly', category: 'Productivity', rating: 4.4, reviews: 47,
     description: 'Task boards, schedules, and habit tracking in a clean interface. Your plans persist in the browser.',
-  },
-  {
-    id: 'youtube', name: 'YouTube', tagline: 'Video streaming', version: '1.0',
-    url: 'https://www.youtube.com/', icon: 'icons/youtube.svg', accent: '#f87171', embed: false,
-    developer: 'Google', category: 'Media', rating: 4.5, reviews: 812,
-    description: 'Watch, search, and subscribe. Opens in its own tab — YouTube forbids embedding inside other sites.',
-  },
-  {
-    id: 'discord', name: 'Discord', tagline: 'Chat & communities', version: '1.0',
-    url: 'https://discord.com/app', icon: 'icons/discord.svg', accent: '#818cf8', embed: false,
-    developer: 'Discord Inc.', category: 'Social', rating: 4.6, reviews: 640,
-    description: 'Voice, video, and text for your communities. Opens in its own tab — Discord forbids embedding.',
-  },
-  {
-    id: 'spotify', name: 'Spotify', tagline: 'Music & podcasts', version: '1.0',
-    url: 'https://open.spotify.com/', icon: 'icons/spotify.svg', accent: '#34d399', embed: false,
-    developer: 'Spotify AB', category: 'Media', rating: 4.7, reviews: 903,
-    description: 'Millions of songs and podcasts. Opens in its own tab — the Spotify player forbids embedding.',
   },
 ];
 

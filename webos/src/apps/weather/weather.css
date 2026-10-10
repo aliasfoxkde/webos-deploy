@@ -50,3 +50,6 @@
   .wx-stats { margin: 0; width: 100%; flex-direction: row; justify-content: space-between; }
   .wx-days { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* units toggle chip (°C / °F) */
+.wx-units { min-width: 46px; flex: none; font-variant-numeric: tabular-nums; }

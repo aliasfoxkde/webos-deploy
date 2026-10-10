@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useReducer } from 'react';
 import { allApps, findApp, DEFAULT_APPS, APP_INDEX } from './registry.js';
+import { zoneRect } from './snap.js';
 
 /* ---------- persistence helpers ---------- */
 function load(key, fallback) {
@@ -148,9 +149,36 @@ function reducer(state, action) {
       };
     }
     case 'toggleMax':
-      return { ...state, windows: state.windows.map((w) => (w.id === action.id ? { ...w, max: !w.max } : w)) };
+      // Maximizing abandons a tile (snap/pre) — restore after maximize goes
+      // back to the floating rect, not the tile.
+      return { ...state, windows: state.windows.map((w) => (w.id === action.id ? { ...w, max: !w.max, snap: null, pre: null } : w)) };
     case 'setRect':
-      return { ...state, windows: state.windows.map((w) => (w.id === action.id ? { ...w, rect: action.rect } : w)) };
+      // Any manual move clears the snapped-tile flag (pre is kept so a later
+      // restore can still put the window back).
+      return { ...state, windows: state.windows.map((w) => (w.id === action.id ? { ...w, rect: action.rect, snap: null } : w)) };
+
+    /* -- tiling: halves + quadrants (see os/snap.js) --
+       `pre` remembers the floating rect so the window can be unsnapped back
+       to it; snapping a maximized window keeps its untouched rect as pre. */
+    case 'snapWin':
+      return {
+        ...state,
+        windows: state.windows.map((w) => {
+          if (w.id !== action.id || action.zone === 'top' || w.snap === action.zone) return w;
+          return {
+            ...w,
+            max: false,
+            snap: action.zone,
+            pre: w.snap ? w.pre : { ...w.rect },
+            rect: zoneRect(action.zone),
+          };
+        }),
+      };
+    case 'restoreWin':
+      return {
+        ...state,
+        windows: state.windows.map((w) => (w.id === action.id ? { ...w, snap: null, pre: null, rect: w.pre || w.rect } : w)),
+      };
     case 'install': {
       const installed = state.installed.includes(action.appId) ? state.installed : [...state.installed, action.appId];
       save('installed', installed);
@@ -273,6 +301,8 @@ export function OSProvider({ children }) {
     minimize: (id, unmin) => dispatch({ type: 'minimize', id, unmin }),
     toggleMax: (id) => dispatch({ type: 'toggleMax', id }),
     setRect: (id, rect) => dispatch({ type: 'setRect', id, rect }),
+    snap: (id, zone) => dispatch({ type: 'snapWin', id, zone }),
+    restore: (id) => dispatch({ type: 'restoreWin', id }),
     install: (appId) => dispatch({ type: 'install', appId }),
     uninstall: (appId) => dispatch({ type: 'uninstall', appId }),
     setTheme: (patch) => dispatch({ type: 'setTheme', patch }),

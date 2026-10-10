@@ -1,7 +1,10 @@
 import React, { Suspense, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useOS } from '../os/state.jsx';
+import { zoneRect } from '../os/snap.js';
 import { APP_COMPONENTS } from '../apps/components.js';
 import EmbedFrame from './EmbedFrame.jsx';
+import { startMoveDrag } from './winDrag.js';
 
 const MIN_W = 320, MIN_H = 220;
 
@@ -33,6 +36,7 @@ export default function Window({ win }) {
   const app = os.findApp(win.appId);
   const [loaded, setLoaded] = useState(false);
   const [slow, setSlow] = useState(false);
+  const [hint, setHint] = useState(null); // snap zone under the pointer while dragging
 
   useEffect(() => {
     if (loaded) return;
@@ -43,30 +47,21 @@ export default function Window({ win }) {
   if (!app) return null;
   const focused = os.focused === win.id;
 
-  // Shared pointer plumbing for titlebar drag + edge resize.
-  const beginGesture = (e, mode, dir) => {
+  // Resize keeps its own gesture; moving is shared with VirtualWindow
+  // (startMoveDrag) so both get snapping, tear-off, and the preview.
+  const beginGesture = (e, dir) => {
     e.preventDefault();
     os.focus(win.id);
     const start = { x: e.clientX, y: e.clientY, rect: { ...win.rect } };
     let last = null;
     const move = (ev) => {
-      const dx = ev.clientX - start.x;
-      const dy = ev.clientY - start.y;
-      if (mode === 'move') {
-        os.setRect(win.id, {
-          ...start.rect,
-          x: Math.max(-start.rect.w + 90, ev.clientX - (start.x - start.rect.x)),
-          y: Math.max(0, Math.min(window.innerHeight - 100, ev.clientY - (start.y - start.rect.y))),
-        });
-      } else {
-        last = resized(start, dx, dy, dir);
-        os.setRect(win.id, last);
-      }
+      last = resized(start, ev.clientX - start.x, ev.clientY - start.y, dir);
+      os.setRect(win.id, last);
     };
     const up = () => {
       // Snap any clamped edge back to its min instead of leaving a
       // negative-size rect behind.
-      if (mode === 'resize' && last) os.setRect(win.id, last);
+      if (last) os.setRect(win.id, last);
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);
     };
@@ -75,8 +70,10 @@ export default function Window({ win }) {
   };
 
   const onTitlePointerDown = (e) => {
-    if (e.target.closest('.tb-btn') || win.max) return;
-    beginGesture(e, 'move');
+    if (e.target.closest('.tb-btn')) return;
+    e.preventDefault();
+    os.focus(win.id);
+    startMoveDrag(e, win, os, setHint);
   };
 
   const style = win.max
@@ -125,9 +122,13 @@ export default function Window({ win }) {
           key={dir}
           className={`rz rz-${dir}`}
           style={{ cursor: CURSOR[dir] }}
-          onPointerDown={(e) => { e.stopPropagation(); beginGesture(e, 'resize', dir); }}
+          onPointerDown={(e) => { e.stopPropagation(); beginGesture(e, dir); }}
         />
       ))}
+      {hint && hint !== 'top' && createPortal(
+        <div id="snap-preview" style={{ ...zoneRect(hint) }} aria-hidden="true" />,
+        document.body
+      )}
     </section>
   );
 }

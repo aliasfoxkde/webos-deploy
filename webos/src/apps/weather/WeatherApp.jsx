@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { geocode, fetchWeather, wmo, loadLoc, saveLoc } from './api.js';
+import { geocode, fetchWeather, wmo, loadLoc, saveLoc, loadUnits, saveUnits, fmtTemp, fmtWind, fmtPrecip, UNITS_LABEL } from './api.js';
 import WxIcon from './WxIcon.jsx';
 import './weather.css';
 
@@ -7,11 +7,20 @@ const round = (n) => (Number.isFinite(n) ? Math.round(n) : '–');
 
 export default function WeatherApp() {
   const [loc, setLoc] = useState(loadLoc);
+  const [units, setUnits] = useState(loadUnits);
   const [data, setData] = useState(null);
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
   const [q, setQ] = useState('');
   const [results, setResults] = useState(null);
+
+  // The sidebar widget may flip the unit; keep this view in sync.
+  useEffect(() => {
+    const h = (e) => setUnits(e.detail);
+    window.addEventListener('webos:units', h);
+    return () => window.removeEventListener('webos:units', h);
+  }, []);
+  const U = UNITS_LABEL[units];
 
   const refresh = useCallback(async (place = loc) => {
     if (!place) return;
@@ -65,6 +74,14 @@ export default function WeatherApp() {
           aria-label="Search location"
         />
         <button className="btn" disabled={busy}>{busy ? '…' : 'Search'}</button>
+        <button
+          type="button"
+          className="btn wx-units"
+          title="Switch temperature / wind / precipitation units"
+          onClick={() => { const next = units === 'metric' ? 'imperial' : 'metric'; setUnits(next); saveUnits(next); }}
+        >
+          {units === 'metric' ? '°C' : '°F'}
+        </button>
       </form>
 
       {results ? (
@@ -92,17 +109,17 @@ export default function WeatherApp() {
           <header className="wx-head">
             <div>
               <h3>{loc.name}</h3>
-              <span className="dim">{cond.label} · feels like {round(cur.feels)}°</span>
+              <span className="dim">{cond.label} · feels like {round(fmtTemp(cur.feels, units))}{U.temp}</span>
             </div>
             <button className="btn" onClick={() => refresh()} disabled={busy}>Refresh</button>
           </header>
           <div className="wx-now">
             <span className="wx-glyph"><WxIcon id={cond.icon} size={96} /></span>
-            <span className="wx-temp">{round(cur.temp)}°</span>
+            <span className="wx-temp">{round(fmtTemp(cur.temp, units))}{U.temp}</span>
             <ul className="wx-stats">
               <li><em>Humidity</em>{round(cur.humidity)}%</li>
-              <li><em>Wind</em>{round(cur.wind)} km/h</li>
-              <li><em>Precip</em>{round(cur.precip)} mm</li>
+              <li><em>Wind</em>{round(fmtWind(cur.wind, units))} {U.wind}</li>
+              <li><em>Precip</em>{round(fmtPrecip(cur.precip, units))} {U.precip}</li>
             </ul>
           </div>
           <div className="wx-days">
@@ -113,7 +130,7 @@ export default function WeatherApp() {
                 <div key={d.date} className="wx-day">
                   <span className="wx-dayname">{day}</span>
                   <WxIcon id={c.icon} size={30} />
-                  <span className="wx-range">{round(d.min)}° / {round(d.max)}°</span>
+                  <span className="wx-range">{round(fmtTemp(d.min, units))}° / {round(fmtTemp(d.max, units))}°</span>
                   <span className="dim wx-pop">{d.pop}%</span>
                 </div>
               );

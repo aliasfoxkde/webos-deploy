@@ -12,6 +12,26 @@ export const saveLoc = (loc) => {
   } catch { /* private mode */ }
 };
 
+/* ---- units (metric | imperial), shared by the app and the sidebar widget ----
+   Open-Meteo always returns metric (°C, km/h, mm); conversion happens at
+   render time so the raw fetch stays unit-pure. Components broadcast
+   'webos:units' so both views flip together. */
+const UNITS_KEY = 'webos.weather.units';
+export const loadUnits = () => {
+  try { return localStorage.getItem(UNITS_KEY) === 'imperial' ? 'imperial' : 'metric'; } catch { return 'metric'; }
+};
+export const saveUnits = (u) => {
+  try { localStorage.setItem(UNITS_KEY, u === 'imperial' ? 'imperial' : 'metric'); } catch { /* private mode */ }
+  window.dispatchEvent(new CustomEvent('webos:units', { detail: u }));
+};
+export const fmtTemp = (celsius, units) => (units === 'imperial' ? celsius * 9 / 5 + 32 : celsius);
+export const fmtWind = (kmh, units) => (units === 'imperial' ? kmh / 1.609344 : kmh);
+export const fmtPrecip = (mm, units) => (units === 'imperial' ? mm / 25.4 : mm);
+export const UNITS_LABEL = {
+  metric: { temp: '°C', wind: 'km/h', precip: 'mm' },
+  imperial: { temp: '°F', wind: 'mph', precip: 'in' },
+};
+
 export async function geocode(q) {
   const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=6&language=en&format=json`;
   const res = await fetch(url);

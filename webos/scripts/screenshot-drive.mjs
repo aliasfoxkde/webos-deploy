@@ -16,7 +16,14 @@ const chrome = spawn('/usr/bin/chromium', [
 process.on('exit', () => chrome.kill());
 await sleep(1500);
 
-const { webSocketDebuggerUrl } = await fetch(`http://127.0.0.1:${DEBUG_PORT}/json/version`).then((r) => r.json());
+// Chromium cold-starts slowly on this box — poll for the CDP endpoint.
+let webSocketDebuggerUrl = null;
+for (let i = 0; i < 30 && !webSocketDebuggerUrl; i++) {
+  await sleep(500);
+  webSocketDebuggerUrl = await fetch(`http://127.0.0.1:${DEBUG_PORT}/json/version`)
+    .then((r) => r.json()).then((d) => d.webSocketDebuggerUrl).catch(() => null);
+}
+if (!webSocketDebuggerUrl) throw new Error('chromium CDP endpoint never came up');
 const ws = new WebSocket(webSocketDebuggerUrl);
 await new Promise((res, rej) => { ws.onopen = res; ws.onerror = rej; });
 
@@ -393,12 +400,10 @@ await shot('40-wallpaper-tile');
 const adj = await evaluate(`({ fit: window.__os.theme.fit, layerFilter: document.querySelector('#wallpaper')?.style.filter || '' })`);
 console.log('adjustments:', JSON.stringify(adj.result?.value));
 
-// 18. store carries YouTube / Discord / Spotify
-await evaluate(`window.__os?.launch('store')`);
-await sleep(450);
-const media = await evaluate(`['YouTube', 'Discord', 'Spotify'].map(n => document.body.textContent.includes(n))`);
-console.log('store media apps (want [true,true,true]):', JSON.stringify(media.result?.value));
-await shot('41-store-media');
+// 18. YouTube / Discord / Spotify / ChatGPT ship ON THE DESKTOP by default
+const media = await evaluate(`['YouTube', 'Discord', 'Spotify', 'ChatGPT'].map(n => [...document.querySelectorAll('.desk-icon .lbl')].some(el => el.textContent === n))`);
+console.log('desktop media apps (want [true,true,true,true]):', JSON.stringify(media.result?.value));
+await shot('41-desktop-media');
 
 // 19. persistence sanity: reload keeps installed store app + wallpaper + pins + custom app
 await evaluate(`location.reload()`);
@@ -406,6 +411,119 @@ await sleep(2500);
 const persisted = await evaluate(`({ installed: window.__os?.installed, icons: document.querySelectorAll('.desk-icon').length, wallpaper: !!document.querySelector('#wallpaper'), pinned: window.__os?.taskbar.pinned?.length, userApps: window.__os?.userApps?.length })`);
 console.log('after reload:', JSON.stringify(persisted.result?.value));
 await shot('42-reload-persisted');
+
+// 20. calendar popup: single border (the old build drew panel chrome twice)
+await evaluate(`document.querySelector('#clock')?.click()`);
+await sleep(400);
+const calBorder = await evaluate(`(() => {
+  const pop = document.querySelector('.cal-pop');
+  const cal = document.querySelector('.calendar');
+  if (!pop || !cal) return { missing: true };
+  const s = getComputedStyle(cal);
+  return { calendarBorder: s.borderTopWidth, calendarBg: s.backgroundColor, popBorder: getComputedStyle(pop).borderTopWidth };
+})()`);
+console.log('calendar border (want calendarBorder 0px):', JSON.stringify(calBorder.result?.value));
+await shot('43-calendar-single-border');
+await clickAt(400, 300);
+await sleep(250);
+
+// 21. weather: REAL data check — rendered values vs a live Open-Meteo fetch.
+// (In-page probe fetches hang intermittently in headless chromium on this
+// box — flaky resolver — so the raw comparison runs node-side; the rendered
+// value itself already proves the app's in-browser fetch succeeded.)
+await evaluate(`localStorage.setItem('webos.weather.loc', JSON.stringify({ name: 'New York', label: 'New York, New York, United States', lat: 40.7128, lon: -74.006 })); location.href = '${BASE}?open=weather';`);
+await sleep(3500);
+const shownMetric = await evaluate(`({ temp: document.querySelector('.wx-temp')?.textContent || null, wind: [...document.querySelectorAll('.wx-stats li')].map(li => li.textContent).find(t => t.includes('Wind')) || null, err: document.querySelector('.wx-err')?.textContent || null })`);
+console.log('weather rendered (metric):', JSON.stringify(shownMetric.result?.value));
+await shot('44-weather-real-metric');
+// units toggle: °C → °F (display + persistence + widget event)
+await evaluate(`document.querySelector('.wx-units')?.click()`);
+await sleep(400);
+const wxUnits = await evaluate(`({ temp: document.querySelector('.wx-temp')?.textContent || null, unitsBtn: document.querySelector('.wx-units')?.textContent, stored: localStorage.getItem('webos.weather.units') })`);
+console.log('weather rendered (imperial):', JSON.stringify(wxUnits.result?.value));
+await shot('45-weather-imperial');
+// node-side API truth for the same coordinates
+const apiTemp = await fetch('https://api.open-meteo.com/v1/forecast?latitude=40.7128&longitude=-74.006&current=temperature_2m,wind_speed_10m&timezone=auto&forecast_days=1')
+  .then((r) => r.json()).then((d) => d.current.temperature_2m).catch(() => null);
+if (typeof apiTemp === 'number') {
+  const shownC = shownMetric.result?.value?.temp;
+  const shownF = wxUnits.result?.value?.temp;
+  console.log('weather match metric:', shownC === `${Math.round(apiTemp)}°C`, `(api ${apiTemp}°C → want ${Math.round(apiTemp)}°C, got ${shownC})`);
+  console.log('weather match imperial:', shownF === `${Math.round(apiTemp * 9 / 5 + 32)}°F`, `(api ${apiTemp}°C → want ${Math.round(apiTemp * 9 / 5 + 32)}°F, got ${shownF})`);
+} else {
+  console.log('weather api fetch failed node-side too');
+}
+
+// 22. snapping: drag terminal to the right edge → right half.
+// Gesture IIFE is self-contained (down + moves + up); results land on window.
+await evaluate(`location.href = '${BASE}'`);
+await sleep(1800);
+await evaluate(`window.__os?.launch('terminal')`);
+await sleep(900);
+const vw = (await evaluate(`window.innerWidth`)).result.value;
+const vh = (await evaluate(`window.innerHeight`)).result.value;
+const tbRect = await evaluate(`(() => { const w = window.__os.windows.at(-1); return { id: w.id, w: w.rect.w, h: w.rect.h }; })()`);
+const TID = tbRect.result.value.id;
+const dragGesture = (tx, ty, capture) => `
+(() => {
+  window.__dragResult = null;
+  const t = document.querySelector('.win:last-child .titlebar');
+  const r = t.getBoundingClientRect();
+  const sx = r.left + Math.min(60, r.width / 2), sy = r.top + r.height / 2;
+  const moves = [];
+  t.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerId: 5, clientX: sx, clientY: sy, button: 0 }));
+  let i = 0;
+  const step = () => {
+    i++;
+    const x = sx + (${tx} - sx) * i / 6, y = sy + (${ty} - sy) * i / 6;
+    window.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, pointerId: 5, clientX: x, clientY: y }));
+    if (i === 6) {
+      // React flushes setHint asynchronously — check the preview a tick later,
+      // then release the pointer.
+      setTimeout(() => {
+        window.__previewSeen = !!document.querySelector('#snap-preview');
+        window.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId: 5, clientX: x, clientY: y }));
+        window.__dragResult = 'done';
+      }, 90);
+      return;
+    }
+    setTimeout(step, 45);
+  };
+  setTimeout(step, 45);
+})()`;
+await evaluate(dragGesture(vw - 2, 300));
+await sleep(600);
+const rightHalf = await evaluate(`(() => { const w = window.__os.windows.find(x => x.id === ${TID}); return { x: w.rect.x, w: w.rect.w, snap: w.snap, max: w.max }; })()`);
+console.log('snap preview during drag (want true):', (await evaluate(`window.__previewSeen`)).result?.value);
+console.log('snapped right half (want x≈vw/2, snap right):', JSON.stringify(rightHalf.result?.value), `vw=${vw}`);
+await shot('46-snap-right');
+// tear-off: drag the tiled window back toward the middle → floating size restored
+await evaluate(dragGesture(Math.floor(vw / 2), 280));
+await sleep(600);
+const torn = await evaluate(`(() => { const w = window.__os.windows.find(x => x.id === ${TID}); return { w: w.rect.w, snap: w.snap }; })()`);
+console.log('tear-off restored float (want w≈' + tbRect.result.value.w + ', snap null):', JSON.stringify(torn.result?.value));
+
+// 23. keyboard tiling: Meta+arrows on the focused window
+await evaluate(`window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', metaKey: true, bubbles: true }))`);
+await sleep(300);
+const kbLeft = await evaluate(`(() => { const w = window.__os.windows.find(x => x.id === ${TID}); return { x: w.rect.x, w: w.rect.w, snap: w.snap }; })()`);
+console.log('Meta+Left (want x 0, w≈vw/2):', JSON.stringify(kbLeft.result?.value));
+await evaluate(`window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', metaKey: true, bubbles: true }))`);
+await sleep(250);
+const kbUp = await evaluate(`(() => { const w = window.__os.windows.find(x => x.id === ${TID}); return { max: w.max, snap: w.snap }; })()`);
+console.log('Meta+Up maximizes (want max true, snap null):', JSON.stringify(kbUp.result?.value));
+await evaluate(`window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', metaKey: true, bubbles: true }))`);
+await sleep(250);
+const kbDown = await evaluate(`(() => { const w = window.__os.windows.find(x => x.id === ${TID}); return { max: w.max, snap: w.snap }; })()`);
+console.log('Meta+Down unmaximizes (want max false, snap null):', JSON.stringify(kbDown.result?.value));
+// corner quarter via drag to top-left
+await evaluate(dragGesture(4, 4));
+await sleep(600);
+const quarter = await evaluate(`(() => { const w = window.__os.windows.find(x => x.id === ${TID}); return { snap: w.snap, x: w.rect.x, y: w.rect.y, w: w.rect.w, h: w.rect.h }; })()`);
+console.log('top-left quarter (want snap tl, w≈vw/2, h≈vh/2):', JSON.stringify(quarter.result?.value), `vh=${vh}`);
+await shot('47-snap-quarter');
+await evaluate(`window.__os?.windows.forEach(w => window.__os.close(w.id))`);
+await sleep(250);
 
 console.log('done');
 chrome.kill();

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useOS, WIDGET_IDS } from '../os/state.jsx';
-import { loadLoc, fetchWeather, wmo } from '../apps/weather/api.js';
+import { loadLoc, fetchWeather, wmo, loadUnits, saveUnits, fmtTemp } from '../apps/weather/api.js';
 import WxIcon from '../apps/weather/WxIcon.jsx';
 
 /* --- individual widgets --- */
@@ -8,12 +8,19 @@ import WxIcon from '../apps/weather/WxIcon.jsx';
 function WeatherWidget() {
   const os = useOS();
   const [loc] = useState(loadLoc);
+  const [units, setUnits] = useState(loadUnits);
   const [wx, setWx] = useState(null);
   useEffect(() => {
     let live = true;
     if (loc) fetchWeather(loc.lat, loc.lon).then((d) => { if (live) setWx(d); }).catch(() => {});
     return () => { live = false; };
   }, [loc]);
+  // The Weather app may flip the unit; keep the widget in sync.
+  useEffect(() => {
+    const h = (e) => setUnits(e.detail);
+    window.addEventListener('webos:units', h);
+    return () => window.removeEventListener('webos:units', h);
+  }, []);
   if (!loc) {
     return (
       <div className="widget">
@@ -27,9 +34,14 @@ function WeatherWidget() {
     <div className="widget">
       <div className="widget-title">Weather · {loc.name}</div>
       {wx && cond ? (
-        <div className="widget-weather">
+        <div
+          className="widget-weather"
+          title={`Units: ${units} — click to switch`}
+          style={{ cursor: 'pointer' }}
+          onClick={() => { const next = units === 'metric' ? 'imperial' : 'metric'; setUnits(next); saveUnits(next); }}
+        >
           <WxIcon id={cond.icon} size={40} />
-          <span className="widget-temp">{Math.round(wx.current.temp)}°</span>
+          <span className="widget-temp">{Math.round(fmtTemp(wx.current.temp, units))}°</span>
           <span className="dim">{cond.label}</span>
         </div>
       ) : (
