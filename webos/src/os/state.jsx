@@ -163,7 +163,7 @@ function reducer(state, action) {
           ...state,
           seq: id + 1,
           recents,
-          windows: [...state.windows, { id, appId: action.appId, args: action.args, rect: { x: 0, y: 0, w: window.innerWidth, h: window.innerHeight - 56 }, z: state.zTop + 1, min: false, max: true }],
+          windows: [...state.windows, { id, appId: action.appId, args: action.args, born: Date.now(), rect: { x: 0, y: 0, w: window.innerWidth, h: window.innerHeight - 56 }, z: state.zTop + 1, min: false, max: true }],
           zTop: state.zTop + 1,
           focused: id,
         };
@@ -184,7 +184,7 @@ function reducer(state, action) {
         ...state,
         seq: id + 1,
         recents,
-        windows: [...state.windows, { id, appId: action.appId, args: action.args, rect, z: state.zTop + 1, min: false, max: false }],
+        windows: [...state.windows, { id, appId: action.appId, args: action.args, born: Date.now(), rect, z: state.zTop + 1, min: false, max: false }],
         zTop: state.zTop + 1,
         focused: id,
       };
@@ -459,7 +459,7 @@ export function OSProvider({ children }) {
     groupRemove: (id, appId) => dispatch({ type: 'groupRemove', id, appId }),
     isDefault: (appId) => DEFAULT_APPS.some((a) => a.id === appId),
     isCustom: (appId) => state.userApps.some((a) => a.id === appId),
-  }), [apps]);
+  }), [apps, state.userApps]);
 
   /* -- mobile detection (auto mode follows device; explicit mode wins) -- */
   useEffect(() => {

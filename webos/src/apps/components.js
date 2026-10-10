@@ -17,4 +17,5 @@ export const APP_COMPONENTS = {
   chat: lazy(() => import('./chat/Chat.jsx')),
   photos: lazy(() => import('./photos/Photos.jsx')),
   notepad: lazy(() => import('./notepad/Notepad.jsx')),
+  taskmgr: lazy(() => import('./taskmgr/TaskManager.jsx')),
 };
