@@ -85,7 +85,7 @@ export default function Window({ win }) {
     if (Plugin) {
       return (
         <Suspense fallback={<div className="win-loading"><div className="spin" /><span>Starting {app.name}…</span></div>}>
-          <Plugin />
+          <Plugin args={win.args} />
         </Suspense>
       );
     }

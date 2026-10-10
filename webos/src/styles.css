@@ -810,3 +810,63 @@ body[data-tb-ico="lg"] .task-app img { width: 22px; height: 22px; }
 #start-menu .sm-ai { color: var(--accent); }
 #start-menu .sm-ai:hover { background: color-mix(in srgb, var(--accent) 14%, transparent); }
 #start-menu .sm-link .sub { display: block; font-size: 0.62rem; color: var(--text-dim); }
+
+/* ---- start menu 2.8: search-first, pinned grid, categories, power ---- */
+#start-menu { width: 580px; left: 50%; transform: translateX(-50%); padding: 0; overflow: hidden; display: flex; flex-direction: column; }
+#start-menu .sm-search-row { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-bottom: 1px solid var(--chrome-line); }
+.sm-search-icon { color: var(--text-dim); font-size: 1rem; }
+.sm-search {
+  flex: 1; background: rgba(255, 255, 255, 0.06); border: 1px solid var(--chrome-line); border-radius: 18px;
+  color: var(--text); padding: 8px 14px; font: inherit; user-select: text; -webkit-user-select: text;
+}
+.sm-search:focus { outline: 1px solid var(--accent); }
+#start-menu .sm-results, #start-menu .sm-browse { padding: 8px 10px 12px; overflow-y: auto; }
+#start-menu .sm-empty { padding: 10px 8px 4px; }
+.sm-ico-glyph {
+  width: 26px; height: 26px; flex: none; display: grid; place-items: center;
+  border-radius: 8px; background: rgba(255, 255, 255, 0.07); font-size: 0.85rem;
+}
+#start-menu .sm-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+.sm-tile {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 10px 4px 8px; border: 0; border-radius: 10px; background: transparent;
+  cursor: pointer; text-align: center;
+}
+.sm-tile:hover { background: rgba(255, 255, 255, 0.08); }
+.sm-tile img { width: 34px; height: 34px; }
+.sm-tile span { font-size: 0.68rem; color: var(--text); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#start-menu .sm-rowset { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.sm-cat { margin-bottom: 2px; }
+.sm-cat-name { font-size: 0.66rem; color: var(--text-dim); padding: 6px 8px 3px; }
+#start-menu .sm-foot {
+  display: flex; align-items: center; gap: 6px; padding: 9px 14px;
+  border-top: 1px solid var(--chrome-line); background: rgba(255, 255, 255, 0.03);
+}
+.sm-user { display: flex; align-items: center; gap: 9px; padding: 4px 8px 4px 4px; border-radius: 18px; }
+.sm-user:hover { background: rgba(255, 255, 255, 0.07); }
+.sm-avatar {
+  width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center;
+  background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #1b2333));
+  color: #06121c; font-weight: 700; font-size: 0.82rem;
+}
+.sm-who { font-size: 0.78rem; }
+.sm-pwr {
+  border: 0; background: transparent; color: var(--text-dim); cursor: pointer;
+  width: 32px; height: 32px; border-radius: 9px; font-size: 0.95rem;
+}
+.sm-pwr:hover { background: rgba(255, 255, 255, 0.1); color: var(--text); }
+.sm-pwr.danger:hover { background: rgba(248, 113, 113, 0.14); color: #f87171; }
+/* tui: full-width ASCII column; linux/bsd: left-anchored under the top bar */
+body[data-persona="tui"] #start-menu { left: 0; right: 0; width: auto; transform: none; border-radius: 0; border-left: 0; border-right: 0; font-family: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace; }
+body[data-persona="linux"] #start-menu, body[data-persona="bsd"] #start-menu { left: 10px; transform: none; }
+body[data-persona="mac"] #start-menu { bottom: 74px; }
+
+/* ---- halt overlay (shut down) ---- */
+#halt { position: fixed; inset: 0; z-index: 2000; background: #05070b; display: grid; place-items: center; }
+.halt-card { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; padding: 24px; }
+.halt-logo {
+  width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center;
+  border: 2px solid var(--chrome-line); color: var(--text-dim); font-size: 1.6rem;
+}
+.halt-card h2 { margin: 0; font-size: 1.1rem; letter-spacing: 0.06em; }
+.halt-card .dim { max-width: 340px; line-height: 1.6; }

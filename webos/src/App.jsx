@@ -19,8 +19,8 @@ import { wallpaperLayer } from './os/wallpapers.js';
 
 /* Virtual apps that render in-window instead of an iframe. */
 const VIRTUAL = {
-  store: { name: 'App Store', render: () => <AppStore /> },
-  settings: { name: 'Settings', render: () => <Settings /> },
+  store: { name: 'App Store', render: (win) => <AppStore /> },
+  settings: { name: 'Settings', render: (win) => <Settings args={win.args} /> },
 };
 
 // Only external, non-embeddable sites launch in a new tab.
@@ -59,7 +59,7 @@ function VirtualWindow({ win }) {
         <button className="tb-btn max" title={win.max ? 'Restore' : 'Maximize'} onClick={() => os.toggleMax(win.id)}>{win.max ? '❐' : '□'}</button>
         <button className="tb-btn close" title="Close" onClick={() => os.close(win.id)}>✕</button>
       </header>
-      <div className="win-body virtual">{v.render()}</div>
+      <div className="win-body virtual">{v.render(win)}</div>
       {hint && hint !== 'top' && createPortal(
         <div id="snap-preview" style={{ ...zoneRect(hint) }} aria-hidden="true" />,
         document.body
@@ -136,6 +136,15 @@ export default function App() {
   const enterWelcome = () => {
     try { localStorage.setItem('webos.welcomed', 'true'); } catch { /* private mode */ }
     setWelcome(false);
+  };
+
+  // Power menu (start menu footer): restart reloads, shut down shows the
+  // halt overlay — a browser page can't actually power anything off, so the
+  // overlay says exactly that and offers "Power on" (reload).
+  const [halted, setHalted] = useState(false);
+  const power = (action) => {
+    if (action === 'restart') location.reload();
+    else setHalted(true);
   };
 
   /* Desktop flow: loose apps + group tiles arranged by the saved order.
@@ -472,7 +481,13 @@ export default function App() {
           )}
         </div>
       </main>
-      <StartMenu open={startOpen} onClose={() => setStartOpen(false)} openStore={() => os.launch('store')} openSettings={() => os.launch('settings')} />
+      <StartMenu
+        open={startOpen}
+        onClose={() => setStartOpen(false)}
+        openStore={() => os.launch('store')}
+        openSettings={(args) => os.launch('settings', args)}
+        onPower={(action) => { setStartOpen(false); power(action); }}
+      />
       <Taskbar
         openStart={(e) => { e?.stopPropagation(); setStartOpen((v) => !v); }}
         startOpen={startOpen}
@@ -495,6 +510,16 @@ export default function App() {
       {openGroupId && <GroupPopup groupId={openGroupId} onClose={() => setOpenGroupId(null)} />}
       {appDlg && <AddApp app={appDlg === 'new' ? null : appDlg} onClose={() => setAppDlg(null)} />}
       {welcome && <Welcome onEnter={enterWelcome} />}
+      {halted && (
+        <div id="halt" role="alertdialog" aria-label="System shut down">
+          <div className="halt-card">
+            <div className="halt-logo" aria-hidden="true">⏻</div>
+            <h2>System halted</h2>
+            <p className="dim">It is now safe to close this browser tab. Nothing is running.</p>
+            <button className="btn accent" onClick={() => location.reload()}>Power on</button>
+          </div>
+        </div>
+      )}
       {menu}
     </>
   );

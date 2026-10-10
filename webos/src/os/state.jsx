@@ -112,6 +112,7 @@ const initial = () => ({
   zTop: 10,
   focused: null,
   seq: 1,
+  recents: load('recents', []), // most-recently launched app ids (start menu)
 });
 
 // Settings-object actions share one code path: patch a slice + persist.
@@ -131,11 +132,14 @@ function reducer(state, action) {
       const n = state.windows.length;
       const off = (n % 6) * 28;
       const def = APP_INDEX.find((a) => a.id === action.appId);
+      const recents = [action.appId, ...state.recents.filter((r) => r !== action.appId)].slice(0, 8);
+      save('recents', recents);
       if (state.mobile) {
         return {
           ...state,
           seq: id + 1,
-          windows: [...state.windows, { id, appId: action.appId, rect: { x: 0, y: 0, w: window.innerWidth, h: window.innerHeight - 56 }, z: state.zTop + 1, min: false, max: true }],
+          recents,
+          windows: [...state.windows, { id, appId: action.appId, args: action.args, rect: { x: 0, y: 0, w: window.innerWidth, h: window.innerHeight - 56 }, z: state.zTop + 1, min: false, max: true }],
           zTop: state.zTop + 1,
           focused: id,
         };
@@ -146,7 +150,8 @@ function reducer(state, action) {
       return {
         ...state,
         seq: id + 1,
-        windows: [...state.windows, { id, appId: action.appId, rect, z: state.zTop + 1, min: false, max: false }],
+        recents,
+        windows: [...state.windows, { id, appId: action.appId, args: action.args, rect, z: state.zTop + 1, min: false, max: false }],
         zTop: state.zTop + 1,
         focused: id,
       };
@@ -370,7 +375,7 @@ export function OSProvider({ children }) {
   const api = useMemo(() => ({
     apps,
     findApp: (id) => findApp(apps, id),
-    launch: (appId) => dispatch({ type: 'launch', appId }),
+    launch: (appId, args) => dispatch({ type: 'launch', appId, args }),
     close: (id) => dispatch({ type: 'close', id }),
     focus: (id) => dispatch({ type: 'focus', id }),
     minimize: (id, unmin) => dispatch({ type: 'minimize', id, unmin }),

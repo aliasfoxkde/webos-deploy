@@ -1,6 +1,7 @@
 // Editor plugin manifest — pure data, imported by apps/manifests.js.
 export default {
   id: 'editor',
+  category: 'Development',
   name: 'Editor',
   tagline: 'Code & text editor',
   version: '1.0',

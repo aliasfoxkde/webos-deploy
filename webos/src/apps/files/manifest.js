@@ -2,6 +2,7 @@
 // apps/components.js so the OS registry stays import-cycle free.
 export default {
   id: 'files',
+  category: 'Utilities',
   name: 'Files',
   tagline: 'Virtual disk · upload · device browse',
   version: '1.0',

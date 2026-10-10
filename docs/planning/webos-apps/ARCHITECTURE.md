@@ -294,3 +294,24 @@ adapter's reply says exactly what is missing and where to wire a provider.
 - Sending aborts cleanly: Stop uses an `AbortController`; aborted runs keep
   the user message and mark partial assistant text "(stopped)". Errors append
   an "The adapter failed — …" assistant message instead of throwing.
+
+## Start menu overhaul (2.8.0)
+
+Search-first Start (`shell/StartMenu.jsx`): search box on top; typing
+switches to a results view — the ✦ Ask AI row, matching apps (name/tagline/
+category), and matching Settings sections. Enter launches the first hit.
+The browse view (empty query) shows a Pinned grid (`DEFAULT_PINNED`,
+drag-reorder + persistence still open), a Recommended row driven by
+`webos.recents` (launch order, capped 8, persisted in the `launch` reducer
+case), All apps grouped by `app.category` (fixed `CATEGORY_ORDER` display
+order), an App Store/Settings links block, and a footer with the user chip
++ power menu (Restart = `location.reload()`, Shut down = the `#halt`
+overlay in App.jsx — honest about being a browser page, "Power on" reloads).
+
+- **Launch args**: `os.launch(id, args)` stores `args` on the window record;
+  plugin windows render `<Plugin args={...} />`, virtual windows pass
+  `win.args` (Settings reads `args.initial` to deep-link a section —
+  `SECTIONS` is exported for the search index).
+- **Persona styling stays CSS-only**: `body[data-persona]` rules — win =
+  centered 580px panel, linux/bsd = left-anchored, mac = raised over the
+  dock, tui = full-width monospace column.

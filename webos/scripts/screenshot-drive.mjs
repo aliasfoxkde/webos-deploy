@@ -923,12 +923,12 @@ await evaluate(`(() => { const ui = JSON.parse(localStorage.getItem('webos.ui'))
 await evaluate(`location.reload()`);
 await sleep(2500);
 
-// 30. AI chat — launch from the start menu's "Ask AI" hook
+// 30. AI chat — launch from the start menu's pinned tile
 await evaluate(`document.getElementById('start-btn')?.click()`);
 await sleep(400);
-const askAi = await evaluate(`(() => { const b = [...document.querySelectorAll('#start-menu .sm-ai')][0]; if (!b) return null; b.click(); return b.textContent.trim(); })()`);
+const askAi = await evaluate(`(() => { const b = [...document.querySelectorAll('#start-menu .sm-tile')].find(t => t.textContent.trim() === 'AI Chat'); if (!b) return null; b.click(); return 'pinned AI Chat tile'; })()`);
 await sleep(700);
-console.log('start menu Ask AI row:', JSON.stringify(askAi.result?.value));
+console.log('start menu pinned AI Chat tile:', JSON.stringify(askAi.result?.value));
 const chatWin = await evaluate(`(() => { const w = [...document.querySelectorAll('.win')].find(w => w.getAttribute('aria-label') === 'AI Chat'); return w ? { id: Number(w.dataset.id), state: w.querySelector('.c-state')?.textContent, note: w.querySelector('.c-note')?.textContent.slice(0, 40) } : null; })()`);
 console.log('chat window + honesty badge:', JSON.stringify(chatWin.result?.value));
 await shot('34-chat');
@@ -974,6 +974,79 @@ await evaluate(`(() => { const b = [...document.querySelectorAll('.widget-chat ~
 await sleep(300);
 const cleared = await evaluate(`({ stored: JSON.parse(localStorage.getItem('webos.chat.history') || '[]').length, widget: document.querySelector('.widget-chat')?.querySelectorAll('.widget-chat-msg').length ?? 0 })`);
 console.log('cleared (want stored 0):', JSON.stringify(cleared.result?.value));
+
+// 31. start menu overhaul — close everything, then inspect the browse view
+await evaluate(`(() => { document.querySelector('[data-tray="widgets"]')?.click(); window.__os?.windows.filter(w => w.appId === 'chat').forEach(w => window.__os.close(w.id)); })()`);
+await sleep(400);
+await evaluate(`document.getElementById('start-btn')?.click()`);
+await sleep(500);
+const smView = await evaluate(`(() => ({
+  search: !!document.querySelector('#start-menu .sm-search'),
+  pinned: document.querySelectorAll('#start-menu .sm-tile').length,
+  cats: [...document.querySelectorAll('#start-menu .sm-cat-name')].map(c => c.textContent),
+  rec: document.querySelectorAll('#start-menu .sm-rowset')[0]?.querySelectorAll('.sm-app').length || 0,
+  user: document.querySelector('#start-menu .sm-who')?.textContent,
+  pwr: document.querySelectorAll('#start-menu .sm-pwr').length,
+}))()`);
+console.log('start menu browse view (want search true, pinned 8, cats, user, pwr 2):', JSON.stringify(smView.result?.value));
+await shot('37-start-menu');
+// recommended should list chat (just launched)
+const recHasChat = await evaluate(`[...document.querySelectorAll('#start-menu .sm-rowset')[0]?.querySelectorAll('.sm-app img') || []].length`);
+// search: type "photo" → Enter launches first hit (PhotoCraft)
+await evaluate(`(() => {
+  const inp = document.querySelector('#start-menu .sm-search');
+  const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+  set.call(inp, 'photo');
+  inp.dispatchEvent(new Event('input', { bubbles: true }));
+  return 'typed';
+})()`);
+await sleep(400);
+const hits = await evaluate(`(() => ({
+  apps: [...document.querySelectorAll('#start-menu .sm-results .sm-app img')].map(i => i.closest('.sm-app').textContent.trim().split('\\n')[0]),
+  secs: [...document.querySelectorAll('#start-menu .sm-results .sm-section')].map(s => s.textContent),
+}))()`);
+console.log('search "photo" hits:', JSON.stringify(hits.result?.value));
+await shot('38-start-search');
+await evaluate(`(() => { const hit = [...document.querySelectorAll('#start-menu .sm-results .sm-app')].find(b => b.textContent.trim().startsWith('PhotoCraft')); hit?.click(); })()`);
+await sleep(900);
+const launched = await evaluate(`(() => { const w = [...document.querySelectorAll('.win')].find(w => w.getAttribute('aria-label') === 'PhotoCraft'); return w ? 'PhotoCraft window' : 'MISSING'; })()`);
+console.log('search hit click launches PhotoCraft:', launched);
+// settings deep-link via search: "storage" → Storage section active
+await evaluate(`(() => { const w = [...document.querySelectorAll('.win')].find(w => w.getAttribute('aria-label') === 'PhotoCraft'); if (w) window.__os.close(Number(w.dataset.id)); })()`);
+await sleep(250);
+await evaluate(`document.getElementById('start-btn')?.click()`);
+await sleep(400);
+await evaluate(`(() => {
+  const inp = document.querySelector('#start-menu .sm-search');
+  const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+  set.call(inp, 'storage');
+  inp.dispatchEvent(new Event('input', { bubbles: true }));
+})()`);
+await sleep(400);
+await evaluate(`(() => { [...document.querySelectorAll('#start-menu .sm-results .sm-app')].at(-1)?.click(); })()`);
+await sleep(800);
+const settingsSec = await evaluate(`(() => {
+  const w = [...document.querySelectorAll('.win')].find(w => w.getAttribute('aria-label') === 'Settings');
+  return w ? { open: true, active: w.querySelector('.set-nav.on')?.textContent.trim().replace('💾', '') } : { open: false };
+})()`);
+console.log('settings deep-linked to (want Storage):', JSON.stringify(settingsSec.result?.value));
+await evaluate(`(() => { [...document.querySelectorAll('.win')].forEach(w => window.__os.close(Number(w.dataset.id))); })()`);
+await sleep(250);
+// recommended row now has PhotoCraft (launched above)
+await evaluate(`document.getElementById('start-btn')?.click()`);
+await sleep(400);
+const recommended = await evaluate(`[...document.querySelectorAll('#start-menu .sm-rowset')][0]?.querySelectorAll('.sm-app').length || 0`);
+console.log('recommended row entries (want >=1):', recommended.result?.value);
+// power menu: shut down → halt overlay → power on (reload)
+await evaluate(`[...document.querySelectorAll('#start-menu .sm-pwr')].at(-1)?.click()`);
+await sleep(400);
+const halted = await evaluate(`({ halt: !!document.getElementById('halt'), text: document.getElementById('halt')?.querySelector('h2')?.textContent })`);
+console.log('shutdown overlay (want halt true / System halted):', JSON.stringify(halted.result?.value));
+await shot('39-halt');
+await evaluate(`document.querySelector('#halt .btn')?.click()`);
+await sleep(2500);
+const back = await evaluate(`({ menu: !!document.getElementById('start-menu'), boot: !!document.body })`);
+console.log('power on → reloaded, start menu closed:', JSON.stringify(back.result?.value));
 
 console.log('done');
 clearTimeout(watchdog);

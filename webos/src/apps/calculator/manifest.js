@@ -1,6 +1,7 @@
 // Calculator plugin manifest (data only; see apps/components.js).
 export default {
   id: 'calc',
+  category: 'Utilities',
   name: 'Calculator',
   tagline: 'Standard · Scientific · Graphing · Programmer',
   version: '2.0',

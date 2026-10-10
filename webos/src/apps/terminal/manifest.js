@@ -2,6 +2,7 @@
 // apps/components.js so the OS registry stays import-cycle free.
 export default {
   id: 'terminal',
+  category: 'Development',
   name: 'Terminal',
   tagline: 'JS / shell console',
   version: '1.1',

@@ -5,7 +5,7 @@ import {
   NetworkPanel, StoragePanel, AppsPanel, AboutPanel,
 } from './settings/Panels.jsx';
 
-const SECTIONS = [
+export const SECTIONS = [
   { id: 'appearance', label: 'Appearance', icon: '🎨', body: Appearance },
   { id: 'desktop', label: 'Desktop', icon: '🖥', body: DesktopPanel },
   { id: 'taskbar', label: 'Taskbar', icon: '▭', body: TaskbarPanel },
@@ -18,9 +18,10 @@ const SECTIONS = [
 ];
 
 /* Settings is a full control center: left rail of sections, scrollable panel.
-   It renders inside a VirtualWindow — movable and resizable like any window. */
-export default function Settings({ initial = 'appearance' }) {
-  const [sec, setSec] = useState(initial);
+   It renders inside a VirtualWindow — movable and resizable like any window.
+   Launch args deep-link a section: os.launch('settings', { initial: 'about' }). */
+export default function Settings({ args = {} }) {
+  const [sec, setSec] = useState(SECTIONS.some((s) => s.id === args.initial) ? args.initial : 'appearance');
   const Active = SECTIONS.find((s) => s.id === sec)?.body || Appearance;
   return (
     <div className="settings has-rail">
