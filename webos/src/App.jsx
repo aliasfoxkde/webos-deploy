@@ -214,28 +214,40 @@ export default function App() {
           { label: 'Remove group', hint: 'icons return', run: () => os.removeGroup(g.id) },
         ];
       }
-      case 'pin': {
+      case 'app': {
+        // One taskbar-button menu for every app, pinned or running — same
+        // shape either way, so a pinned app's running windows stay closable.
         const app = os.findApp(arg);
         if (!app) return [];
-        return [
-          { label: `Open ${app.name}`, icon: app.icon, run: () => os.launch(app.id) },
-          ...(app.url ? [{ label: 'Open in new tab', hint: '↗', run: () => window.open(app.url, '_blank', 'noopener') }] : []),
-          '-',
-          { label: 'Unpin from taskbar', run: () => togglePin(arg) },
-          { label: 'Properties', hint: 'details', run: () => setPropsId(app.id) },
-        ];
-      }
-      case 'taskapp': {
-        const w = os.windows.find((x) => x.id === Number(arg));
-        const app = w && os.findApp(w.appId);
-        if (!w || !app) return [];
-        return [
-          { label: w.min ? 'Restore' : 'Minimize', run: () => os.minimize(w.id) },
-          ...(app.url ? [{ label: 'Open in new tab', run: () => window.open(app.url, '_blank', 'noopener') }] : []),
-          '-',
-          { label: 'Properties', run: () => setPropsId(app.id) },
-          { label: 'Close window', run: () => os.close(w.id) },
-        ];
+        const wins = os.windows.filter((w) => w.appId === app.id);
+        const isPinned = (os.taskbar.pinned || []).includes(app.id);
+        const items = [];
+        if (!wins.length) {
+          items.push({ label: `Open ${app.name}`, icon: app.icon, run: () => os.launch(app.id) });
+        } else {
+          // One item per window: activate it (restore + focus).
+          wins.forEach((w, i) => {
+            items.push({
+              label: wins.length > 1 ? `Window ${i + 1}` : (w.min ? 'Restore window' : 'Show window'),
+              icon: app.icon,
+              hint: w.min ? 'minimized' : '',
+              run: () => { os.minimize(w.id, true); os.focus(w.id); },
+            });
+          });
+        }
+        if (app.url) items.push({ label: 'Open in new tab', hint: '↗', run: () => window.open(app.url, '_blank', 'noopener') });
+        if (wins.length || !app.singleInstance) items.push({ label: 'New window', run: () => os.launch(app.id) });
+        items.push('-');
+        items.push({ label: isPinned ? 'Unpin from taskbar' : 'Pin to taskbar', run: () => togglePin(app.id) });
+        items.push({ label: 'Properties', hint: 'details', run: () => setPropsId(app.id) });
+        if (wins.length) {
+          items.push('-');
+          items.push({
+            label: wins.length > 1 ? `Close all ${wins.length} windows` : 'Close window',
+            run: () => wins.forEach((w) => os.close(w.id)),
+          });
+        }
+        return items;
       }
       case 'titlebar': {
         const w = os.windows.find((x) => x.id === Number(arg));
@@ -252,6 +264,7 @@ export default function App() {
       }
       case 'taskbar':
         return [
+          { label: 'Taskbar settings…', run: () => os.launch('settings', { initial: 'taskbar' }) },
           { label: 'Widgets', hint: os.widgets.enabled.length ? `${os.widgets.enabled.length} enabled` : 'off', run: () => setWidgetsOpen((v) => !v) },
           { label: 'App Store…', run: () => os.launch('store') },
           { label: 'Settings…', run: () => os.launch('settings') },
