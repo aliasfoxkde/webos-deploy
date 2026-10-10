@@ -1,0 +1,99 @@
+/* Photos viewer — chrome follows the shell (dark, subtle borders, amber
+   accent from the manifest). */
+
+.photos {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: #0a0e14;
+  color: var(--text, #dbe4ee);
+}
+
+.ph-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  flex: 0 0 auto;
+  min-width: 0;
+}
+.ph-bar.bottom { border-top: 1px solid rgba(255, 255, 255, 0.08); border-bottom: none; flex-wrap: wrap; }
+
+.ph-btn {
+  background: transparent;
+  color: inherit;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 7px;
+  padding: 4px 10px;
+  font: inherit;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  cursor: pointer;
+}
+.ph-btn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.1); }
+.ph-btn:disabled { opacity: 0.4; cursor: default; }
+.ph-btn.on { background: var(--accent, #fbbf24); border-color: transparent; color: #1a1205; font-weight: 600; }
+.ph-btn.accent { background: var(--accent, #fbbf24); border-color: transparent; color: #1a1205; font-weight: 600; }
+.ph-btn.accent:hover:not(:disabled) { filter: brightness(1.08); }
+
+.ph-count { font-size: 0.75rem; opacity: 0.7; min-width: 4.5em; text-align: center; font-variant-numeric: tabular-nums; }
+.ph-name { font-size: 0.85rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 45%; }
+.ph-zoom { font-size: 0.72rem; opacity: 0.7; min-width: 3.2em; text-align: center; font-variant-numeric: tabular-nums; }
+.ph-edited {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent, #fbbf24);
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  padding: 1px 8px;
+}
+.ph-sep { width: 1px; align-self: stretch; margin: 3px 4px; background: rgba(255, 255, 255, 0.12); }
+.ph-spring { flex: 1; }
+.ph-meta { font-size: 0.74rem; opacity: 0.7; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.ph-stage {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: grid;
+  place-items: center;
+  background:
+    repeating-conic-gradient(rgba(255, 255, 255, 0.045) 0% 25%, transparent 0% 50%)
+    0 0 / 20px 20px; /* checkerboard shows transparency honestly */
+  outline: none;
+}
+.ph-stage:focus-visible { box-shadow: inset 0 0 0 2px var(--accent, #fbbf24); }
+
+.ph-canvas-box { position: relative; margin: 12px; flex: 0 0 auto; }
+.ph-canvas { display: block; border-radius: 3px; box-shadow: 0 2px 18px rgba(0, 0, 0, 0.5); }
+
+.ph-crop-rect {
+  position: absolute;
+  border: 1.5px solid var(--accent, #fbbf24);
+  outline: 9999px solid rgba(4, 6, 10, 0.55);
+  pointer-events: none;
+  border-radius: 2px;
+}
+.ph-crop-rect.live { border-style: dashed; }
+
+.ph-crop-pad { position: absolute; inset: 0; cursor: crosshair; touch-action: none; }
+
+.ph-empty {
+  color: rgba(219, 228, 238, 0.6);
+  font-size: 0.9rem;
+  padding: 24px;
+  text-align: center;
+}
+
+.ph-status {
+  flex: 0 0 auto;
+  padding: 4px 12px;
+  font-size: 0.74rem;
+  color: var(--accent, #fbbf24);
+  background: rgba(0, 0, 0, 0.25);
+}

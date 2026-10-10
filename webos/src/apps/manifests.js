@@ -8,5 +8,6 @@ import editor from './editor/manifest.js';
 import weather from './weather/manifest.js';
 import files from './files/manifest.js';
 import chat from './chat/manifest.js';
+import photos from './photos/manifest.js';
 
-export const PLUGIN_APPS = [terminal, video, calc, editor, weather, files, chat];
+export const PLUGIN_APPS = [terminal, video, calc, editor, weather, files, chat, photos];

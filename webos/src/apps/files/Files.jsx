@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { filePut, fileGet, fileDel, fileDelTree, fileList, dirPut } from '../../os/db.js';
+import { fmtBytes } from '../../os/format.js';
 import { useOS } from '../../os/state.jsx';
 import { useContextMenu } from '../../shell/ContextMenu.jsx';
 import './files.css';
@@ -14,14 +15,6 @@ const base = (path) => path.slice(path.lastIndexOf('/') + 1);
 
 const TEXT_EXT = /\.(txt|md|mdx|markdown|json|js|jsx|ts|tsx|css|html|htm|xml|svg|csv|log|toml|yaml|yml|ini|rs|py|sh)$/i;
 const TEXT_CAP = 2_000_000; // don't slurp huge files as text
-
-const fmtBytes = (n) => {
-  if (n == null) return '';
-  if (n < 1024) return `${n} B`;
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
-  if (n < 1024 ** 3) return `${(n / 1024 / 1024).toFixed(1)} MB`;
-  return `${(n / 1024 ** 3).toFixed(2)} GB`;
-};
 
 function kindOf(rec) {
   const type = rec.type || '';
@@ -144,9 +137,11 @@ export default function FilesApp() {
   }, []);
 
   const openFile = useCallback(async (rec) => {
+    // images get the full viewer (folder navigation, rotate/crop) — not the inline preview
+    if (kindOf(rec) === 'img') { os.launch('photos', { path: rec.path }); return; }
     const full = await fileGet(rec.path);
     if (full) openBlob({ ...rec, name: rec.name || base(rec.path) }, full.blob);
-  }, [openBlob]);
+  }, [openBlob, os]);
 
   const upload = async (files) => {
     for (const f of files) await filePut(join(cwd, f.name), f);
