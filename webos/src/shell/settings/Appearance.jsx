@@ -147,17 +147,25 @@ export default function Appearance() {
             </span>
             Theme default
           </button>
-          {list.map((w) => (
-            <button
-              key={w.id}
-              className={`preset ${t.wallpaper === w.css ? 'on' : ''}`}
-              onClick={() => os.setTheme({ wallpaper: w.css })}
-              title={`${w.label} (${w.cat})`}
-            >
-              <span className="preset-preview" style={{ background: w.css }} />
-              {w.label}
-            </button>
-          ))}
+          {list.map((w) => {
+            // three wallpaper kinds: CSS art presets, bundled photos, live FX
+            const val = w.fx ? w.id : (w.img || w.css);
+            const active = t.wallpaper === val;
+            const preview = w.img
+              ? { backgroundImage: `url(${w.img})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+              : { background: w.css };
+            return (
+              <button
+                key={w.id}
+                className={`preset ${active ? 'on' : ''}`}
+                onClick={() => os.setTheme({ wallpaper: val, fit: 'fill' })}
+                title={`${w.label} (${w.cat})${w.fx ? ' — animated, pointer parallax' : ''}`}
+              >
+                <span className="preset-preview" style={preview} />
+                {w.label}
+              </button>
+            );
+          })}
         </div>
         <div className="row">
           <input

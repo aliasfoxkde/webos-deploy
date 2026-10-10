@@ -344,3 +344,48 @@ future bridge drops in without changing the shell.
 
 **v86 Linux mode** stays tracked for 3.1 (CDN-fetched image at the user's
 request; keeps CSR purity).
+
+## Real assets — icons, photo wallpapers, FX wallpapers, store wave 3 (3.0.0)
+
+The "no half-assing" assets batch. Three asset classes moved from CSS-only to
+real content, plus a third App Store wave.
+
+**Craft app icons.** Each sibling craft repo ships `assets/app-icon/<app>-1024.png`
+(original artwork by the project owner, Apache-2.0 OR MIT). Those are resized
+to 256 px into `webos/public/icons/craft/<app>.png` and the eight registry
+rows now point at them instead of placeholder SVGs. They are the projects'
+own marks — used to launch the apps they identify. License rows live in
+`docs/ATTRIBUTION.md` (kept out of `public/` per the scaffolding rule; the
+bundle itself stays attribution-free).
+
+**Wallpaper photos.** Eight CC-licensed photographs from Wikimedia Commons
+lived in `webos/public/wallpapers/photos/*.jpg` at 1920 px (dunes, alpine
+lake, aurora, sea cliffs, misty forest, canyon, Milky Way, tropical beach).
+`WALLPAPERS` gained a `Photos` category whose entries carry
+`img: './wallpapers/photos/….jpg'` (relative — the site must work from any
+sub-path/iframe). Fetching script pattern: Commons API search →
+`imageinfo` license filter (public domain / CC0 / CC BY / CC BY-SA only) →
+1920 px thumb download; the shared-IP rate limit needs ~21 s between
+requests. Every photo has a row in `docs/ATTRIBUTION.md` — do not add a
+photo without adding its row in the same change.
+
+**FX wallpapers.** `theme.wallpaper = 'fx:<kind>'` mounts
+`shell/FxWallpaper.jsx`, a full-viewport canvas at z-index −1 with five
+code-drawn effects (starfield, aurora, tide, mesh, code rain) — deterministic
+per kind (seeded PRNG), pointer parallax, DPR capped at 1.5, paused on
+`visibilitychange`, a single static frame under `prefers-reduced-motion`.
+Gotcha that shaped the API: assigning an invalid inline CSS value through the
+CSSOM is a silent no-op, so `wallpaperLayer()` returns `null` for `fx:*` and
+the `#wallpaper` div unmounts instead of carrying a stale photo background
+over the canvas. The Appearance grid generalised to three kinds: `css`
+(CSS art), `img` (bundled photos), `fx` (interactive; swatch shows a static
+representative gradient).
+
+**App Store wave 3.** Eight third-wave store entries: 2048 (the original
+Gabriele Cirulli MIT build), Hextris, Untrusted, HexGL, Excalidraw, tldraw,
+Squoosh, Photopea. Each URL was probed for `X-Frame-Options` /
+CSP `frame-ancestors` before being added — all eight allow framing, so they
+run embedded (`embed: true`). Icons are WebOS-drawn glyphs in the house style
+(64×64 rounded rect, dark gradient, accent line art) — never vendor marks;
+names and links are referential. Rejected: `play2048.co` (frame-ancestors
+allow-list blocks us).

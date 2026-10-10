@@ -3,6 +3,24 @@
 // Categories: 'Gradients' | 'Scenery' | 'Patterns' | 'Mesh'.
 
 export const WALLPAPERS = [
+  // -- Interactive (canvas FX in shell/FxWallpaper.jsx; pointer parallax,
+  //    paused when the tab is hidden, static frame under reduced motion) --
+  { id: 'fx:aurora', label: 'Aurora FX', cat: 'Interactive', fx: true, css: 'radial-gradient(900px 600px at 20% 20%, rgba(52,211,153,0.35), transparent 60%), radial-gradient(1000px 700px at 80% 30%, rgba(56,189,248,0.30), transparent 60%), linear-gradient(160deg, #07101c, #04070d 75%)' },
+  { id: 'fx:starfield', label: 'Starfield FX', cat: 'Interactive', fx: true, css: 'radial-gradient(1px 1px at 25% 30%, #ffffff, transparent), radial-gradient(1px 1px at 70% 60%, #bcd8ff, transparent), linear-gradient(160deg, #05070d, #070a12 75%)' },
+  { id: 'fx:waves', label: 'Tide FX', cat: 'Interactive', fx: true, css: 'linear-gradient(180deg, #04121c 0%, #062033 70%, #04283a 100%)' },
+  { id: 'fx:mesh', label: 'Mesh FX', cat: 'Interactive', fx: true, css: 'radial-gradient(at 30% 30%, rgba(56,189,248,0.28) 0, transparent 50%), radial-gradient(at 75% 70%, rgba(103,232,249,0.16) 0, transparent 50%), #07090d' },
+  { id: 'fx:matrix', label: 'Code Rain FX', cat: 'Interactive', fx: true, css: 'linear-gradient(180deg, #041008, #050a06)' },
+
+  // -- Photos (bundled, real photographs — license rows in ATTRIBUTION.md) --
+  { id: 'photo:dunes', label: 'Dunes', cat: 'Photos', img: './wallpapers/photos/dunes.jpg' },
+  { id: 'photo:peak', label: 'Alpine Lake', cat: 'Photos', img: './wallpapers/photos/peak.jpg' },
+  { id: 'photo:aurora', label: 'Polar Night', cat: 'Photos', img: './wallpapers/photos/aurora.jpg' },
+  { id: 'photo:coast', label: 'Sea Cliffs', cat: 'Photos', img: './wallpapers/photos/coast.jpg' },
+  { id: 'photo:forest', label: 'Misty Forest', cat: 'Photos', img: './wallpapers/photos/forest.jpg' },
+  { id: 'photo:canyon', label: 'Canyon', cat: 'Photos', img: './wallpapers/photos/canyon.jpg' },
+  { id: 'photo:galaxy', label: 'Milky Way', cat: 'Photos', img: './wallpapers/photos/galaxy.jpg' },
+  { id: 'photo:tropical', label: 'Lagoon', cat: 'Photos', img: './wallpapers/photos/tropical.jpg' },
+
   // -- Gradients --
   { id: 'aurora', label: 'Aurora', cat: 'Gradients', css: 'radial-gradient(900px 600px at 20% 20%, rgba(52,211,153,0.35), transparent 60%), radial-gradient(1000px 700px at 80% 30%, rgba(56,189,248,0.30), transparent 60%), radial-gradient(900px 700px at 50% 90%, rgba(167,139,250,0.30), transparent 60%), linear-gradient(160deg, #07101c, #04070d 75%)' },
   { id: 'ember', label: 'Ember', cat: 'Gradients', css: 'radial-gradient(1000px 700px at 75% 75%, rgba(251,146,60,0.35), transparent 60%), radial-gradient(800px 600px at 20% 20%, rgba(244,114,182,0.22), transparent 60%), linear-gradient(160deg, #170c08, #0a0404 75%)' },
@@ -49,7 +67,8 @@ export const POSITIONS = [
   'left bottom', 'center bottom', 'right bottom',
 ];
 
-const isImage = (wp) => wp.startsWith('http') || wp.startsWith('data:');
+const isImage = (wp) => wp.startsWith('http') || wp.startsWith('data:') || wp.startsWith('./');
+export const isFx = (wp) => typeof wp === 'string' && wp.startsWith('fx:');
 
 // The desktop wallpaper layer: original-style properties for a custom image
 // (placement + dim shade in the background, brightness/blur/saturation as a
@@ -58,6 +77,7 @@ const isImage = (wp) => wp.startsWith('http') || wp.startsWith('data:');
 export const wallpaperLayer = (theme) => {
   const wp = theme.wallpaper;
   if (!wp) return null;
+  if (isFx(wp)) return null; // canvas FX renders via <FxWallpaper/>, no CSS layer
   const dim = Math.max(0, Math.min(0.75, 0.55 * (1 - theme.dim) + 0.15));
   const shade = `linear-gradient(rgba(0,0,0,${dim.toFixed(2)}), rgba(0,0,0,${dim.toFixed(2)}))`;
   if (isImage(wp)) {

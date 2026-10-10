@@ -1115,6 +1115,54 @@ await sleep(400);
 const allClosed = await evaluate(`document.querySelectorAll('#windows .win').length`);
 console.log('wosh close all → 0 windows (want 0):', allClosed.result?.value);
 
+// 33. assets — real craft icons, photo wallpapers, FX wallpapers
+const craftIcons = await evaluate(`(() => {
+  const imgs = [...document.querySelectorAll('.desk-icon img[src*="icons/craft/"]')];
+  return { count: imgs.length, loaded: imgs.filter((i) => i.complete && i.naturalWidth > 0).length };
+})()`);
+console.log('craft icons on desktop (count==loaded, want 8/8):', JSON.stringify(craftIcons.result?.value));
+await shot('42-craft-icons');
+// photo wallpaper via Appearance → Photos → Dunes
+await evaluate(`window.__os.launch('settings', { initial: 'appearance' })`);
+await sleep(700);
+await evaluate(`[...document.querySelectorAll('.win .store-cats .chip')].find(c => c.textContent === 'Photos')?.click()`);
+await sleep(300);
+const dunes = await evaluate(`(() => {
+  const b = [...document.querySelectorAll('.win .preset')].find(p => p.textContent.trim() === 'Dunes');
+  return b ? (b.click(), { found: true }) : { found: false };
+})()`);
+await sleep(500);
+const dunesApplied = await evaluate(`({
+  theme: JSON.parse(localStorage.getItem('webos.theme')).wallpaper,
+  layer: document.getElementById('wallpaper')?.style.background.includes('dunes.jpg'),
+})`);
+console.log('photo wallpaper dunes (want dunes.jpg/dunes.jpg):', JSON.stringify({ ...dunes.result?.value, ...dunesApplied.result?.value }));
+await shot('43-photo-wallpaper');
+// FX wallpaper via Appearance → Interactive → Starfield
+await evaluate(`[...document.querySelectorAll('.win .store-cats .chip')].find(c => c.textContent === 'Interactive')?.click()`);
+await sleep(300);
+await evaluate(`[...document.querySelectorAll('.win .preset')].find(p => p.textContent.includes('Starfield'))?.click()`);
+await sleep(600);
+const fx = await evaluate(`(() => {
+  const c = document.getElementById('fx-wallpaper');
+  return {
+    theme: JSON.parse(localStorage.getItem('webos.theme')).wallpaper,
+    canvas: !!c,
+    painted: c ? c.width > 0 && c.height > 0 : false,
+  };
+})()`);
+console.log('fx wallpaper starfield (want fx:starfield/true/true):', JSON.stringify(fx.result?.value));
+await sleep(700);
+await shot('44-fx-wallpaper');
+const fxShot2 = await evaluate(`(() => { const c = document.getElementById('fx-wallpaper'); return c ? c.toDataURL().length : 0; })()`);
+await sleep(600);
+const fxShot2b = await evaluate(`(() => { const c = document.getElementById('fx-wallpaper'); return c ? c.toDataURL().length : 0; })()`);
+console.log('fx animating (dataURL length changes between frames, want differs):', fxShot2.result?.value, 'vs', fxShot2b.result?.value);
+// back to theme default
+await evaluate(`[...document.querySelectorAll('.win .preset')].find(p => p.textContent.includes('Theme default'))?.click()`);
+await sleep(400);
+await evaluate(`[...document.querySelectorAll('.win')].forEach(w => window.__os.close(Number(w.dataset.id)))`);
+
 console.log('done');
 clearTimeout(watchdog);
 killTree();

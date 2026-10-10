@@ -15,7 +15,8 @@ import Welcome from './shell/Welcome.jsx';
 import { startMoveDrag } from './shell/winDrag.js';
 import { zoneRect } from './os/snap.js';
 import { PLUGIN_IDS } from './os/registry.js';
-import { wallpaperLayer } from './os/wallpapers.js';
+import { wallpaperLayer, isFx } from './os/wallpapers.js';
+import FxWallpaper from './shell/FxWallpaper.jsx';
 
 /* Virtual apps that render in-window instead of an iframe. */
 const VIRTUAL = {
@@ -435,9 +436,12 @@ export default function App() {
 
   // Wallpaper renders in its own fixed layer (behind everything, slightly
   // oversized) so custom images can take blur/brightness/saturation filters.
+  // `fx:*` wallpapers render the interactive canvas instead.
   const wp = wallpaperLayer(os.theme);
+  const fxKind = isFx(os.theme.wallpaper) ? os.theme.wallpaper.slice(3) : null;
   return (
     <>
+      {fxKind && <FxWallpaper kind={fxKind} />}
       {wp && <div id="wallpaper" aria-hidden="true" style={wp} />}
       <main id="desktop" data-cm="desktop">
         <section id="icon-grid" aria-label="Applications">

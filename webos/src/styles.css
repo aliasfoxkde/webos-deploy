@@ -860,3 +860,9 @@ body[data-persona="mac"] #start-menu { bottom: 74px; }
 }
 .halt-card h2 { margin: 0; font-size: 1.1rem; letter-spacing: 0.06em; }
 .halt-card .dim { max-width: 340px; line-height: 1.6; }
+
+/* ---- FX wallpaper canvas layer (same stacking slot as #wallpaper) ---- */
+#fx-wallpaper {
+  position: fixed; inset: 0; z-index: -1; width: 100vw; height: 100vh; display: block;
+  pointer-events: none;
+}

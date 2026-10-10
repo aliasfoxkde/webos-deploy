@@ -18,49 +18,49 @@ export const DEFAULT_APPS = [
   // -- the 8 craft apps (deployed on Cloudflare Pages from upstream release zips) --
   {
     id: 'cadcraft', name: 'CADCraft', tagline: 'CAD & drafting', version: '0.3.0',
-    url: 'https://cadcraft-web.pages.dev/', icon: 'icons/cadcraft.svg', accent: '#22d3ee', embed: true,
+    url: 'https://cadcraft-web.pages.dev/', icon: 'icons/craft/cadcraft.png', accent: '#22d3ee', embed: true,
     developer: 'ArtCraft', category: 'Design', rating: 4.7, reviews: 128,
     description: 'Precision 2D CAD and drafting in the browser: layers, snaps, dimensions, DXF workflows — a clean-room reimagining of classic desktop CAD as pure Rust/WebAssembly.',
   },
   {
     id: 'designcraft', name: 'DesignCraft', tagline: 'Page layout', version: '0.4.0',
-    url: 'https://designcraft-web.pages.dev/', icon: 'icons/designcraft.svg', accent: '#e879f9', embed: true,
+    url: 'https://designcraft-web.pages.dev/', icon: 'icons/craft/designcraft.png', accent: '#e879f9', embed: true,
     developer: 'ArtCraft', category: 'Design', rating: 4.5, reviews: 96,
     description: 'Multi-page layout for print and digital: master pages, text flow, frames, and precise typography controls — desktop-publishing chops without the desktop.',
   },
   {
     id: 'gridcraft', name: 'GridCraft', tagline: 'Spreadsheets', version: '0.3.0',
-    url: 'https://gridcraft-web.pages.dev/', icon: 'icons/gridcraft.svg', accent: '#34d399', embed: true,
+    url: 'https://gridcraft-web.pages.dev/', icon: 'icons/craft/gridcraft.png', accent: '#34d399', embed: true,
     developer: 'ArtCraft', category: 'Productivity', rating: 4.6, reviews: 143,
     description: 'A fast spreadsheet engine with formulas, ranges, formatting, and charts. Everything runs locally in WebAssembly — your sheets never leave the browser.',
   },
   {
     id: 'lightcraft', name: 'LightCraft', tagline: 'Photo library', version: '0.4.0',
-    url: 'https://lightcraft-web.pages.dev/', icon: 'icons/lightcraft.svg', accent: '#fbbf24', embed: true,
+    url: 'https://lightcraft-web.pages.dev/', icon: 'icons/craft/lightcraft.png', accent: '#fbbf24', embed: true,
     developer: 'ArtCraft', category: 'Photo', rating: 4.4, reviews: 87,
     description: 'Catalog, cull, and grade your photo library: ratings, flags, collections, and non-destructive adjustments with a raw-focused develop pipeline.',
   },
   {
     id: 'pdfcraft', name: 'PdfCraft', tagline: 'PDF documents', version: '0.4.0',
-    url: 'https://pdfcraft-web.pages.dev/', icon: 'icons/pdfcraft.svg', accent: '#f87171', embed: true,
+    url: 'https://pdfcraft-web.pages.dev/', icon: 'icons/craft/pdfcraft.png', accent: '#f87171', embed: true,
     developer: 'ArtCraft', category: 'Productivity', rating: 4.5, reviews: 112,
     description: 'Read, annotate, assemble, and export PDF documents. Page manipulation, comments, and form-friendly rendering — all client-side, no uploads.',
   },
   {
     id: 'photocraft', name: 'PhotoCraft', tagline: 'Image editing', version: '0.5.0',
-    url: 'https://photocraft-web.pages.dev/', icon: 'icons/photocraft.svg', accent: '#60a5fa', embed: true,
+    url: 'https://photocraft-web.pages.dev/', icon: 'icons/craft/photocraft.png', accent: '#60a5fa', embed: true,
     developer: 'ArtCraft', category: 'Photo', rating: 4.8, reviews: 201,
     description: 'Layer-based raster image editing: selections, masks, brushes, filters, and adjustment layers with non-destructive editing — the flagship ArtCraft editor.',
   },
   {
     id: 'vectorcraft', name: 'VectorCraft', tagline: 'Vector illustration', version: '0.7.0',
-    url: 'https://vectorcraft-web-9y7.pages.dev/', icon: 'icons/vectorcraft.svg', accent: '#a78bfa', embed: true,
+    url: 'https://vectorcraft-web-9y7.pages.dev/', icon: 'icons/craft/vectorcraft.png', accent: '#a78bfa', embed: true,
     developer: 'ArtCraft', category: 'Design', rating: 4.7, reviews: 165,
     description: 'Bezier drawing, paths, booleans, gradients, and artboards for illustration and logo work. Exports clean SVG — infinitely scalable by nature.',
   },
   {
     id: 'wordcraft', name: 'WordCraft', tagline: 'Word processing', version: '0.3.0',
-    url: 'https://wordcraft-web.pages.dev/', icon: 'icons/wordcraft.svg', accent: '#818cf8', embed: true,
+    url: 'https://wordcraft-web.pages.dev/', icon: 'icons/craft/wordcraft.png', accent: '#818cf8', embed: true,
     developer: 'ArtCraft', category: 'Productivity', rating: 4.3, reviews: 74,
     description: 'A focused word processor: styles, tables, headers, and clean document flow with export. Distraction-free writing with real layout under the hood.',
   },
@@ -192,6 +192,60 @@ export const STORE_APPS = [
     url: 'https://planly.site/', icon: 'icons/planly.svg', accent: '#4ade80', embed: true,
     developer: 'Planly', category: 'Productivity', rating: 4.4, reviews: 47,
     description: 'Task boards, schedules, and habit tracking in a clean interface. Your plans persist in the browser.',
+  },
+
+  // -- third wave (3.0.0): open web apps + games, frame-embeddability probed
+  //    via X-Frame-Options / CSP frame-ancestors before each was added. Icons
+  //    are WebOS-drawn glyphs in the house style, NOT vendor marks; names and
+  //    links are referential. Underlying projects: 2048 MIT, Hextris MIT,
+  //    Excalidraw MIT, tldraw Apache-2.0, Squoosh Apache-2.0.
+  {
+    id: 'g2048', name: '2048', tagline: 'Tile-sliding puzzle', version: '1.0',
+    url: 'https://gabrielecirulli.github.io/2048/', icon: 'icons/g2048.svg', accent: '#fbbf24', embed: true,
+    developer: 'Gabriele Cirulli (MIT)', category: 'Games', rating: 4.7, reviews: 312,
+    description: 'The original open-source 2048: swipe tiles, merge equal numbers, chase the 2048 tile. Endlessly replayable and famously hard to put down.',
+  },
+  {
+    id: 'hextris', name: 'Hextris', tagline: 'Hexagonal arcade', version: '1.0',
+    url: 'https://hextris.github.io/', icon: 'icons/hextris.svg', accent: '#a78bfa', embed: true,
+    developer: 'Hextris team (MIT)', category: 'Games', rating: 4.5, reviews: 178,
+    description: 'A fast-paced puzzle game inspired by hexagonal rotational play — match colors on a spinning hexagon before it fills. Open source and addictive.',
+  },
+  {
+    id: 'untrusted', name: 'Untrusted', tagline: 'JS adventure', version: '1.0',
+    url: 'https://untrustedgame.com/', icon: 'icons/untrusted.svg', accent: '#34d399', embed: true,
+    developer: 'Alex Nisnevich & Greg Shuflin', category: 'Games', rating: 4.6, reviews: 94,
+    description: 'A roguelike you beat by rewriting its JavaScript: edit the machine code of each level to escape the maze. Learn coding by breaking out.',
+  },
+  {
+    id: 'hexgl', name: 'HexGL', tagline: 'Anti-grav racing', version: '1.0',
+    url: 'https://hexgl.bkcore.com/', icon: 'icons/hexgl.svg', accent: '#f87171', embed: true,
+    developer: 'Thibaut Despoulain', category: 'Games', rating: 4.3, reviews: 126,
+    description: 'A futuristic anti-gravity racer built on WebGL — blistering speed, a neon city track, and real-time reflections. Keyboard controls, browser-native.',
+  },
+  {
+    id: 'excalidraw', name: 'Excalidraw', tagline: 'Virtual whiteboard', version: '1.0',
+    url: 'https://excalidraw.com/', icon: 'icons/excalidraw.svg', accent: '#a3e635', embed: true,
+    developer: 'Excalidraw (MIT)', category: 'Creative', rating: 4.8, reviews: 267,
+    description: 'Hand-drawn-style diagramming and whiteboarding: sketch flows, wireframes, and diagrams with a charming sketchy look. Export PNG/SVG, share links.',
+  },
+  {
+    id: 'tldraw', name: 'tldraw', tagline: 'Infinite canvas', version: '1.0',
+    url: 'https://www.tldraw.com/', icon: 'icons/tldraw.svg', accent: '#60a5fa', embed: true,
+    developer: 'tldraw (Apache-2.0)', category: 'Creative', rating: 4.7, reviews: 155,
+    description: 'An infinite collaborative canvas with buttery shapes, arrows, and freehand drawing. The smoothest drawing feel in a browser tab.',
+  },
+  {
+    id: 'squoosh', name: 'Squoosh', tagline: 'Image compression', version: '1.0',
+    url: 'https://squoosh.app/', icon: 'icons/squoosh.svg', accent: '#fb923c', embed: true,
+    developer: 'GoogleChromeLabs (Apache-2.0)', category: 'Tools', rating: 4.8, reviews: 203,
+    description: 'Compress and convert images right in the browser with side-by-side quality comparison — MozJPEG, WebP, AVIF and more, all client-side.',
+  },
+  {
+    id: 'photopea', name: 'Photopea', tagline: 'Photoshop-grade editor', version: '1.0',
+    url: 'https://www.photopea.com/', icon: 'icons/photopea.svg', accent: '#38bdf8', embed: true,
+    developer: 'Ivan Kutskir', category: 'Photo', rating: 4.7, reviews: 421,
+    description: 'A full photo editor that opens PSD, XCF, Sketch and RAW files in the browser — layers, masks, filters, and PSD-compatible export. Free with ads.',
   },
 ];
 
