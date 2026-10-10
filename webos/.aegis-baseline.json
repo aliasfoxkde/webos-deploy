@@ -1,0 +1,1586 @@
+{
+ "findings": [
+  {
+   "id": "000000000000000018dd4c3250306fd6",
+   "pattern": "x-frame-options",
+   "category": "web-security",
+   "severity": "medium",
+   "confidence": "high",
+   "location": {
+    "file": "src/registry.js",
+    "line": 3,
+    "column": 36
+   },
+   "description": "X-Frame-Options header detected",
+   "reference": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Frame-Options",
+   "tags": [],
+   "kind": "pattern",
+   "fingerprint": "x-frame-options:src/registry.js:3:8dc7783322ff9aac99d062f379b85ac37538ce182e849dbe869dba227b719d4d",
+   "stable_id": "aegis-5731266feaf6a051a95e13ca394d6b6778712605c5688ad0354528b4a7c9947b"
+  },
+  {
+   "id": "000000000000000018dd4c326d3eccc7",
+   "pattern": "australian-tfn",
+   "category": "pii",
+   "severity": "high",
+   "confidence": "medium",
+   "location": {
+    "file": "src/os/wallpapers.js",
+    "line": 30,
+    "column": 110
+   },
+   "description": "Australian Tax File Number (TFN) detected",
+   "reference": "https://www.ato.gov.au/individual/tax-file-number",
+   "tags": [],
+   "kind": "pattern",
+   "fingerprint": "australian-tfn:src/os/wallpapers.js:30:c53d18d15157812f66b6da5ccf7922c20099a6a3659a62045d09a02b8f216811",
+   "stable_id": "aegis-e5034054a654dcbe57cd9fe5b759d833daf409f1c541d4a7ced5e4731c7ca2f4"
+  },
+  {
+   "id": "000000000000000018dd4c326d3efccb",
+   "pattern": "australian-tfn",
+   "category": "pii",
+   "severity": "high",
+   "confidence": "medium",
+   "location": {
+    "file": "src/os/wallpapers.js",
+    "line": 32,
+    "column": 112
+   },
+   "description": "Australian Tax File Number (TFN) detected",
+   "reference": "https://www.ato.gov.au/individual/tax-file-number",
+   "tags": [],
+   "kind": "pattern",
+   "fingerprint": "australian-tfn:src/os/wallpapers.js:32:6766462e84903c65e07e35ee92a20dcbb7ac9dd19b988697eae6bd251f070302",
+   "stable_id": "aegis-4db03cf7b54b407169702aec4b88c324858c8b2df6d1a5f3575fa94cbef4f966"
+  },
+  {
+   "id": "000000000000000018dd4c326d3f1513",
+   "pattern": "australian-tfn",
+   "category": "pii",
+   "severity": "high",
+   "confidence": "medium",
+   "location": {
+    "file": "src/os/wallpapers.js",
+    "line": 38,
+    "column": 113
+   },
+   "description": "Australian Tax File Number (TFN) detected",
+   "reference": "https://www.ato.gov.au/individual/tax-file-number",
+   "tags": [],
+   "kind": "pattern",
+   "fingerprint": "australian-tfn:src/os/wallpapers.js:38:a03746edcf98e9e36d4b8bade43abb0cface42e755d4bf3acb22107f7abef495",
+   "stable_id": "aegis-48f058c1291d8feb699fb93abfaeab1390f397ccb1cdab558115ec76c110ad9f"
+  },
+  {
+   "id": "000000000000000018dd4c3263fb60f5",
+   "pattern": "x-frame-options",
+   "category": "web-security",
+   "severity": "medium",
+   "confidence": "high",
+   "location": {
+    "file": "src/os/registry.js",
+    "line": 98,
+    "column": 29
+   },
+   "description": "X-Frame-Options header detected",
+   "reference": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Frame-Options",
+   "tags": [],
+   "kind": "pattern",
+   "fingerprint": "x-frame-options:src/os/registry.js:98:8dc7783322ff9aac99d062f379b85ac37538ce182e849dbe869dba227b719d4d",
+   "stable_id": "aegis-61133453066c895762cf5c48150871c485e65f11247d747326c50eb262c75509"
+  },
+  {
+   "id": "000000000000000018dd4c3263fb89e1",
+   "pattern": "x-frame-options",
+   "category": "web-security",
+   "severity": "medium",
+   "confidence": "high",
+   "location": {
+    "file": "src/os/registry.js",
+    "line": 204,
+    "column": 13
+   },
+   "description": "X-Frame-Options header detected",
+   "reference": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Frame-Options",
+   "tags": [],
+   "kind": "pattern",
+   "fingerprint": "x-frame-options:src/os/registry.js:204:8dc7783322ff9aac99d062f379b85ac37538ce182e849dbe869dba227b719d4d",
+   "stable_id": "aegis-d29a573778b0d8d0e9075b60d4872fdec5fd113e2dcb9ff735d14aace33b9a69"
+  },
+  {
+   "id": "000000000000000018dd4c324da6d806",
+   "pattern": "x-frame-options",
+   "category": "web-security",
+   "severity": "medium",
+   "confidence": "high",
+   "location": {
+    "file": "src/shell/EmbedFrame.jsx",
+    "line": 4,
+    "column": 23
+   },
+   "description": "X-Frame-Options header detected",
+   "reference": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Frame-Options",
+   "tags": [],
+   "kind": "pattern",
+   "fingerprint": "x-frame-options:src/shell/EmbedFrame.jsx:4:8dc7783322ff9aac99d062f379b85ac37538ce182e849dbe869dba227b719d4d",
+   "stable_id": "aegis-aa297cc4b5c76d3ff7678e22dbed6791c817c7c29db6de7dd1831ea99e2b082f"
+  },
+  {
+   "id": "000000000000000018dd4c324da70367",
+   "pattern": "x-frame-options",
+   "category": "web-security",
+   "severity": "medium",
+   "confidence": "high",
+   "location": {
+    "file": "src/shell/EmbedFrame.jsx",
+    "line": 13,
+    "column": 33
+   },
+   "description": "X-Frame-Options header detected",
+   "reference": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Frame-Options",
+   "tags": [],
+   "kind": "pattern",
+   "fingerprint": "x-frame-options:src/shell/EmbedFrame.jsx:13:8dc7783322ff9aac99d062f379b85ac37538ce182e849dbe869dba227b719d4d",
+   "stable_id": "aegis-2002b5d6c84dfe57606204d773c83ff817a3b1dfa36c235ee61f6c3cfafa3b49"
+  },
+  {
+   "id": "000000000000000018dd4c3262380595",
+   "pattern": "zip-code",
+   "category": "pii",
+   "severity": "low",
+   "confidence": "high",
+   "location": {
+    "file": "src/shell/Window.jsx",
+    "line": 43,
+    "column": 47
+   },
+   "description": "US ZIP code detected",
+   "tags": [],
+   "kind": "pattern",
+   "fingerprint": "zip-code:src/shell/Window.jsx:43:891937cb335016e9c7074c3781dcb1364e0c660733a8889bbeae83e6aa759be6",
+   "stable_id": "aegis-cf2a7ab26489e817359b4cf2946b4fca13df7695a850813da789cca95abc3f54"
+  },
+  {
+   "id": "000000000000000018dd4c326717ca2c",
+   "pattern": "zip-code",
+   "category": "pii",
+   "severity": "low",
+   "confidence": "high",
+   "location": {
+    "file": "src/shell/Screensaver.jsx",
+    "line": 32,
+    "column": 67
+   },
+   "description": "US ZIP code detected",
+   "tags": [],
+   "kind": "pattern",
+   "fingerprint": "zip-code:src/shell/Screensaver.jsx:32:d55d01d0341ed0ba2cd99b322e8c5b609254f47d10c7cd12b99b4922effeba44",
+   "stable_id": "aegis-de94d831f6a37067cc40ec4059fe7ea01b42753afbf4f3219bd0427b62c73480"
+  },
+  {
+   "id": "000000000000000018dd4c3271ff3240",
+   "pattern": "phone-number",
+   "category": "pii",
+   "severity": "low",
+   "confidence": "medium",
+   "location": {
+    "file": "src/shell/FxWallpaper.jsx",
+    "line": 11,
+    "column": 11
+   },
+   "description": "Phone number detected",
+   "tags": [],
+   "kind": "pattern",
+   "fingerprint": "phone-number:src/shell/FxWallpaper.jsx:11:6a588696ca26facaa83703a2d314e4513743ee617378a7fbbaa52d879ff7cc16",
+   "stable_id": "aegis-498039ca7cb18061028c58baf413f6398dee489699c9f2cc3a0ada7c4856243e"
+  },
+  {
+   "id": "000000000000000018dd4c329a41c31e",
+   "pattern": "dom-xss",
+   "category": "web-security",
+   "severity": "high",
+   "confidence": "high",
+   "location": {
+    "file": "src/apps/terminal/Terminal.jsx",
+    "line": 346,
+    "column": 24
+   },
+   "description": "Potential DOM XSS vulnerability",
+   "reference": "https://owasp.org/www-community/attacks/xss/",
+   "tags": [],
+   "kind": "pattern",
+   "fingerprint": "dom-xss:src/apps/terminal/Terminal.jsx:346:e77b1f0a57e84163e26cca4027983e6efb0319a80479fc78da4382ed6eaf192d",
+   "stable_id": "aegis-b2df815cf77263e61d0eef12e0dea750f6377f8a5595b62c855e2a3dfdccb37a"
+  },
+  {
+   "id": "000000000000000018dd4c329a41e5c4",
+   "pattern": "dom-xss",
+   "category": "web-security",
+   "severity": "high",
+   "confidence": "high",
+   "location": {
+    "file": "src/apps/terminal/Terminal.jsx",
+    "line": 348,
+    "column": 44
+   },
+   "description": "Potential DOM XSS vulnerability",
+   "reference": "https://owasp.org/www-community/attacks/xss/",
+   "tags": [],
+   "kind": "pattern",
+   "fingerprint": "dom-xss:src/apps/terminal/Terminal.jsx:348:e77b1f0a57e84163e26cca4027983e6efb0319a80479fc78da4382ed6eaf192d",
+   "stable_id": "aegis-d86e63640c935dbe3da44c031bbdb00d0e0969983ed2acd4627ab92fe8df661e"
+  },
+  {
+   "id": "000000000000000018dd4c328fa04b0c",
+   "pattern": "ssrf",
+   "category": "web-security",
+   "severity": "high",
+   "confidence": "medium",
+   "location": {
+    "file": "src/apps/terminal/coreutils.js",
+    "line": 29,
+    "column": 21
+   },
+   "description": "Potential Server-Side Request Forgery (SSRF)",
+   "reference": "https://owasp.org/www-community/attacks/Server_Side_Request_Forgery",
+   "tags": [],
+   "kind": "pattern",
+   "fingerprint": "ssrf:src/apps/terminal/coreutils.js:29:22a15e7898e500b34502d3e1a8b2517121b3c342baa83756bd6d535534caebab",
+   "stable_id": "aegis-acca76278d401ac011ffe06d18ebc15c431ff7067a59455c3722fdc942e9e394"
+  },
+  {
+   "id": "000000000000000018dd4c32611bfd62",
+   "pattern": "hipaa-phi",
+   "category": "compliance",
+   "severity": "high",
+   "confidence": "high",
+   "location": {
+    "file": "src/apps/calculator/engine/functions.js",
+    "line": 9,
+    "column": 3
+   },
+   "description": "HIPAA Protected Health Information (PHI) reference detected",
+   "reference": "https://www.hhs.gov/hipaa/for-professionals/special-topics/health-information-privacy/",
+   "tags": [],
+   "kind": "pattern",
+   "fingerprint": "hipaa-phi:src/apps/calculator/engine/functions.js:9:7f754d3dbef2f9c8be86a085d505d9bf943e8a9d0c2d84c5015e92e97c53040d",
+   "stable_id": "aegis-c4a03e3468a25114478eb9f547a7a7a9607b2b629c1162337c8cd191442ce7ff"
+  },
+  {
+   "id": "000000000000000018dd4c3261a2118f",
+   "pattern": "insecure-random",
+   "category": "security-hardening",
+   "severity": "medium",
+   "confidence": "high",
+   "location": {
+    "file": "src/apps/calculator/engine/functions.js",
+    "line": 33,
+    "column": 15
+   },
+   "description": "Insecure random number generation (Math.random)",
+   "tags": [],
+   "kind": "pattern",
+   "fingerprint": "insecure-random:src/apps/calculator/engine/functions.js:33:70e9d248688717df77bfb739b2384e84959ac43eb35ff5df19415eb1ca72c7be",
+   "stable_id": "aegis-527a5309fdd43967e927f6b6bd873861f74bf4439ae56f096e44327933125e3d"
+  },
+  {
+   "id": "000000000000000018dd4c325e98117e",
+   "pattern": "pci-cardholder-data",
+   "category": "compliance",
+   "severity": "high",
+   "confidence": "high",
+   "location": {
+    "file": "src/apps/calculator/modes/Graphing.jsx",
+    "line": 5,
+    "column": 51
+   },
+   "description": "PCI cardholder data reference detected",
+   "reference": "https://www.pcisecuritystandards.org/pci_security/",
+   "tags": [],
+   "kind": "pattern",
+   "fingerprint": "pci-cardholder-data:src/apps/calculator/modes/Graphing.jsx:5:00e37ffae0562ab6818d8f4f97457ac5f9679723c1b57f4b371b93f379f1c17a",
+   "stable_id": "aegis-a42150bdd2b0ede8ba59f975d7183b350237234cea8c73b9cdf11e878a58f33f"
+  },
+  {
+   "id": "000000000000000018dd4c325e983c0d",
+   "pattern": "pci-cardholder-data",
+   "category": "compliance",
+   "severity": "high",
+   "confidence": "high",
+   "location": {
+    "file": "src/apps/calculator/modes/Graphing.jsx",
+    "line": 70,
+    "column": 62
+   },
+   "description": "PCI cardholder data reference detected",
+   "reference": "https://www.pcisecuritystandards.org/pci_security/",
+   "tags": [],
+   "kind": "pattern",
+   "fingerprint": "pci-cardholder-data:src/apps/calculator/modes/Graphing.jsx:70:00e37ffae0562ab6818d8f4f97457ac5f9679723c1b57f4b371b93f379f1c17a",
+   "stable_id": "aegis-b71f528de8e8d73c3559612179c9be1b2505ae37b3d71e1c93f11832d78b48cc"
+  },
+  {
+   "id": "000000000000000018dd4c325cf3f851",
+   "pattern": "indian-aadhaar",
+   "category": "pii",
+   "severity": "high",
+   "confidence": "high",
+   "location": {
+    "file": "src/apps/calculator/modes/Converter.jsx",
+    "line": 33,
+    "column": 87
+   },
+   "description": "Indian Aadhaar number detected",
+   "reference": "https://uidai.gov.in/",
+   "tags": [],
+   "kind": "pattern",
+   "fingerprint": "indian-aadhaar:src/apps/calculator/modes/Converter.jsx:33:ad11e11ee55f5d9414daf00859f2718ca20e2a15282c31397b8b142e2f99abde",
+   "stable_id": "aegis-e04c90cdb061139930225a6b7bc95e59b30bd1288da3e89fb247a5051acfe4d8"
+  },
+  {
+   "id": "000000000000000018dd4c325cf41df7",
+   "pattern": "phone-number",
+   "category": "pii",
+   "severity": "low",
+   "confidence": "medium",
+   "location": {
+    "file": "src/apps/calculator/modes/Converter.jsx",
+    "line": 28,
+    "column": 15
+   },
+   "description": "Phone number detected",
+   "tags": [],
+   "kind": "pattern",
+   "fingerprint": "phone-number:src/apps/calculator/modes/Converter.jsx:28:e83cd99e7a64693130fd98645a94315fec8f283b9858f49841b6c075ba1fcb0d",
+   "stable_id": "aegis-dc859407d8aeded51e3287d68bf2b69b79efcc109f7f1d2889b0c112a7560b7f"
+  },
+  {
+   "id": "000000000000000018dd4c325cf43d57",
+   "pattern": "zip-code",
+   "category": "pii",
+   "severity": "low",
+   "confidence": "high",
+   "location": {
+    "file": "src/apps/calculator/modes/Converter.jsx",
+    "line": 33,
+    "column": 71
+   },
+   "description": "US ZIP code detected",
+   "tags": [],
+   "kind": "pattern",
+   "fingerprint": "zip-code:src/apps/calculator/modes/Converter.jsx:33:47b0d24be66f623654a6b187d61a725c0c4398fa725f2f7aea706b7d4154687f",
+   "stable_id": "aegis-284ccd2bfd5b37fa04625a6afef84c7fe319aedea8d50a1bf0d35ca9ed5e23aa"
+  },
+  {
+   "id": "000000000000000018dd4c325cf45acd",
+   "pattern": "zip-code",
+   "category": "pii",
+   "severity": "low",
+   "confidence": "high",
+   "location": {
+    "file": "src/apps/calculator/modes/Converter.jsx",
+    "line": 38,
+    "column": 72
+   },
+   "description": "US ZIP code detected",
+   "tags": [],
+   "kind": "pattern",
+   "fingerprint": "zip-code:src/apps/calculator/modes/Converter.jsx:38:b045dd9c18caa8be1e17a4b902152cc1fd292b242b7b9dd74ba8c40896239424",
+   "stable_id": "aegis-c45e854614ec0a400a59d1af03a44a2bc6b55b814369659c37c60d6e6a56262d"
+  },
+  {
+   "id": "000000000000000018dd4c325cf4772d",
+   "pattern": "australian-tfn",
+   "category": "pii",
+   "severity": "high",
+   "confidence": "medium",
+   "location": {
+    "file": "src/apps/calculator/modes/Converter.jsx",
+    "line": 28,
+    "column": 36
+   },
+   "description": "Australian Tax File Number (TFN) detected",
+   "reference": "https://www.ato.gov.au/individual/tax-file-number",
+   "tags": [],
+   "kind": "pattern",
+   "fingerprint": "australian-tfn:src/apps/calculator/modes/Converter.jsx:28:10df55fe510e7dc672180ce67c02d6bbaf87ca446c0a6512de8419b911f972f8",
+   "stable_id": "aegis-b5ce0c038428d1d8994348aab437b6036a17e1e8448bc77c2d55800eae9ea2fe"
+  },
+  {
+   "id": "000000000000000018dd4c325cf498bb",
+   "pattern": "australian-tfn",
+   "category": "pii",
+   "severity": "high",
+   "confidence": "medium",
+   "location": {
+    "file": "src/apps/calculator/modes/Converter.jsx",
+    "line": 28,
+    "column": 57
+   },
+   "description": "Australian Tax File Number (TFN) detected",
+   "reference": "https://www.ato.gov.au/individual/tax-file-number",
+   "tags": [],
+   "kind": "pattern",
+   "fingerprint": "australian-tfn:src/apps/calculator/modes/Converter.jsx:28:1f91b43544181cf0f23c095dc831f9e4afa1f8c3da99d3283db9d082be566872",
+   "stable_id": "aegis-bec84026b41978dd6f80096c983e8f59c6b149dfd1e1cf109e1183425fdab152"
+  },
+  {
+   "id": "000000000000000018dd4c325cf4b2a6",
+   "pattern": "australian-tfn",
+   "category": "pii",
+   "severity": "high",
+   "confidence": "medium",
+   "location": {
+    "file": "src/apps/calculator/modes/Converter.jsx",
+    "line": 28,
+    "column": 79
+   },
+   "description": "Australian Tax File Number (TFN) detected",
+   "reference": "https://www.ato.gov.au/individual/tax-file-number",
+   "tags": [],
+   "kind": "pattern",
+   "fingerprint": "australian-tfn:src/apps/calculator/modes/Converter.jsx:28:811dfec0bc8137c75ef06068321f67aa42d2d53f746917cf081272b8b464f88a",
+   "stable_id": "aegis-c43a0527614a8e597ee0a32b2c91ea7d24156808fb424e699222eb86f5487050"
+  },
+  {
+   "id": "000000000000000018dd4c325cf4ce34",
+   "pattern": "australian-tfn",
+   "category": "pii",
+   "severity": "high",
+   "confidence": "medium",
+   "location": {
+    "file": "src/apps/calculator/modes/Converter.jsx",
+    "line": 48,
+    "column": 65
+   },
+   "description": "Australian Tax File Number (TFN) detected",
+   "reference": "https://www.ato.gov.au/individual/tax-file-number",
+   "tags": [],
+   "kind": "pattern",
+   "fingerprint": "australian-tfn:src/apps/calculator/modes/Converter.jsx:48:da90fdbc2bdcf4e1f4f4f529e25d04da36e0f5ea6339659326bfa18bb9f86bb4",
+   "stable_id": "aegis-196c40d69882c3ccd5b38f76f43126c76fb0f933218e368d00e0756e5bfa7803"
+  },
+  {
+   "id": "000000000000000018dd4c325cf4e6c2",
+   "pattern": "australian-tfn",
+   "category": "pii",
+   "severity": "high",
+   "confidence": "medium",
+   "location": {
+    "file": "src/apps/calculator/modes/Converter.jsx",
+    "line": 48,
+    "column": 107
+   },
+   "description": "Australian Tax File Number (TFN) detected",
+   "reference": "https://www.ato.gov.au/individual/tax-file-number",
+   "tags": [],
+   "kind": "pattern",
+   "fingerprint": "australian-tfn:src/apps/calculator/modes/Converter.jsx:48:5b8ad89168e9ca6b5c85b8d07466a8e7974858dca388768133421b3be264c5fd",
+   "stable_id": "aegis-9adaf7cc2ffd5186400f70de83d9b5e84dc536061d22402c86c9a111001d75de"
+  },
+  {
+   "id": "000000000000000018dd4c325cf50a7f",
+   "pattern": "ssn-no-dashes",
+   "category": "pii",
+   "severity": "high",
+   "confidence": "medium",
+   "location": {
+    "file": "src/apps/calculator/modes/Converter.jsx",
+    "line": 28,
+    "column": 36
+   },
+   "description": "Possible SSN without dashes detected",
+   "reference": "https://www.ssa.gov/history/ssn.html",
+   "tags": [],
+   "kind": "pattern",
+   "fingerprint": "ssn-no-dashes:src/apps/calculator/modes/Converter.jsx:28:10df55fe510e7dc672180ce67c02d6bbaf87ca446c0a6512de8419b911f972f8",
+   "stable_id": "aegis-6b5a0c53d8239202222b894070ff356316c9c7c7c3340f1c858da40feb819ce1"
+  },
+  {
+   "id": "000000000000000018dd4c325cf52281",
+   "pattern": "ssn-no-dashes",
+   "category": "pii",
+   "severity": "high",
+   "confidence": "medium",
+   "location": {
+    "file": "src/apps/calculator/modes/Converter.jsx",
+    "line": 28,
+    "column": 57
+   },
+   "description": "Possible SSN without dashes detected",
+   "reference": "https://www.ssa.gov/history/ssn.html",
+   "tags": [],
+   "kind": "pattern",
+   "fingerprint": "ssn-no-dashes:src/apps/calculator/modes/Converter.jsx:28:1f91b43544181cf0f23c095dc831f9e4afa1f8c3da99d3283db9d082be566872",
+   "stable_id": "aegis-c09de4c6f026790d5df89b23ee7f3fe7ff2261122eb803e32482769b89b7b781"
+  },
+  {
+   "id": "000000000000000018dd4c325cf53ff8",
+   "pattern": "ssn-no-dashes",
+   "category": "pii",
+   "severity": "high",
+   "confidence": "medium",
+   "location": {
+    "file": "src/apps/calculator/modes/Converter.jsx",
+    "line": 28,
+    "column": 79
+   },
+   "description": "Possible SSN without dashes detected",
+   "reference": "https://www.ssa.gov/history/ssn.html",
+   "tags": [],
+   "kind": "pattern",
+   "fingerprint": "ssn-no-dashes:src/apps/calculator/modes/Converter.jsx:28:811dfec0bc8137c75ef06068321f67aa42d2d53f746917cf081272b8b464f88a",
+   "stable_id": "aegis-af240afe40c7d53cf857738b570cfe37232d479472716449f239c0e528121ebd"
+  },
+  {
+   "id": "000000000000000018dd4c325cf55a28",
+   "pattern": "ssn-no-dashes",
+   "category": "pii",
+   "severity": "high",
+   "confidence": "medium",
+   "location": {
+    "file": "src/apps/calculator/modes/Converter.jsx",
+    "line": 48,
+    "column": 65
+   },
+   "description": "Possible SSN without dashes detected",
+   "reference": "https://www.ssa.gov/history/ssn.html",
+   "tags": [],
+   "kind": "pattern",
+   "fingerprint": "ssn-no-dashes:src/apps/calculator/modes/Converter.jsx:48:da90fdbc2bdcf4e1f4f4f529e25d04da36e0f5ea6339659326bfa18bb9f86bb4",
+   "stable_id": "aegis-e67f310a759f2c9facdc99f8a194eb2a52550d2a955fdd91ba5a16a078ba5db4"
+  },
+  {
+   "id": "000000000000000018dd4c325cf570cd",
+   "pattern": "ssn-no-dashes",
+   "category": "pii",
+   "severity": "high",
+   "confidence": "medium",
+   "location": {
+    "file": "src/apps/calculator/modes/Converter.jsx",
+    "line": 48,
+    "column": 107
+   },
+   "description": "Possible SSN without dashes detected",
+   "reference": "https://www.ssa.gov/history/ssn.html",
+   "tags": [],
+   "kind": "pattern",
+   "fingerprint": "ssn-no-dashes:src/apps/calculator/modes/Converter.jsx:48:5b8ad89168e9ca6b5c85b8d07466a8e7974858dca388768133421b3be264c5fd",
+   "stable_id": "aegis-7d4c8e32361355ce08aee44b678917eab98fb251ce5dca50361d8c688e7f18db"
+  },
+  {
+   "id": "000000000000000018dd4c325cf58ab8",
+   "pattern": "bank-routing-number",
+   "category": "pii",
+   "severity": "high",
+   "confidence": "medium",
+   "location": {
+    "file": "src/apps/calculator/modes/Converter.jsx",
+    "line": 28,
+    "column": 36
+   },
+   "description": "Bank routing number (ABA) detected",
+   "reference": "https://en.wikipedia.org/wiki/ABA_routing_transit_number",
+   "tags": [],
+   "kind": "pattern",
+   "fingerprint": "bank-routing-number:src/apps/calculator/modes/Converter.jsx:28:10df55fe510e7dc672180ce67c02d6bbaf87ca446c0a6512de8419b911f972f8",
+   "stable_id": "aegis-0633dc7e039c7538d3e447d59fe63f142d06fa9e5acfc25c239773e7b6a9aae4"
+  },
+  {
+   "id": "000000000000000018dd4c325cf5a300",
+   "pattern": "bank-routing-number",
+   "category": "pii",
+   "severity": "high",
+   "confidence": "medium",
+   "location": {
+    "file": "src/apps/calculator/modes/Converter.jsx",
+    "line": 28,
+    "column": 57
+   },
+   "description": "Bank routing number (ABA) detected",
+   "reference": "https://en.wikipedia.org/wiki/ABA_routing_transit_number",
+   "tags": [],
+   "kind": "pattern",
+   "fingerprint": "bank-routing-number:src/apps/calculator/modes/Converter.jsx:28:1f91b43544181cf0f23c095dc831f9e4afa1f8c3da99d3283db9d082be566872",
+   "stable_id": "aegis-845c5f2378149ecf4dffc58e8e33d0d69bd199e125e81a7d96095aa2e16cfa61"
+  },
+  {
+   "id": "000000000000000018dd4c325cf5bca5",
+   "pattern": "bank-routing-number",
+   "category": "pii",
+   "severity": "high",
+   "confidence": "medium",
+   "location": {
+    "file": "src/apps/calculator/modes/Converter.jsx",
+    "line": 28,
+    "column": 79
+   },
+   "description": "Bank routing number (ABA) detected",
+   "reference": "https://en.wikipedia.org/wiki/ABA_routing_transit_number",
+   "tags": [],
+   "kind": "pattern",
+   "fingerprint": "bank-routing-number:src/apps/calculator/modes/Converter.jsx:28:811dfec0bc8137c75ef06068321f67aa42d2d53f746917cf081272b8b464f88a",
+   "stable_id": "aegis-f62728ea1dfeb9cd808158bdce4b2cb152e65f2b165f934c4b9c159cf04743e7"
+  },
+  {
+   "id": "000000000000000018dd4c325cf5d71b",
+   "pattern": "bank-routing-number",
+   "category": "pii",
+   "severity": "high",
+   "confidence": "medium",
+   "location": {
+    "file": "src/apps/calculator/modes/Converter.jsx",
+    "line": 48,
+    "column": 65
+   },
+   "description": "Bank routing number (ABA) detected",
+   "reference": "https://en.wikipedia.org/wiki/ABA_routing_transit_number",
+   "tags": [],
+   "kind": "pattern",
+   "fingerprint": "bank-routing-number:src/apps/calculator/modes/Converter.jsx:48:da90fdbc2bdcf4e1f4f4f529e25d04da36e0f5ea6339659326bfa18bb9f86bb4",
+   "stable_id": "aegis-23dd018889679044480087dfffa852da3473080385df5224da1fa694d40d288e"
+  },
+  {
+   "id": "000000000000000018dd4c325cf5edc0",
+   "pattern": "bank-routing-number",
+   "category": "pii",
+   "severity": "high",
+   "confidence": "medium",
+   "location": {
+    "file": "src/apps/calculator/modes/Converter.jsx",
+    "line": 48,
+    "column": 107
+   },
+   "description": "Bank routing number (ABA) detected",
+   "reference": "https://en.wikipedia.org/wiki/ABA_routing_transit_number",
+   "tags": [],
+   "kind": "pattern",
+   "fingerprint": "bank-routing-number:src/apps/calculator/modes/Converter.jsx:48:5b8ad89168e9ca6b5c85b8d07466a8e7974858dca388768133421b3be264c5fd",
+   "stable_id": "aegis-f337bf20bddbffa7e2cb1e83cfd8127f63dad13391f289ca2bf2791b72e7d22a"
+  },
+  {
+   "id": "000000000000000018dd4c3275eaf84a",
+   "pattern": "pci-cardholder-data",
+   "category": "compliance",
+   "severity": "high",
+   "confidence": "high",
+   "location": {
+    "file": "src/apps/calculator/graph/PlotCanvas.jsx",
+    "line": 4,
+    "column": 46
+   },
+   "description": "PCI cardholder data reference detected",
+   "reference": "https://www.pcisecuritystandards.org/pci_security/",
+   "tags": [],
+   "kind": "pattern",
+   "fingerprint": "pci-cardholder-data:src/apps/calculator/graph/PlotCanvas.jsx:4:00e37ffae0562ab6818d8f4f97457ac5f9679723c1b57f4b371b93f379f1c17a",
+   "stable_id": "aegis-d7307934c8ca6abc198267c0c8fb4ad038b0b4da5437bc789c8967ac71cc247e"
+  },
+  {
+   "id": "000000000000000018dd4c3276e011c0",
+   "pattern": "ssrf",
+   "category": "web-security",
+   "severity": "high",
+   "confidence": "medium",
+   "location": {
+    "file": "src/apps/weather/api.js",
+    "line": 37,
+    "column": 21
+   },
+   "description": "Potential Server-Side Request Forgery (SSRF)",
+   "reference": "https://owasp.org/www-community/attacks/Server_Side_Request_Forgery",
+   "tags": [],
+   "kind": "pattern",
+   "fingerprint": "ssrf:src/apps/weather/api.js:37:02080ee9df2029343f4a9ce242af5ea993a030cc7d8e206f90eb5ab207dd5d52",
+   "stable_id": "aegis-b9c184f99377c27595d23e504fef1e8e6fc0d9d9e28333dad570182c2aa75921"
+  }
+ ],
+ "stats": {
+  "files_scanned": 78,
+  "files_skipped": 0,
+  "files_failed": 0,
+  "bytes_scanned": 440187,
+  "finding_count": 39,
+  "suppressed_count": 0,
+  "patterns_matched": 20,
+  "scan_time_ms": 1764,
+  "io_time_ms": 72,
+  "workers_used": 16,
+  "files_by_extension": {},
+  "findings_by_severity": {
+   "medium": 6,
+   "low": 6,
+   "high": 27
+  },
+  "findings_by_category": {
+   "compliance": 4,
+   "security-hardening": 1,
+   "web-security": 9,
+   "pii": 25
+  },
+  "inspection_ledger": {
+   "schema_version": 1,
+   "units": [
+    {
+     "unit_id": "src/registry.js",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/registry.js#ast",
+     "status": "analyzed",
+     "required": false,
+     "reason": "tree_sitter_feature_disabled"
+    },
+    {
+     "unit_id": "src/os/snap.js",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/os/snap.js#ast",
+     "status": "analyzed",
+     "required": false,
+     "reason": "tree_sitter_feature_disabled"
+    },
+    {
+     "unit_id": "src/os/db.js",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/os/db.js#ast",
+     "status": "analyzed",
+     "required": false,
+     "reason": "tree_sitter_feature_disabled"
+    },
+    {
+     "unit_id": "src/os/personas.js",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/os/personas.js#ast",
+     "status": "analyzed",
+     "required": false,
+     "reason": "tree_sitter_feature_disabled"
+    },
+    {
+     "unit_id": "src/os/wallpapers.js",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/os/wallpapers.js#ast",
+     "status": "analyzed",
+     "required": false,
+     "reason": "tree_sitter_feature_disabled"
+    },
+    {
+     "unit_id": "src/os/registry.js",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/os/registry.js#ast",
+     "status": "analyzed",
+     "required": false,
+     "reason": "tree_sitter_feature_disabled"
+    },
+    {
+     "unit_id": "src/os/state.jsx",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/os/state.jsx#ast",
+     "status": "unsupported",
+     "required": false,
+     "reason": "unsupported_extension"
+    },
+    {
+     "unit_id": "src/shell/EmbedFrame.jsx",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/shell/EmbedFrame.jsx#ast",
+     "status": "unsupported",
+     "required": false,
+     "reason": "unsupported_extension"
+    },
+    {
+     "unit_id": "src/shell/ContextMenu.jsx",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/shell/ContextMenu.jsx#ast",
+     "status": "unsupported",
+     "required": false,
+     "reason": "unsupported_extension"
+    },
+    {
+     "unit_id": "src/shell/Calendar.jsx",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/shell/Calendar.jsx#ast",
+     "status": "unsupported",
+     "required": false,
+     "reason": "unsupported_extension"
+    },
+    {
+     "unit_id": "src/shell/settings/Appearance.jsx",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/shell/settings/Appearance.jsx#ast",
+     "status": "unsupported",
+     "required": false,
+     "reason": "unsupported_extension"
+    },
+    {
+     "unit_id": "src/shell/settings/Panels.jsx",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/shell/settings/Panels.jsx#ast",
+     "status": "unsupported",
+     "required": false,
+     "reason": "unsupported_extension"
+    },
+    {
+     "unit_id": "src/shell/MobileDrawer.jsx",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/shell/MobileDrawer.jsx#ast",
+     "status": "unsupported",
+     "required": false,
+     "reason": "unsupported_extension"
+    },
+    {
+     "unit_id": "src/shell/winDrag.js",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/shell/winDrag.js#ast",
+     "status": "analyzed",
+     "required": false,
+     "reason": "tree_sitter_feature_disabled"
+    },
+    {
+     "unit_id": "src/shell/Welcome.jsx",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/shell/Welcome.jsx#ast",
+     "status": "unsupported",
+     "required": false,
+     "reason": "unsupported_extension"
+    },
+    {
+     "unit_id": "src/shell/Sidebar.jsx",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/shell/Sidebar.jsx#ast",
+     "status": "unsupported",
+     "required": false,
+     "reason": "unsupported_extension"
+    },
+    {
+     "unit_id": "src/shell/Window.jsx",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/shell/Window.jsx#ast",
+     "status": "unsupported",
+     "required": false,
+     "reason": "unsupported_extension"
+    },
+    {
+     "unit_id": "src/shell/StartMenu.jsx",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/shell/StartMenu.jsx#ast",
+     "status": "unsupported",
+     "required": false,
+     "reason": "unsupported_extension"
+    },
+    {
+     "unit_id": "src/shell/Taskbar.jsx",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/shell/Taskbar.jsx#ast",
+     "status": "unsupported",
+     "required": false,
+     "reason": "unsupported_extension"
+    },
+    {
+     "unit_id": "src/shell/Properties.jsx",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/shell/Properties.jsx#ast",
+     "status": "unsupported",
+     "required": false,
+     "reason": "unsupported_extension"
+    },
+    {
+     "unit_id": "src/shell/AddApp.jsx",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/shell/AddApp.jsx#ast",
+     "status": "unsupported",
+     "required": false,
+     "reason": "unsupported_extension"
+    },
+    {
+     "unit_id": "src/shell/Screensaver.jsx",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/shell/Screensaver.jsx#ast",
+     "status": "unsupported",
+     "required": false,
+     "reason": "unsupported_extension"
+    },
+    {
+     "unit_id": "src/shell/FxWallpaper.jsx",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/shell/FxWallpaper.jsx#ast",
+     "status": "unsupported",
+     "required": false,
+     "reason": "unsupported_extension"
+    },
+    {
+     "unit_id": "src/shell/Settings.jsx",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/shell/Settings.jsx#ast",
+     "status": "unsupported",
+     "required": false,
+     "reason": "unsupported_extension"
+    },
+    {
+     "unit_id": "src/shell/AppStore.jsx",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/shell/AppStore.jsx#ast",
+     "status": "unsupported",
+     "required": false,
+     "reason": "unsupported_extension"
+    },
+    {
+     "unit_id": "src/apps/terminal/manifest.js",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/apps/terminal/manifest.js#ast",
+     "status": "analyzed",
+     "required": false,
+     "reason": "tree_sitter_feature_disabled"
+    },
+    {
+     "unit_id": "src/apps/terminal/coreutils-commands.js",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/apps/terminal/coreutils-commands.js#ast",
+     "status": "analyzed",
+     "required": false,
+     "reason": "tree_sitter_feature_disabled"
+    },
+    {
+     "unit_id": "src/apps/terminal/Terminal.jsx",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/apps/terminal/Terminal.jsx#ast",
+     "status": "unsupported",
+     "required": false,
+     "reason": "unsupported_extension"
+    },
+    {
+     "unit_id": "src/apps/terminal/coreutils.js",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/apps/terminal/coreutils.js#ast",
+     "status": "analyzed",
+     "required": false,
+     "reason": "tree_sitter_feature_disabled"
+    },
+    {
+     "unit_id": "src/apps/terminal/wasi.js",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/apps/terminal/wasi.js#ast",
+     "status": "analyzed",
+     "required": false,
+     "reason": "tree_sitter_feature_disabled"
+    },
+    {
+     "unit_id": "src/apps/video/VideoApp.jsx",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/apps/video/VideoApp.jsx#ast",
+     "status": "unsupported",
+     "required": false,
+     "reason": "unsupported_extension"
+    },
+    {
+     "unit_id": "src/apps/video/manifest.js",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/apps/video/manifest.js#ast",
+     "status": "analyzed",
+     "required": false,
+     "reason": "tree_sitter_feature_disabled"
+    },
+    {
+     "unit_id": "src/apps/calculator/engine/errors.js",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/apps/calculator/engine/errors.js#ast",
+     "status": "analyzed",
+     "required": false,
+     "reason": "tree_sitter_feature_disabled"
+    },
+    {
+     "unit_id": "src/apps/calculator/engine/lexer.js",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/apps/calculator/engine/lexer.js#ast",
+     "status": "analyzed",
+     "required": false,
+     "reason": "tree_sitter_feature_disabled"
+    },
+    {
+     "unit_id": "src/apps/calculator/engine/functions.js",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/apps/calculator/engine/functions.js#ast",
+     "status": "analyzed",
+     "required": false,
+     "reason": "tree_sitter_feature_disabled"
+    },
+    {
+     "unit_id": "src/apps/calculator/engine/parser.js",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/apps/calculator/engine/parser.js#ast",
+     "status": "analyzed",
+     "required": false,
+     "reason": "tree_sitter_feature_disabled"
+    },
+    {
+     "unit_id": "src/apps/calculator/engine/evaluate.js",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/apps/calculator/engine/evaluate.js#ast",
+     "status": "analyzed",
+     "required": false,
+     "reason": "tree_sitter_feature_disabled"
+    },
+    {
+     "unit_id": "src/apps/calculator/engine/format.js",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/apps/calculator/engine/format.js#ast",
+     "status": "analyzed",
+     "required": false,
+     "reason": "tree_sitter_feature_disabled"
+    },
+    {
+     "unit_id": "src/apps/calculator/engine/programmer.js",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/apps/calculator/engine/programmer.js#ast",
+     "status": "analyzed",
+     "required": false,
+     "reason": "tree_sitter_feature_disabled"
+    },
+    {
+     "unit_id": "src/apps/calculator/engine/index.js",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/apps/calculator/engine/index.js#ast",
+     "status": "analyzed",
+     "required": false,
+     "reason": "tree_sitter_feature_disabled"
+    },
+    {
+     "unit_id": "src/apps/calculator/modes/Standard.jsx",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/apps/calculator/modes/Standard.jsx#ast",
+     "status": "unsupported",
+     "required": false,
+     "reason": "unsupported_extension"
+    },
+    {
+     "unit_id": "src/apps/calculator/modes/History.jsx",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/apps/calculator/modes/History.jsx#ast",
+     "status": "unsupported",
+     "required": false,
+     "reason": "unsupported_extension"
+    },
+    {
+     "unit_id": "src/apps/calculator/modes/Scientific.jsx",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/apps/calculator/modes/Scientific.jsx#ast",
+     "status": "unsupported",
+     "required": false,
+     "reason": "unsupported_extension"
+    },
+    {
+     "unit_id": "src/apps/calculator/modes/Graphing.jsx",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/apps/calculator/modes/Graphing.jsx#ast",
+     "status": "unsupported",
+     "required": false,
+     "reason": "unsupported_extension"
+    },
+    {
+     "unit_id": "src/apps/calculator/modes/Programmer.jsx",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/apps/calculator/modes/Programmer.jsx#ast",
+     "status": "unsupported",
+     "required": false,
+     "reason": "unsupported_extension"
+    },
+    {
+     "unit_id": "src/apps/calculator/modes/Converter.jsx",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/apps/calculator/modes/Converter.jsx#ast",
+     "status": "unsupported",
+     "required": false,
+     "reason": "unsupported_extension"
+    },
+    {
+     "unit_id": "src/apps/calculator/calcState.jsx",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/apps/calculator/calcState.jsx#ast",
+     "status": "unsupported",
+     "required": false,
+     "reason": "unsupported_extension"
+    },
+    {
+     "unit_id": "src/apps/calculator/Keypad.jsx",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/apps/calculator/Keypad.jsx#ast",
+     "status": "unsupported",
+     "required": false,
+     "reason": "unsupported_extension"
+    },
+    {
+     "unit_id": "src/apps/calculator/Display.jsx",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/apps/calculator/Display.jsx#ast",
+     "status": "unsupported",
+     "required": false,
+     "reason": "unsupported_extension"
+    },
+    {
+     "unit_id": "src/apps/calculator/BasicKeys.jsx",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/apps/calculator/BasicKeys.jsx#ast",
+     "status": "unsupported",
+     "required": false,
+     "reason": "unsupported_extension"
+    },
+    {
+     "unit_id": "src/apps/calculator/graph/PlotCanvas.jsx",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/apps/calculator/graph/PlotCanvas.jsx#ast",
+     "status": "unsupported",
+     "required": false,
+     "reason": "unsupported_extension"
+    },
+    {
+     "unit_id": "src/apps/calculator/Calculator.jsx",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/apps/calculator/Calculator.jsx#ast",
+     "status": "unsupported",
+     "required": false,
+     "reason": "unsupported_extension"
+    },
+    {
+     "unit_id": "src/apps/calculator/calculator.css",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/apps/calculator/calculator.css#ast",
+     "status": "unsupported",
+     "required": false,
+     "reason": "unsupported_extension"
+    },
+    {
+     "unit_id": "src/apps/calculator/manifest.js",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/apps/calculator/manifest.js#ast",
+     "status": "analyzed",
+     "required": false,
+     "reason": "tree_sitter_feature_disabled"
+    },
+    {
+     "unit_id": "src/apps/editor/buffers.js",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/apps/editor/buffers.js#ast",
+     "status": "analyzed",
+     "required": false,
+     "reason": "tree_sitter_feature_disabled"
+    },
+    {
+     "unit_id": "src/apps/editor/editor.css",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/apps/editor/editor.css#ast",
+     "status": "unsupported",
+     "required": false,
+     "reason": "unsupported_extension"
+    },
+    {
+     "unit_id": "src/apps/editor/Editor.jsx",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/apps/editor/Editor.jsx#ast",
+     "status": "unsupported",
+     "required": false,
+     "reason": "unsupported_extension"
+    },
+    {
+     "unit_id": "src/apps/editor/language.js",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/apps/editor/language.js#ast",
+     "status": "analyzed",
+     "required": false,
+     "reason": "tree_sitter_feature_disabled"
+    },
+    {
+     "unit_id": "src/apps/editor/manifest.js",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/apps/editor/manifest.js#ast",
+     "status": "analyzed",
+     "required": false,
+     "reason": "tree_sitter_feature_disabled"
+    },
+    {
+     "unit_id": "src/apps/weather/weather.css",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/apps/weather/weather.css#ast",
+     "status": "unsupported",
+     "required": false,
+     "reason": "unsupported_extension"
+    },
+    {
+     "unit_id": "src/apps/weather/WxIcon.jsx",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/apps/weather/WxIcon.jsx#ast",
+     "status": "unsupported",
+     "required": false,
+     "reason": "unsupported_extension"
+    },
+    {
+     "unit_id": "src/apps/weather/api.js",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/apps/weather/api.js#ast",
+     "status": "analyzed",
+     "required": false,
+     "reason": "tree_sitter_feature_disabled"
+    },
+    {
+     "unit_id": "src/apps/weather/WeatherApp.jsx",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/apps/weather/WeatherApp.jsx#ast",
+     "status": "unsupported",
+     "required": false,
+     "reason": "unsupported_extension"
+    },
+    {
+     "unit_id": "src/apps/weather/manifest.js",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/apps/weather/manifest.js#ast",
+     "status": "analyzed",
+     "required": false,
+     "reason": "tree_sitter_feature_disabled"
+    },
+    {
+     "unit_id": "src/apps/files/files.css",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/apps/files/files.css#ast",
+     "status": "unsupported",
+     "required": false,
+     "reason": "unsupported_extension"
+    },
+    {
+     "unit_id": "src/apps/files/Files.jsx",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/apps/files/Files.jsx#ast",
+     "status": "unsupported",
+     "required": false,
+     "reason": "unsupported_extension"
+    },
+    {
+     "unit_id": "src/apps/files/manifest.js",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/apps/files/manifest.js#ast",
+     "status": "analyzed",
+     "required": false,
+     "reason": "tree_sitter_feature_disabled"
+    },
+    {
+     "unit_id": "src/apps/chat/adapters.js",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/apps/chat/adapters.js#ast",
+     "status": "analyzed",
+     "required": false,
+     "reason": "tree_sitter_feature_disabled"
+    },
+    {
+     "unit_id": "src/apps/chat/store.js",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/apps/chat/store.js#ast",
+     "status": "analyzed",
+     "required": false,
+     "reason": "tree_sitter_feature_disabled"
+    },
+    {
+     "unit_id": "src/apps/chat/Chat.jsx",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/apps/chat/Chat.jsx#ast",
+     "status": "unsupported",
+     "required": false,
+     "reason": "unsupported_extension"
+    },
+    {
+     "unit_id": "src/apps/chat/chat.css",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/apps/chat/chat.css#ast",
+     "status": "unsupported",
+     "required": false,
+     "reason": "unsupported_extension"
+    },
+    {
+     "unit_id": "src/apps/chat/manifest.js",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/apps/chat/manifest.js#ast",
+     "status": "analyzed",
+     "required": false,
+     "reason": "tree_sitter_feature_disabled"
+    },
+    {
+     "unit_id": "src/apps/manifests.js",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/apps/manifests.js#ast",
+     "status": "analyzed",
+     "required": false,
+     "reason": "tree_sitter_feature_disabled"
+    },
+    {
+     "unit_id": "src/apps/components.js",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/apps/components.js#ast",
+     "status": "analyzed",
+     "required": false,
+     "reason": "tree_sitter_feature_disabled"
+    },
+    {
+     "unit_id": "src/main.jsx",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/main.jsx#ast",
+     "status": "unsupported",
+     "required": false,
+     "reason": "unsupported_extension"
+    },
+    {
+     "unit_id": "src/App.jsx",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/App.jsx#ast",
+     "status": "unsupported",
+     "required": false,
+     "reason": "unsupported_extension"
+    },
+    {
+     "unit_id": "src/styles.css",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/styles.css#ast",
+     "status": "unsupported",
+     "required": false,
+     "reason": "unsupported_extension"
+    },
+    {
+     "unit_id": "src/version.js",
+     "status": "analyzed",
+     "required": true
+    },
+    {
+     "unit_id": "src/version.js#ast",
+     "status": "analyzed",
+     "required": false,
+     "reason": "tree_sitter_feature_disabled"
+    }
+   ]
+  }
+ }
+}

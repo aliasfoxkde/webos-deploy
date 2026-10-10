@@ -69,6 +69,25 @@ warn-then-fail order so CI is green at every commit.
 | 7 | CI/CD + docs | `.github/workflows/ci.yml`, `.gitforce.yml`, README/ARCHITECTURE/CLAUDE.md updates | CI config valid; docs match commands |
 | 8 | Release | version bump, `gh release create`, push, wrangler deploy, live verify | live site serves the release |
 
+## Aegis triage (2026-10-10, phase 2)
+
+`aegis -c production scan src` reports 39 findings — all triaged into
+`webos/.aegis-baseline.json` (gate re-scan: "No findings detected"). Classes:
+
+| Pattern class | Count | Verdict |
+|---|---|---|
+| australian-tfn / ssn-no-dashes / bank-routing / zip-code / phone-number | 20 | Numeric literals in CSS gradient geometry (px values), unit-conversion factors (0.2365882365…), FNV prime (2166136261), ms timeouts. Not secrets. |
+| x-frame-options | 5 | Comments *describing* that third-party sites send XFO/CSP — documentation strings, not headers being set. |
+| dom-xss (Terminal.jsx:346,348) | 2 | Accepted risk: the documented JS-eval escape hatch (`new Function('os', …)`). A terminal user can already open devtools; capability equals the platform. |
+| ssrf (coreutils.js, weather/api.js) | 2 | Client-side fetches of the bundled wasm asset and the open-meteo API — the app's whole architecture is client-side by design. |
+| hipaa-phi (functions.js:9) | 1 | The golden-ratio constant `phi`. |
+| pci-cardholder-data (Graphing/PlotCanvas) | 3 | UI hint text ("drag to pan · double-click to reset") tripping the card-pattern regex. |
+| insecure-random (functions.js:33) | 1 | Calculator's `rand()` — a calculator random button needs no CSPRNG. |
+
+The full-repo scan (`aegis scan .`) additionally sweeps gitignored sibling
+checkouts (uutils upstream CI scripts etc.) — those are not this repo's code
+and are out of scope; CI scans `webos/src` from `webos/`.
+
 ## Non-negotiables carried from the craft rules
 
 - No placeholders/stubs/fake data in shipped code; examples live in docs.
