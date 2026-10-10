@@ -439,3 +439,43 @@ Validation: `scripts/screenshot-drive.mjs` steps 34–35 sweep all six personas
 four knobs to a live window (flex-direction, title position, box-shadow,
 font), then drive About → "Reset look & layout" with an auto-accepted confirm
 and assert the state slices land back on defaults.
+
+### 3.2.0 — taskbar grouping, window placement, single-instance apps
+
+**One taskbar button per app.** The old split (pinned buttons + one button
+per running unpinned window) became a unified list: pinned apps first (pin
+order), then running unpinned apps in launch order. A click launches when
+nothing is running, toggles minimize/focus with a single window, and cycles
+focus across several. `Taskbar.jsx` renders `data-cm="app:<id>"` on every
+button; only pinned buttons carry `data-pin` (drag-to-reorder unchanged).
+
+**One context menu for every taskbar app.** `App.jsx` replaces the divergent
+`pin:`/`taskapp:` menus with a single `app:` case whose shape is the same
+whether or not the app is pinned — the gap this fixes: a pinned app's
+running windows previously had no close affordance at all. Items: one entry
+per window (activate/restore), "Open in new tab" (url apps), "New window"
+(omitted for single-instance apps), pin/unpin, Properties, and
+"Close (all) window(s)".
+
+**Window placement.** The old global cascade (every new window +28 px from
+top-left regardless of app) became: the first window of an app opens
+centred; each further window of the SAME app cascades by a constant +28 px
+step from the previous (wraps after 7 so the chain never walks off-screen).
+Different apps all centre. Computed against `innerHeight - 52` so the
+taskbar doesn't cover a centred window.
+
+**`singleInstance` app property.** Registry/plugin manifests can declare
+`singleInstance: true`; `launch` then focuses and un-minimises the running
+window instead of opening a second one (mobile path included). Marked on
+mail, editor, weather, video, discord, spotify, chatgpt; user-created apps
+get a "Single instance" checkbox in the Add/Edit dialog, and Properties
+shows a "Windows: Single instance/Multiple" row.
+
+**Taskbar right-click → Taskbar settings.** The taskbar's own context menu
+gained a direct deep link: `os.launch('settings', { initial: 'taskbar' })`
+(Settings resolves `args.initial` against its section ids).
+
+Validation: driver step 35 groups two calc windows (one button, dot, both
+windows), reads the menu items, closes all from the menu, asserts the
+centred first rect and the +28/+28 second rect, launches weather twice
+(1 window, 1 button), and drives the deep link into the Taskbar section.

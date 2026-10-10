@@ -15,6 +15,7 @@ apps they identify.
 | Path | Source | License |
 |---|---|---|
 | `webos/public/icons/craft/cadcraft.png` | aliasfoxkde/cadcraft `assets/app-icon/cadcraft-1024.png` | Apache-2.0 OR MIT |
+| `webos/public/icons/craft/deckcraft.png` | aliasfoxkde/deckcraft `assets/app-icon/deckcraft-1024.png` | Apache-2.0 OR MIT |
 | `webos/public/icons/craft/designcraft.png` | aliasfoxkde/designcraft `assets/app-icon/designcraft-1024.png` | Apache-2.0 OR MIT |
 | `webos/public/icons/craft/gridcraft.png` | aliasfoxkde/gridcraft `assets/app-icon/gridcraft-1024.png` | Apache-2.0 OR MIT |
 | `webos/public/icons/craft/lightcraft.png` | aliasfoxkde/lightcraft `assets/app-icon/lightcraft-1024.png` | Apache-2.0 OR MIT |

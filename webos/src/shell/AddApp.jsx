@@ -6,7 +6,7 @@ const MAX_ICON = 512 * 1024;
 
 const blank = {
   id: '', name: '', url: '', icon: '', description: '',
-  accent: '#38bdf8', embed: false,
+  accent: '#38bdf8', embed: false, singleInstance: false,
 };
 
 /* Create or edit a user app ("Add app…" on the desktop right-click menu).
@@ -52,6 +52,7 @@ export default function AddApp({ app, onClose }) {
       version: '1.0',
       accent: f.accent,
       embed: !!f.embed,
+      singleInstance: !!f.singleInstance,
       developer: 'You',
       category: 'Custom',
       description: f.description.trim() || `Custom web app pointing at ${parsed.host}.`,
@@ -107,6 +108,11 @@ export default function AddApp({ app, onClose }) {
               <input type="checkbox" checked={!!f.embed} onChange={(e) => set({ embed: e.target.checked })} />
               Try to open inside a window
               <span className="dim">(many sites block this — they open in a tab instead)</span>
+            </label>
+            <label className="check">
+              <input type="checkbox" checked={!!f.singleInstance} onChange={(e) => set({ singleInstance: e.target.checked })} />
+              Single instance
+              <span className="dim">(launching again focuses the open window)</span>
             </label>
           </div>
           {err ? <p className="wx-err">{err}</p> : null}

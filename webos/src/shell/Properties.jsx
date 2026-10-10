@@ -51,6 +51,7 @@ export default function Properties({ appId, onClose }) {
           <dt>Version</dt><dd>{app.version}</dd>
           <dt>Developer</dt><dd>{app.developer || 'Unknown'}</dd>
           <dt>Category</dt><dd>{app.category || '—'}</dd>
+          <dt>Windows</dt><dd>{app.singleInstance ? 'Single instance' : 'Multiple'}</dd>
           <dt>Rating</dt>
           <dd>
             <Stars rating={app.rating || 0} />

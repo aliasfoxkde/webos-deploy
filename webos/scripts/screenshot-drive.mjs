@@ -1222,6 +1222,81 @@ console.log('after Reset look & layout (win/midnight/1/(empty)/shadowed/row):', 
 await evaluate(`window.__os.closeAll ? window.__os.closeAll() : [...document.querySelectorAll('.win')].forEach(w => window.__os.close(Number(w.dataset.id)))`);
 await sleep(300);
 
+// 35. taskbar grouping + centered/cascade placement + right-click close +
+//     single-instance apps + taskbar settings deep link
+await evaluate(`window.confirm = () => true`);
+// two calc windows: one grouped button, centered first window, +28 cascade
+await evaluate(`window.__os.launch('calc')`);
+await sleep(600);
+await evaluate(`window.__os.launch('calc')`);
+await sleep(600);
+const group1 = await evaluate(`(() => {
+  const btns = [...document.querySelectorAll('#task-apps [data-cm="app:calc"]')];
+  const wins = window.__os ? JSON.parse(JSON.stringify(window.__os.windows || [])) : [];
+  const rects = [...document.querySelectorAll('.win')].map((w) => {
+    const r = w.getBoundingClientRect();
+    return { x: Math.round(r.left), y: Math.round(r.top) };
+  });
+  return { buttons: btns.length, dot: !!btns[0]?.querySelector('.pin-dot'), winCount: wins.filter(w => w.appId === 'calc').length, rects };
+})()`);
+console.log('calc grouped (want 1 button/dot/2 wins):', JSON.stringify(group1.result?.value));
+await shot('47-grouped');
+// right-click the grouped button -> close all windows from the menu
+const cbtn = await evaluate(`(() => { const b = document.querySelector('#task-apps [data-cm="app:calc"]'); const r = b.getBoundingClientRect(); return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) }; })()`);
+await ctxAt(cbtn.result.value.x, cbtn.result.value.y);
+await sleep(400);
+const menu1 = await evaluate(`[...document.querySelectorAll('.ctx-menu .ctx-item span')].map((s) => s.textContent)`);
+console.log('calc ctx menu items:', JSON.stringify(menu1.result?.value));
+await shot('48-ctx-close');
+await evaluate(`[...document.querySelectorAll('.ctx-menu .ctx-item')].find((b) => b.textContent.includes('Close all'))?.click()`);
+await sleep(400);
+const closed1 = await evaluate(`document.querySelectorAll('.win').length`);
+console.log('after Close all (want 0):', closed1.result?.value);
+// centered first window + cascade offset for the second
+await evaluate(`window.__os.launch('calc')`);
+await sleep(500);
+const r1 = await evaluate(`(() => { const r = document.querySelector('.win').getBoundingClientRect(); return { x: Math.round(r.left), y: Math.round(r.top), vw: innerWidth, vh: innerHeight }; })()`);
+await evaluate(`window.__os.launch('calc')`);
+await sleep(500);
+const r2 = await evaluate(`(() => { const ws = [...document.querySelectorAll('.win')]; const r = ws[ws.length - 1].getBoundingClientRect(); return { x: Math.round(r.left), y: Math.round(r.top) }; })()`);
+console.log('first calc rect:', JSON.stringify(r1.result?.value), 'second (want +28):', JSON.stringify(r2.result?.value));
+await evaluate(`[...document.querySelectorAll('.win')].forEach((w) => window.__os.close(Number(w.dataset.id)))`);
+await sleep(300);
+// single-instance: weather opens once
+await evaluate(`window.__os.launch('weather')`);
+await sleep(700);
+await evaluate(`window.__os.launch('weather')`);
+await sleep(700);
+const single = await evaluate(`(() => {
+  const btn = document.querySelector('#task-apps [data-cm="app:weather"]');
+  return { wins: document.querySelectorAll('.win').length, buttons: btn ? 1 : 0 };
+})()`);
+console.log('weather single-instance (want 1/1):', JSON.stringify(single.result?.value));
+await evaluate(`[...document.querySelectorAll('.win')].forEach((w) => window.__os.close(Number(w.dataset.id)))`);
+await sleep(300);
+// taskbar right-click -> Taskbar settings deep link
+// empty stretch between the app buttons and the tray (right-30 lands on the clock)
+const tb = await evaluate(`(() => {
+  const bar = document.querySelector('#taskbar').getBoundingClientRect();
+  const apps = document.querySelector('#task-apps').getBoundingClientRect();
+  const tray = document.querySelector('#tray').getBoundingClientRect();
+  return { x: Math.round((apps.right + tray.left) / 2), y: Math.round(bar.top + bar.height / 2) };
+})()`);
+await ctxAt(tb.result.value.x, tb.result.value.y);
+await sleep(400);
+await shot('49-taskbar-ctx');
+await evaluate(`[...document.querySelectorAll('.ctx-menu .ctx-item')].find((b) => b.textContent.includes('Taskbar settings'))?.click()`);
+await sleep(900);
+const deep = await evaluate(`(() => {
+  const wins = [...document.querySelectorAll('.win')];
+  const sec = [...document.querySelectorAll('.win h3, .win [role="radiogroup"]')].length;
+  const body = wins.at(-1)?.textContent || '';
+  return { open: wins.length, isTaskbarSection: body.includes('Auto-hide the taskbar') };
+})()`);
+console.log('taskbar settings deep link (want true):', JSON.stringify(deep.result?.value));
+await evaluate(`[...document.querySelectorAll('.win')].forEach((w) => window.__os.close(Number(w.dataset.id)))`);
+await sleep(200);
+
 console.log('done');
 clearTimeout(watchdog);
 killTree();

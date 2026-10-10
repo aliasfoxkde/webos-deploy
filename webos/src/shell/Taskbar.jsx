@@ -117,30 +117,40 @@ export default function Taskbar({ openStart, startOpen, openSettings, openStore,
   const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: !os.taskbar.clock24 });
   const date = now.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
 
-  /* -- pinned apps -- */
+  /* -- taskbar apps: one button per app, pinned first, then running -- */
   const swallowed = useRef(false); // swallow the click that follows a pin drag
   const pinnedIds = os.taskbar.pinned || [];
-  const pinned = pinnedIds.map((id) => os.findApp(id)).filter(Boolean);
   const winsByApp = new Map();
   for (const w of os.windows) {
     if (!winsByApp.has(w.appId)) winsByApp.set(w.appId, []);
     winsByApp.get(w.appId).push(w);
   }
-  // Running windows of pinned apps live inside the pinned button (dot
-  // indicator); the open-windows section lists only unpinned apps.
-  const taskWindows = os.windows
-    .map((w) => ({ w, app: os.findApp(w.appId) }))
-    .filter((x) => x.app && !pinnedIds.includes(x.w.appId));
+  // Grouping: every app with a running window shows as ONE button (pinned or
+  // not); unpinned running apps append after the pins in launch order.
+  const runningIds = os.windows.map((w) => w.appId).filter((id, i, a) => a.indexOf(id) === i);
+  const tbApps = [
+    ...pinnedIds.map((id) => os.findApp(id)).filter(Boolean),
+    ...runningIds.map((id) => os.findApp(id)).filter((a) => a && !pinnedIds.includes(a.id)),
+  ];
 
-  const clickPinned = (appId) => {
+  const clickApp = (appId) => {
     const wins = winsByApp.get(appId) || [];
     if (!wins.length) {
       os.launch(appId);
       return;
     }
-    const w = wins[0];
-    if (os.focused === w.id && !w.min) os.minimize(w.id);
-    else { os.minimize(w.id, true); os.focus(w.id); }
+    const toggle = (w) => {
+      if (os.focused === w.id && !w.min) os.minimize(w.id);
+      else { os.minimize(w.id, true); os.focus(w.id); }
+    };
+    const visible = wins.filter((w) => !w.min);
+    if (visible.length <= 1) {
+      toggle(visible[0] || wins[0]);
+      return;
+    }
+    // Several windows on screen: cycle focus through them.
+    const cur = visible.findIndex((w) => os.focused === w.id);
+    os.focus(visible[(cur + 1) % visible.length].id);
   };
 
   // Press-and-move reorders pinned icons (same threshold pattern as desktop
@@ -206,17 +216,18 @@ export default function Taskbar({ openStart, startOpen, openSettings, openStore,
           <img src="icons/logo.svg" alt="" />{os.taskbar.labels && <span>Start</span>}
         </button>
         <div id="task-apps">
-          {pinned.map((app) => {
+          {tbApps.map((app) => {
             const wins = winsByApp.get(app.id) || [];
             const focused = wins.some((w) => os.focused === w.id && !w.min);
+            const isPinned = pinnedIds.includes(app.id);
             return (
               <button
-                key={`pin-${app.id}`}
+                key={`tb-${app.id}`}
                 className={`task-app ${focused ? 'focused' : ''}`}
-                data-cm={`pin:${app.id}`}
-                data-pin={pinnedIds.indexOf(app.id)}
-                onClick={() => { if (!swallowed.current) clickPinned(app.id); }}
-                onPointerDown={(e) => beginPinDrag(e, app.id)}
+                data-cm={`app:${app.id}`}
+                {...(isPinned ? { 'data-pin': pinnedIds.indexOf(app.id) } : {})}
+                onClick={() => { if (!swallowed.current) clickApp(app.id); }}
+                {...(isPinned ? { onPointerDown: (e) => beginPinDrag(e, app.id) } : {})}
                 title={app.name}
               >
                 <img src={app.icon} alt="" />{os.taskbar.labels && <span>{app.name}</span>}
@@ -224,20 +235,6 @@ export default function Taskbar({ openStart, startOpen, openSettings, openStore,
               </button>
             );
           })}
-          {taskWindows.map(({ w, app }) => (
-            <button
-              key={w.id}
-              className={`task-app ${os.focused === w.id && !w.min ? 'focused' : ''}`}
-              data-cm={`taskapp:${w.id}`}
-              onClick={() => {
-                if (os.focused === w.id && !w.min) os.minimize(w.id);
-                else { os.minimize(w.id, true); os.focus(w.id); }
-              }}
-              title={app.name}
-            >
-              <img src={app.icon} alt="" />{os.taskbar.labels && <span>{app.name}</span>}
-            </button>
-          ))}
         </div>
         <div id="tray">
           <button

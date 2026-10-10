@@ -64,10 +64,16 @@ export const DEFAULT_APPS = [
     developer: 'ArtCraft', category: 'Productivity', rating: 4.3, reviews: 74,
     description: 'A focused word processor: styles, tables, headers, and clean document flow with export. Distraction-free writing with real layout under the hood.',
   },
+  {
+    id: 'deckcraft', name: 'DeckCraft', tagline: 'Presentations', version: '0.4.0',
+    url: 'https://deckcraft-web.pages.dev/', icon: 'icons/craft/deckcraft.png', accent: '#fb923c', embed: true,
+    developer: 'ArtCraft', category: 'Productivity', rating: 4.4, reviews: 58,
+    description: 'Slide decks with real layout: masters, placeholders, themes, shape geometry, and presenter flow — a clean-room reimagining of the classic presentation suite in Rust/WebAssembly.',
+  },
 
   // -- extra default apps --
   {
-    id: 'mail', name: 'Mail', tagline: 'Email client', version: '1.0',
+    id: 'mail', name: 'Mail', tagline: 'Email client', version: '1.0', singleInstance: true,
     url: 'https://email-client.cyopsys.workers.dev/', icon: 'icons/mail.svg', accent: '#7dd3fc', embed: true,
     developer: 'CyOpsys', category: 'Productivity', rating: 4.1, reviews: 52,
     description: 'A lightweight webmail client hosted as a Worker. Connect an account and read, compose, and search mail without leaving the desktop.',
@@ -98,19 +104,19 @@ export const DEFAULT_APPS = [
     description: 'Watch, search, and subscribe. Opens in its own tab — YouTube forbids embedding inside other sites.',
   },
   {
-    id: 'discord', name: 'Discord', tagline: 'Chat & communities', version: '1.0',
+    id: 'discord', name: 'Discord', tagline: 'Chat & communities', version: '1.0', singleInstance: true,
     url: 'https://discord.com/app', icon: 'icons/discord.svg', accent: '#818cf8', embed: false,
     developer: 'Discord Inc.', category: 'Social', rating: 4.6, reviews: 640,
     description: 'Voice, video, and text for your communities. Opens in its own tab — Discord forbids embedding.',
   },
   {
-    id: 'spotify', name: 'Spotify', tagline: 'Music & podcasts', version: '1.0',
+    id: 'spotify', name: 'Spotify', tagline: 'Music & podcasts', version: '1.0', singleInstance: true,
     url: 'https://open.spotify.com/', icon: 'icons/spotify.svg', accent: '#34d399', embed: false,
     developer: 'Spotify AB', category: 'Media', rating: 4.7, reviews: 903,
     description: 'Millions of songs and podcasts. Opens in its own tab — the Spotify player forbids embedding.',
   },
   {
-    id: 'chatgpt', name: 'ChatGPT', tagline: 'AI assistant', version: '1.0',
+    id: 'chatgpt', name: 'ChatGPT', tagline: 'AI assistant', version: '1.0', singleInstance: true,
     url: 'https://chatgpt.com/', icon: 'icons/chatgpt.svg', accent: '#10a37f', embed: false,
     developer: 'OpenAI', category: 'Tools', rating: 4.8, reviews: 1204,
     description: 'Conversational AI assistant for writing, coding, and research. Opens in its own tab — ChatGPT forbids embedding.',

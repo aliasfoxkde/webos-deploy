@@ -1,5 +1,6 @@
 export default {
   id: 'weather',
+  singleInstance: true,
   name: 'Weather',
   tagline: 'Forecast & conditions',
   version: '1.0',

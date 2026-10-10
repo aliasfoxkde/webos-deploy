@@ -135,15 +135,25 @@ const patched = (state, key, patch) => {
 function reducer(state, action) {
   switch (action.type) {
     case 'launch': {
-      // Every launch opens a NEW window — apps are multi-instance (multiple
-      // terminals, two browsers side by side, …). Taskbar buttons focus or
-      // minimize existing windows instead of launching.
-      const id = state.seq;
-      const n = state.windows.length;
-      const off = (n % 6) * 28;
       const def = APP_INDEX.find((a) => a.id === action.appId);
       const recents = [action.appId, ...state.recents.filter((r) => r !== action.appId)].slice(0, 8);
       save('recents', recents);
+      // Single-instance apps (mail, weather, chat backends, …) focus the
+      // running window instead of opening a second one. Applies on mobile too.
+      if (def?.singleInstance) {
+        const exist = state.windows.find((w) => w.appId === action.appId);
+        if (exist) {
+          return {
+            ...state,
+            focused: exist.id,
+            zTop: state.zTop + 1,
+            windows: state.windows.map((w) => (w.id === exist.id ? { ...w, z: state.zTop + 1, min: false } : w)),
+          };
+        }
+      }
+      // Every other launch opens a NEW window — apps are multi-instance
+      // (multiple terminals, two browsers side by side, …).
+      const id = state.seq;
       if (state.mobile) {
         return {
           ...state,
@@ -154,9 +164,18 @@ function reducer(state, action) {
           focused: id,
         };
       }
-      const w = Math.min(def?.win?.w || 1120, window.innerWidth - 80 - off);
-      const h = Math.min(def?.win?.h || 700, window.innerHeight - 130 - off);
-      const rect = { x: Math.max(12, off + 60), y: Math.max(12, off + 30), w, h };
+      // First window of an app opens centred; each further window of the SAME
+      // app cascades by a fixed step from the first (wraps after 7 so the
+      // chain never walks off-screen). Different apps all centre.
+      const peers = state.windows.filter((w) => w.appId === action.appId);
+      const step = (peers.length % 7) * 28;
+      const w = Math.min(def?.win?.w || 1120, window.innerWidth - 80);
+      const h = Math.min(def?.win?.h || 700, window.innerHeight - 130);
+      const rect = {
+        x: Math.max(12, Math.round((window.innerWidth - w) / 2) + step),
+        y: Math.max(12, Math.round((window.innerHeight - 52 - h) / 2) + step),
+        w, h,
+      };
       return {
         ...state,
         seq: id + 1,

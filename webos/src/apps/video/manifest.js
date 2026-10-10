@@ -1,6 +1,7 @@
 // Video player plugin manifest (data only; see apps/components.js).
 export default {
   id: 'video',
+  singleInstance: true,
   category: 'Media',
   name: 'Video',
   tagline: 'Video player',
