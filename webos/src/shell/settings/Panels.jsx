@@ -36,6 +36,22 @@ export function DesktopPanel() {
           ? 'Drag icons anywhere on the desktop — the layout persists.'
           : 'Icons auto-sort alphabetically. Switch to “Free drag” to rearrange by hand.'}
       </p>
+      <h3>Grid spacing</h3>
+      <div className="seg-row" role="radiogroup" aria-label="Desktop grid spacing">
+        {[['compact', 'Compact'], ['normal', 'Normal'], ['roomy', 'Roomy']].map(([id, label]) => (
+          <button
+            key={id}
+            role="radio" aria-checked={(os.desktop.gap || 'normal') === id}
+            className={`chip ${(os.desktop.gap || 'normal') === id ? 'on' : ''}`}
+            onClick={() => os.setDesktop({ gap: id })}
+          >{label}</button>
+        ))}
+      </div>
+      <h3>Windows</h3>
+      <label className="check-row">
+        <input type="checkbox" checked={!!os.ui.focusHover} onChange={() => os.setUi({ focusHover: !os.ui.focusHover })} />
+        Focus follows the mouse (hover raises a window instead of clicking it)
+      </label>
     </section>
   );
 }
@@ -58,6 +74,33 @@ export function TaskbarPanel() {
               onClick={() => os.setTaskbar({ position: id })}
             >{label}</button>
           ))}
+        </div>
+        <h3>Alignment &amp; size</h3>
+        <div className="row">
+          <label className="dim">Align apps</label>
+          <div className="seg-row" role="radiogroup" aria-label="Taskbar alignment">
+            {[['left', 'Left'], ['center', 'Center']].map(([id, label]) => (
+              <button
+                key={id}
+                role="radio" aria-checked={(tb.align || 'left') === id}
+                className={`chip ${(tb.align || 'left') === id ? 'on' : ''}`}
+                onClick={() => os.setTaskbar({ align: id })}
+              >{label}</button>
+            ))}
+          </div>
+        </div>
+        <div className="row">
+          <label className="dim">Icon size</label>
+          <div className="seg-row" role="radiogroup" aria-label="Taskbar icon size">
+            {[['sm', 'Small'], ['md', 'Medium'], ['lg', 'Large']].map(([id, label]) => (
+              <button
+                key={id}
+                role="radio" aria-checked={(tb.iconSize || 'md') === id}
+                className={`chip ${(tb.iconSize || 'md') === id ? 'on' : ''}`}
+                onClick={() => os.setTaskbar({ iconSize: id })}
+              >{label}</button>
+            ))}
+          </div>
         </div>
         <h3>Behavior</h3>
         <label className="check-row">

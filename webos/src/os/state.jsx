@@ -61,10 +61,14 @@ const DEFAULT_THEME = {
   fit: 'fill', pos: 'center center', blur: 0, bright: 1, sat: 1,
 };
 
+/* Granular interface controls (Settings → Appearance / Desktop / Taskbar).
+   `radius`/`blur` of '' mean "follow the persona default". */
+const DEFAULT_UI = { scale: 1, anim: true, transparency: 1, radius: '', blur: '', focusHover: false };
+
 /* ---------- per-subsystem defaults ---------- */
-const DEFAULT_TASKBAR = { position: 'bottom', autohide: false, labels: true, clock24: false, showDate: true, pinned: [] };
+const DEFAULT_TASKBAR = { position: 'bottom', align: 'left', iconSize: 'md', autohide: false, labels: true, clock24: false, showDate: true, pinned: [] };
 const DEFAULT_WIDGETS = { enabled: ['weather', 'clock', 'battery', 'events', 'notes', 'storage'] };
-const DEFAULT_DESKTOP = { iconSize: 'md', sort: 'custom' };
+const DEFAULT_DESKTOP = { iconSize: 'md', gap: 'normal', sort: 'custom' };
 const DEFAULT_VOLUME = { level: 0.7, muted: false };
 
 // Widget ids the sidebar understands (Sidebar.jsx renders each; Settings
@@ -78,11 +82,23 @@ const withoutApp = (groups, appId) =>
   groups.map((g) => (g.appIds.includes(appId) ? { ...g, appIds: g.appIds.filter((x) => x !== appId) } : g));
 
 /* ---------- reducer ---------- */
+// Scale a `rgba(r,g,b,a)` chrome color's alpha by the transparency strength
+// (Settings → Appearance); non-rgba colors pass through untouched.
+const withAlpha = (color, f) => {
+  const m = /rgba?\(([^)]+)\)/.exec(color);
+  if (!m) return color;
+  const parts = m[1].split(',').map((s) => s.trim());
+  if (parts.length < 3) return color;
+  const a = Math.min(0.98, Math.max(0.35, (parts[3] !== undefined ? parseFloat(parts[3]) : 1) * f));
+  return `rgba(${parts[0]}, ${parts[1]}, ${parts[2]}, ${a.toFixed(3)})`;
+};
+
 const initial = () => ({
   installed: loadInstalled(),
   userApps: load('userapps', []), // custom apps added via right-click → Add app…
   persona: personaOf(load('persona', 'win')).id, // OS skin (see os/personas.js)
   theme: { ...DEFAULT_THEME, ...load('theme', {}) },
+  ui: { ...DEFAULT_UI, ...load('ui', {}) },
   events: load('events', {}),
   groups: load('groups', []), // desktop icon groups: [{ id, name, appIds }]
   order: load('desktop.order', []),
@@ -306,16 +322,17 @@ function reducer(state, action) {
     case 'setPersona': {
       const p = personaOf(action.id);
       save('persona', p.id);
-      // Defaults, not a lockdown: preset/accent/taskbar side, then the user
-      // can override any of them as usual.
+      // Defaults, not a lockdown: preset/accent/taskbar side + alignment,
+      // then the user can override any of them as usual.
       const theme = { ...state.theme, preset: p.preset, accent: p.accent };
       save('theme', theme);
-      const taskbar = { ...state.taskbar, position: p.taskbar };
+      const taskbar = { ...state.taskbar, position: p.taskbar, align: p.align || 'left' };
       save('taskbar', taskbar);
       return { ...state, persona: p.id, theme, taskbar };
     }
 
     /* -- settings-object patches -- */
+    case 'setUi': return patched(state, 'ui', action.patch);
     case 'setVolume': return patched(state, 'volume', action.patch);
     case 'setWidgets': return patched(state, 'widgets', action.patch);
     case 'setTaskbar': return patched(state, 'taskbar', action.patch);
@@ -365,6 +382,7 @@ export function OSProvider({ children }) {
     uninstall: (appId) => dispatch({ type: 'uninstall', appId }),
     setTheme: (patch) => dispatch({ type: 'setTheme', patch }),
     setPersona: (id) => dispatch({ type: 'setPersona', id }),
+    setUi: (patch) => dispatch({ type: 'setUi', patch }),
     addEvent: (date, text) => dispatch({ type: 'addEvent', date, text }),
     removeEvent: (date, index) => dispatch({ type: 'removeEvent', date, index }),
     setOrder: (order) => dispatch({ type: 'setOrder', order }),
@@ -404,7 +422,7 @@ export function OSProvider({ children }) {
     const root = document.documentElement.style;
     root.setProperty('--text', p.text);
     root.setProperty('--text-dim', p.dim);
-    root.setProperty('--chrome', p.chrome);
+    root.setProperty('--chrome', withAlpha(p.chrome, state.ui.transparency ?? 1));
     root.setProperty('--chrome-line', p.line);
     root.setProperty('--accent', state.theme.accent);
     // The preset bg stays on <body> as the base; an active wallpaper renders
@@ -412,17 +430,31 @@ export function OSProvider({ children }) {
     // saturation) can be applied to it — backgrounds can't take CSS filters.
     document.body.style.background = p.bg;
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', state.theme.preset === 'light' ? '#eef2f8' : '#0b0e14');
-  }, [state.theme]);
+  }, [state.theme, state.ui.transparency]);
+
+  /* -- granular interface: scale, animations, radius/blur overrides -- */
+  useEffect(() => {
+    document.documentElement.style.fontSize = `${Math.round(16 * (state.ui.scale || 1))}px`;
+    document.body.toggleAttribute('data-anim-off', state.ui.anim === false);
+    // Overrides beat persona defaults; '' = follow the persona.
+    if (state.ui.radius) document.body.style.setProperty('--radius', state.ui.radius);
+    else document.body.style.removeProperty('--radius');
+    if (state.ui.blur !== '' && state.ui.blur != null) document.body.style.setProperty('--chrome-blur', `${state.ui.blur}px`);
+    else document.body.style.removeProperty('--chrome-blur');
+  }, [state.ui]);
 
   /* -- taskbar layout to body attrs (position / autohide) -- */
   useEffect(() => {
     document.body.dataset.persona = state.persona;
     document.body.dataset.tb = state.taskbar.position;
     document.body.toggleAttribute('data-tb-autohide', !!state.taskbar.autohide);
+    document.body.dataset.tbAlign = state.taskbar.align || 'left';
+    document.body.dataset.tbIco = state.taskbar.iconSize || 'md';
     document.body.toggleAttribute('data-icons', false);
     document.body.dataset.icons = state.desktop.iconSize;
+    document.body.dataset.deskGap = state.desktop.gap || 'normal';
     document.body.dataset.mode = state.mobile ? 'mobile' : 'desktop';
-  }, [state.persona, state.taskbar.position, state.taskbar.autohide, state.desktop.iconSize, state.mobile]);
+  }, [state.persona, state.taskbar.position, state.taskbar.autohide, state.taskbar.align, state.taskbar.iconSize, state.desktop.iconSize, state.desktop.gap, state.mobile]);
 
   /* -- volume broadcast: apps opt in by listening for the event -- */
   useEffect(() => {

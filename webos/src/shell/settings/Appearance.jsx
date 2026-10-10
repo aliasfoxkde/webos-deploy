@@ -53,6 +53,45 @@ export default function Appearance() {
       </section>
 
       <section>
+        <h3>Interface</h3>
+        <div className="row">
+          <label className="dim" htmlFor="set-scale">UI scale</label>
+          <input
+            id="set-scale" type="range" min="0.85" max="1.25" step="0.05" aria-label="UI scale"
+            value={os.ui.scale ?? 1}
+            onChange={(e) => os.setUi({ scale: Number(e.target.value) })}
+          />
+          <span className="dim" style={{ minWidth: 38, textAlign: 'right' }}>{Math.round((os.ui.scale ?? 1) * 100)}%</span>
+        </div>
+        <div className="row">
+          <label className="dim" htmlFor="set-transparency">Transparency</label>
+          <input
+            id="set-transparency" type="range" min="0.5" max="1.2" step="0.05" aria-label="Transparency strength"
+            value={os.ui.transparency ?? 1}
+            onChange={(e) => os.setUi({ transparency: Number(e.target.value) })}
+          />
+          <span className="dim" style={{ minWidth: 38, textAlign: 'right' }}>{Math.round((os.ui.transparency ?? 1) * 100)}%</span>
+        </div>
+        <div className="row">
+          <label className="dim">Corner radius</label>
+          <div className="seg-row" role="radiogroup" aria-label="Corner radius">
+            {[['', 'Persona default'], ['8px', 'Small'], ['12px', 'Medium'], ['18px', 'Large']].map(([v, label]) => (
+              <button
+                key={v || 'auto'}
+                role="radio" aria-checked={(os.ui.radius || '') === v}
+                className={`chip ${(os.ui.radius || '') === v ? 'on' : ''}`}
+                onClick={() => os.setUi({ radius: v })}
+              >{label}</button>
+            ))}
+          </div>
+        </div>
+        <label className="check-row">
+          <input type="checkbox" checked={os.ui.anim !== false} onChange={() => os.setUi({ anim: os.ui.anim === false })} />
+          Animations (window open, popups, taskbar slide)
+        </label>
+      </section>
+
+      <section>
         <h3>Theme</h3>
         <div className="preset-row">
           {Object.entries(THEME_PRESETS).map(([id, p]) => (

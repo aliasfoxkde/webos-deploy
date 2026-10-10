@@ -48,6 +48,7 @@ function VirtualWindow({ win }) {
     <section
       className={`win ${focused ? 'focused' : ''} ${win.max ? 'maximized' : ''}`}
       style={{ ...style, display: win.min ? 'none' : undefined }}
+      data-id={win.id}
       data-cm={`titlebar:${win.id}`}
       onPointerDownCapture={() => os.focus(win.id)}
       aria-label={v.name}
@@ -280,6 +281,20 @@ export default function App() {
     window.addEventListener('keydown', h);
     return () => window.removeEventListener('keydown', h);
   }, []);
+
+  // Focus follows the mouse (Settings → Desktop → Windows): hovering a window
+  // raises it, X11-style. Off by default — clicks remain the normal focus path.
+  useEffect(() => {
+    if (!os.ui.focusHover || os.mobile) return undefined;
+    const h = (e) => {
+      const el = e.target.closest?.('.win[data-id]');
+      if (!el) return;
+      const id = Number(el.dataset.id);
+      if (id && id !== os.focused && os.windows.some((w) => w.id === id && !w.min)) os.focus(id);
+    };
+    document.getElementById('windows')?.addEventListener('pointerover', h);
+    return () => document.getElementById('windows')?.removeEventListener('pointerover', h);
+  }, [os]);
 
   // Window tiling keys: Meta+Arrow or Ctrl+Alt+Arrow on the focused window —
   // Left/Right = half, Up = maximize, Down = untile/unmaximize, else minimize.

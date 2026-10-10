@@ -136,6 +136,21 @@ Guarded by `webos.welcomed`, skipped for `?open=` deep links, reopened from
 Settings → About via the `webos:welcome` window event. Shell version lives in
 `src/version.js` (bump alongside `package.json` + `public/sw.js`).
 
+### Granular interface settings (`webos.ui`)
+
+`state.jsx` keeps a `ui` slice — `scale` (html font-size 85–125%),
+`transparency` (multiplies the theme preset's chrome alpha via `withAlpha`),
+`radius`/`blur` ('' = follow the persona, otherwise inline overrides on
+`<body>` that beat persona rules), `anim` (body[data-anim-off] kills all
+animation/transition), and `focusHover` (focus-follows-mouse: a `pointerover`
+listener on `#windows` raises hovered windows; needs REAL pointer input —
+synthetic `pointerover` doesn't drive it, so the driver uses CDP
+`Input.dispatchMouseEvent`). Taskbar gains `align` (left/center) +
+`iconSize` (sm/md/lg → body[data-tb-align]/[data-tb-ico]); desktop gains
+`gap` (compact/normal/roomy → `--desk-gap`). Personas carry an `align`
+default too. Everything persists under `webos.ui` / `webos.taskbar` /
+`webos.desktop`.
+
 ### Window tiling (snapping)
 
 `os/snap.js` defines the zone geometry: drag a titlebar within 12px of a

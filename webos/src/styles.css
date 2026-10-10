@@ -57,7 +57,8 @@ input:focus { outline: 1px solid var(--accent); }
 }
 #icon-grid {
   position: absolute; top: 18px; left: 18px; bottom: 18px;
-  display: flex; flex-direction: column; flex-wrap: wrap; align-content: flex-start; gap: 4px;
+  display: flex; flex-direction: column; flex-wrap: wrap; align-content: flex-start;
+  gap: var(--desk-gap, 4px);
 }
 .desk-icon {
   width: 96px; padding: 10px 4px 8px; border: 1px solid transparent; border-radius: 10px;
@@ -778,3 +779,22 @@ body[data-persona="tui"] .tb-btn { border-radius: 0; }
   background: var(--accent); color: #06121c; font-weight: 600; padding: 9px 18px;
 }
 .wl-foot .wl-enter:hover { filter: brightness(1.1); }
+
+/* ---- granular interface settings (webos.ui / taskbar / desktop) ---- */
+body[data-anim-off] *, body[data-anim-off] *::before, body[data-anim-off] *::after {
+  animation: none !important; transition: none !important;
+}
+
+body[data-desk-gap="compact"] { --desk-gap: 0px; }
+body[data-desk-gap="normal"] { --desk-gap: 4px; }
+body[data-desk-gap="roomy"] { --desk-gap: 16px; }
+
+body[data-tb-align="left"] #task-apps { justify-content: flex-start; }
+body[data-tb-align="center"] #task-apps { justify-content: center; }
+
+body[data-tb-ico="sm"] #start-btn { height: 28px; padding: 0 10px; font-size: 0.74rem; }
+body[data-tb-ico="sm"] .task-app { height: 28px; padding: 0 8px; font-size: 0.72rem; }
+body[data-tb-ico="sm"] .task-app img { width: 14px; height: 14px; }
+body[data-tb-ico="lg"] #start-btn { height: 44px; padding: 0 18px; font-size: 0.9rem; }
+body[data-tb-ico="lg"] .task-app { height: 44px; padding: 0 16px; font-size: 0.84rem; }
+body[data-tb-ico="lg"] .task-app img { width: 22px; height: 22px; }

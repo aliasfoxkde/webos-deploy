@@ -34,8 +34,8 @@ process.on('exit', killTree);
 
 // The banner carries the true endpoint — never guess a port.
 let webSocketDebuggerUrl = null;
-for (let i = 0; i < 40 && !webSocketDebuggerUrl; i++) {
-  await sleep(250);
+for (let i = 0; i < 60 && !webSocketDebuggerUrl; i++) {
+  await sleep(500);
   webSocketDebuggerUrl = cdpBanner.match(/DevTools listening on (ws:\/\/\S+)/)?.[1] || null;
 }
 if (!webSocketDebuggerUrl) { killTree(); throw new Error('chromium CDP endpoint never came up'); }
@@ -105,6 +105,12 @@ const ctxAt = (x, y) => evaluate(`(() => {
   el.dispatchEvent(new PointerEvent('pointerdown', opts));
   el.dispatchEvent(new MouseEvent('contextmenu', opts));
 })()`);
+// Real pointer move — synthetic pointerover events don't drive the OS's
+// focus-follows-mouse path (isTrusted-gated in practice); CDP input does.
+const moveTo = async (x, y) => {
+  await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y }, sessionId);
+  await sleep(300);
+};
 function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
 // poll until an expression turns truthy (bounded)
 async function waitFor(expression, tries = 12) {
@@ -841,6 +847,81 @@ console.log('win persona restored (want win/bottom):', JSON.stringify((await eva
 )).result?.value));
 await evaluate(`document.querySelector('.wl-enter')?.click()`);
 await sleep(300);
+
+// 29. granular interface settings (Appearance → Interface, Taskbar, Desktop)
+// Settings is still open on About — walk the rail.
+await evaluate(`[...document.querySelectorAll('.set-nav')].find(b => b.textContent.includes('Appearance'))?.click()`);
+await sleep(300);
+const setRange = async (label, value) => {
+  await evaluate(`(() => {
+    const i = document.querySelector('input[aria-label="${label}"]');
+    const set = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+    set.call(i, '${value}');
+    i.dispatchEvent(new Event('input', { bubbles: true }));
+    i.dispatchEvent(new Event('change', { bubbles: true }));
+  })()`);
+  await sleep(250);
+};
+await setRange('UI scale', 1.2);
+await setRange('Transparency strength', 0.6);
+await evaluate(`[...document.querySelectorAll('.set-pane .chip')].find(b => b.textContent === 'Large' && b.closest('[aria-label="Corner radius"]'))?.click()`);
+await sleep(250);
+await evaluate(`[...document.querySelectorAll('.set-pane .check-row input')].find(i => i.checked)?.closest('label')?.click()`); // animations off (first checked box = Animations)
+await sleep(250);
+console.log('interface settings (want 19px/animOff/radius 18px/chrome alpha~0.49):', JSON.stringify((await evaluate(
+  `({ font: document.documentElement.style.fontSize, animOff: document.body.hasAttribute('data-anim-off'), radius: document.body.style.getPropertyValue('--radius'), chrome: getComputedStyle(document.documentElement).getPropertyValue('--chrome').trim() })`
+)).result?.value));
+await shot('59-interface-settings');
+
+await evaluate(`[...document.querySelectorAll('.set-nav')].find(b => b.textContent.includes('Taskbar'))?.click()`);
+await sleep(300);
+await evaluate(`[...document.querySelectorAll('.set-pane .chip')].find(b => b.textContent === 'Center' && b.closest('[aria-label="Taskbar alignment"]'))?.click()`);
+await sleep(200);
+await evaluate(`[...document.querySelectorAll('.set-pane .chip')].find(b => b.textContent === 'Large' && b.closest('[aria-label="Taskbar icon size"]'))?.click()`);
+await sleep(250);
+await evaluate(`[...document.querySelectorAll('.set-nav')].find(b => b.textContent.includes('Desktop'))?.click()`);
+await sleep(300);
+await evaluate(`[...document.querySelectorAll('.set-pane .chip')].find(b => b.textContent === 'Roomy' && b.closest('[aria-label="Desktop grid spacing"]'))?.click()`);
+await sleep(200);
+await evaluate(`[...document.querySelectorAll('.set-pane .check-row input')].forEach(i => i.checked || i.click())`); // focus-follows-mouse on
+await sleep(300);
+console.log('layout settings (want center/lg/roomy):', JSON.stringify((await evaluate(
+  `({ align: document.body.dataset.tbAlign, ico: document.body.dataset.tbIco, gap: document.body.dataset.deskGap, focusHover: !!document.querySelector('.set-pane .check-row input:checked') })`
+)).result?.value));
+// focus follows mouse: hover the Settings window itself after focusing the desktop first
+await evaluate(`window.__os?.launch('calc')`);
+await sleep(700);
+await evaluate(`window.__os?.focus(window.__os.windows.find(w => w.appId === 'settings')?.id)`);
+await sleep(150);
+const hoverAt = await evaluate(`(() => {
+  const calc = [...document.querySelectorAll('.win')].find(w => w.getAttribute('aria-label') === 'Calculator');
+  if (!calc) return null;
+  // settings (focused, on top) fully covers calc — park calc in the clear first
+  window.__os.setRect(Number(calc.dataset.id), { x: 1240, y: 90, w: 240, h: 300 });
+  return 'moved';
+})()`);
+await sleep(250);
+const hoverPt = await evaluate(`(() => {
+  const calc = [...document.querySelectorAll('.win')].find(w => w.getAttribute('aria-label') === 'Calculator');
+  const r = calc.getBoundingClientRect();
+  return { x: Math.round(r.x + r.width / 2), y: Math.round(r.y + 12), id: Number(calc.dataset.id) };
+})()`);
+await moveTo(hoverPt.result.value.x, hoverPt.result.value.y);
+const hover = await evaluate(`({ id: ${hoverPt.result.value.id}, focused: window.__os.focused, topAtPoint: document.elementFromPoint(${hoverPt.result.value.x}, ${hoverPt.result.value.y})?.closest('.win')?.dataset.id || null })`);
+console.log('hover focuses calc window (want id === focused):', JSON.stringify(hover.result?.value));
+await evaluate(`window.__os?.windows.filter(w => w.appId === 'calc').forEach(w => window.__os.close(w.id))`);
+await sleep(200);
+
+// persistence: reload and confirm every knob came back
+await evaluate(`location.reload()`);
+await sleep(2500);
+console.log('persisted after reload (want 1.2/0.6/18px/center/lg/roomy):', JSON.stringify((await evaluate(
+  `({ scale: JSON.parse(localStorage.getItem('webos.ui')).scale, tr: JSON.parse(localStorage.getItem('webos.ui')).transparency, radius: JSON.parse(localStorage.getItem('webos.ui')).radius, align: document.body.dataset.tbAlign, ico: document.body.dataset.tbIco, gap: document.body.dataset.deskGap })`
+)).result?.value));
+// restore defaults for a clean desktop
+await evaluate(`(() => { const ui = JSON.parse(localStorage.getItem('webos.ui')); ui.scale = 1; ui.transparency = 1; ui.radius = ''; ui.anim = true; ui.focusHover = false; localStorage.setItem('webos.ui', JSON.stringify(ui)); const tb = JSON.parse(localStorage.getItem('webos.taskbar')); tb.align = 'left'; tb.iconSize = 'md'; localStorage.setItem('webos.taskbar', JSON.stringify(tb)); const d = JSON.parse(localStorage.getItem('webos.desktop')); d.gap = 'normal'; localStorage.setItem('webos.desktop', JSON.stringify(d)); })()`);
+await evaluate(`location.reload()`);
+await sleep(2500);
 
 console.log('done');
 clearTimeout(watchdog);

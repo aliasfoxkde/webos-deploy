@@ -96,6 +96,7 @@ export default function Window({ win }) {
     <section
       className={`win ${focused ? 'focused' : ''} ${win.max ? 'maximized' : ''}`}
       style={{ ...style, display: win.min ? 'none' : undefined }}
+      data-id={win.id}
       data-cm={`titlebar:${win.id}`}
       onPointerDownCapture={() => os.focus(win.id)}
       aria-label={app.name}

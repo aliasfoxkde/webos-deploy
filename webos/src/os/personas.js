@@ -6,12 +6,12 @@
    (dock magnification physics, GNOME workspaces) are out of scope — visual
    and behavioral essence only. */
 export const PERSONAS = [
-  { id: 'win', label: 'Windows', tagline: 'Centered taskbar, acrylic, snap hints', preset: 'midnight', accent: '#38bdf8', taskbar: 'bottom' },
-  { id: 'mac', label: 'macOS', tagline: 'Traffic lights, vibrancy, tight radii', preset: 'ocean', accent: '#60a5fa', taskbar: 'bottom' },
-  { id: 'linux', label: 'GNOME / Linux', tagline: 'Top bar, centered titles, Adwaita calm', preset: 'forest', accent: '#34d399', taskbar: 'top' },
-  { id: 'bsd', label: 'Tiling WM', tagline: 'Borders + gaps, mono, no shadows', preset: 'cobalt', accent: '#a78bfa', taskbar: 'top' },
-  { id: 'android', label: 'Android', tagline: 'Material You, large radii, color', preset: 'sunset', accent: '#f472b6', taskbar: 'bottom' },
-  { id: 'tui', label: 'Terminal', tagline: 'Monospace grid, ASCII chrome, no blur', preset: 'grid', accent: '#4ade80', taskbar: 'top' },
+  { id: 'win', label: 'Windows', tagline: 'Centered taskbar, acrylic, snap hints', preset: 'midnight', accent: '#38bdf8', taskbar: 'bottom', align: 'center' },
+  { id: 'mac', label: 'macOS', tagline: 'Traffic lights, vibrancy, tight radii', preset: 'ocean', accent: '#60a5fa', taskbar: 'bottom', align: 'center' },
+  { id: 'linux', label: 'GNOME / Linux', tagline: 'Top bar, centered titles, Adwaita calm', preset: 'forest', accent: '#34d399', taskbar: 'top', align: 'left' },
+  { id: 'bsd', label: 'Tiling WM', tagline: 'Borders + gaps, mono, no shadows', preset: 'cobalt', accent: '#a78bfa', taskbar: 'top', align: 'left' },
+  { id: 'android', label: 'Android', tagline: 'Material You, large radii, color', preset: 'sunset', accent: '#f472b6', taskbar: 'bottom', align: 'center' },
+  { id: 'tui', label: 'Terminal', tagline: 'Monospace grid, ASCII chrome, no blur', preset: 'grid', accent: '#4ade80', taskbar: 'top', align: 'left' },
 ];
 
 export const personaOf = (id) => PERSONAS.find((p) => p.id === id) || PERSONAS[0];
