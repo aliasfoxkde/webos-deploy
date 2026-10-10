@@ -13,4 +13,5 @@ export const APP_COMPONENTS = {
   calc: lazy(() => import('./calculator/Calculator.jsx')),
   editor: lazy(() => import('./editor/Editor.jsx')),
   weather: lazy(() => import('./weather/WeatherApp.jsx')),
+  files: lazy(() => import('./files/Files.jsx')),
 };

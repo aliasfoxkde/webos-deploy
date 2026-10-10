@@ -6,5 +6,6 @@ import video from './video/manifest.js';
 import calc from './calculator/manifest.js';
 import editor from './editor/manifest.js';
 import weather from './weather/manifest.js';
+import files from './files/manifest.js';
 
-export const PLUGIN_APPS = [terminal, video, calc, editor, weather];
+export const PLUGIN_APPS = [terminal, video, calc, editor, weather, files];

@@ -1,37 +1,56 @@
 // Dev tool: CDP-driven screenshot session against a running WebOS preview
 // server (`npm run preview`), for visual verification without a browser.
 // Usage: node scripts/screenshot-drive.mjs [base-url] [out-dir]
-import { writeFileSync, mkdirSync } from 'node:fs';
+import { writeFileSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { spawn } from 'node:child_process';
 
 const BASE = process.argv[2] || 'http://localhost:5180/';
 const OUT = process.argv[3] || '/var/tmp/webos-shots';
-const DEBUG_PORT = 9333;
 mkdirSync(OUT, { recursive: true });
 
+// Watchdog: a dead chromium leaves pending CDP promises unsettled forever —
+// bail out loudly instead of hanging.
+const watchdog = setTimeout(() => { console.error('WATCHDOG: driver did not finish in 8min'); process.exit(3); }, 8 * 60 * 1000);
+watchdog.unref?.();
+
+// Private profile + ephemeral CDP port per run. Debian's /usr/bin/chromium is
+// a wrapper that falls back to a SHARED profile dir, and a leaked browser from
+// an earlier run can squat a fixed --remote-debugging-port — a later run then
+// silently drives the stale browser (its profile, its IndexedDB). Port 0 plus
+// the "DevTools listening" stderr banner makes that impossible.
+const profile = mkdtempSync(`${tmpdir()}/webos-prof-`);
 const chrome = spawn('/usr/bin/chromium', [
   '--headless', '--no-sandbox', '--disable-gpu', '--hide-scrollbars',
-  `--remote-debugging-port=${DEBUG_PORT}`, '--window-size=1520,900', 'about:blank',
-], { stdio: 'ignore' });
-process.on('exit', () => chrome.kill());
-await sleep(1500);
+  '--remote-debugging-port=0', `--user-data-dir=${profile}`, '--window-size=1520,900', 'about:blank',
+], { detached: true }); // own process group, so killTree reaps renderers too
+let cdpBanner = '';
+chrome.stderr.on('data', (d) => { cdpBanner += d; });
+const killTree = () => {
+  try { process.kill(-chrome.pid, 'SIGKILL'); } catch { try { chrome.kill('SIGKILL'); } catch { /* gone */ } }
+  try { rmSync(profile, { recursive: true, force: true }); } catch { /* best effort */ }
+};
+process.on('exit', killTree);
 
-// Chromium cold-starts slowly on this box — poll for the CDP endpoint.
+// The banner carries the true endpoint — never guess a port.
 let webSocketDebuggerUrl = null;
-for (let i = 0; i < 30 && !webSocketDebuggerUrl; i++) {
-  await sleep(500);
-  webSocketDebuggerUrl = await fetch(`http://127.0.0.1:${DEBUG_PORT}/json/version`)
-    .then((r) => r.json()).then((d) => d.webSocketDebuggerUrl).catch(() => null);
+for (let i = 0; i < 40 && !webSocketDebuggerUrl; i++) {
+  await sleep(250);
+  webSocketDebuggerUrl = cdpBanner.match(/DevTools listening on (ws:\/\/\S+)/)?.[1] || null;
 }
-if (!webSocketDebuggerUrl) throw new Error('chromium CDP endpoint never came up');
+if (!webSocketDebuggerUrl) { killTree(); throw new Error('chromium CDP endpoint never came up'); }
 const ws = new WebSocket(webSocketDebuggerUrl);
 await new Promise((res, rej) => { ws.onopen = res; ws.onerror = rej; });
 
 let seq = 0;
 const pending = new Map();
+const pageErrors = [];
 ws.onmessage = (ev) => {
   const msg = JSON.parse(ev.data);
-  if (msg.id && pending.has(msg.id)) { pending.get(msg.id)(msg); pending.delete(msg.id); }
+  if (msg.id && pending.has(msg.id)) { pending.get(msg.id)(msg); pending.delete(msg.id); return; }
+  if (msg.method === 'Runtime.exceptionThrown') {
+    pageErrors.push(JSON.stringify(msg.params.exceptionDetails).slice(0, 400));
+  }
 };
 function send(method, params = {}, sessionId) {
   const id = ++seq;
@@ -59,6 +78,16 @@ async function shot(name) {
   console.log('shot', name);
 }
 const evaluate = (expression) => send('Runtime.evaluate', { expression, returnByValue: true }, sessionId);
+// async page code via stash-and-poll (Runtime.evaluate has no awaitPromise)
+const evalAsync = async (body, tries = 25) => {
+  await evaluate(`window.__a = null; (async () => { ${body} })().then((v) => { window.__a = { ok: true, v }; }).catch((e) => { window.__a = { ok: false, e: String((e && e.message) || e) }; })`);
+  for (let i = 0; i < tries; i++) {
+    await sleep(300);
+    const r = await evaluate(`window.__a`);
+    if (r.result?.value) return r.result.value;
+  }
+  return { ok: false, e: 'timeout' };
+};
 // real input fires pointerdown → pointerup → click; dispatch all three
 const clickAt = (x, y) => evaluate(`(() => {
   const el = document.elementFromPoint(${x}, ${y});
@@ -77,6 +106,43 @@ const ctxAt = (x, y) => evaluate(`(() => {
   el.dispatchEvent(new MouseEvent('contextmenu', opts));
 })()`);
 function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
+// poll until an expression turns truthy (bounded)
+async function waitFor(expression, tries = 12) {
+  for (let i = 0; i < tries; i++) {
+    const r = await evaluate(expression);
+    if (r.result?.value) return true;
+    await sleep(400);
+  }
+  return false;
+}
+
+// Independent-DB canary: if these flip to TIMEOUT, IndexedDB itself is
+// wedged in this chromium session (not a webos bug — a session/environment
+// state); if 'canary' works while webos DB ops hang, the 'webos' DB is stuck.
+const idbCanary = async (label) => console.log('idb canary', label + ':', JSON.stringify(await evalAsync(`
+  await new Promise((res, rej) => {
+    const o = indexedDB.open('canary', 1);
+    o.onupgradeneeded = () => { if (!o.result.objectStoreNames.contains('kv')) o.result.createObjectStore('kv'); };
+    o.onsuccess = () => { const db = o.result; const t = db.transaction('kv', 'readwrite'); t.objectStore('kv').put('x', 'k'); t.oncomplete = () => { db.close(); res('ok'); }; t.onerror = () => res('tx-err ' + ((t.error && t.error.message) || '?')); };
+    o.onerror = () => rej(o.error);
+  });
+  return 'done';
+`, 10)));
+
+// 0. clean slate: unregister the service worker, drop its caches, clear all
+// webos.* settings and the IndexedDB disk — runs are reproducible and never
+// race a stale SW cache from a previous build.
+console.log('clean slate:', JSON.stringify(await evalAsync(`
+  const regs = (await navigator.serviceWorker?.getRegistrations?.()) || [];
+  regs.forEach((r) => r.unregister());
+  if (window.caches) { for (const n of await caches.keys()) await caches.delete(n); }
+  Object.keys(localStorage).filter((k) => k.startsWith('webos.')).forEach((k) => localStorage.removeItem(k));
+  await new Promise((res) => { const r = indexedDB.deleteDatabase('webos'); r.onsuccess = res; r.onerror = res; r.onblocked = res; });
+  return 'clean';
+}`)));
+await evaluate(`location.reload()`);
+await sleep(2500);
+await idbCanary('boot');
 
 // 1. desktop home (defaults only — no store apps preinstalled)
 await shot('01-home');
@@ -245,6 +311,8 @@ await sleep(500);
 await shot('32-mobile-app');
 await evaluate(`window.__os?.setUiMode('auto')`);
 await sleep(300);
+
+await idbCanary('mid (after mobile step)');
 
 // 13. virtual windows are movable (Settings + App Store were pinned before 2.2)
 await evaluate(`window.__os?.windows.forEach(w => window.__os.close(w.id)); window.__os?.launch('settings'); window.__os?.launch('store');`);
@@ -454,6 +522,8 @@ if (typeof apiTemp === 'number') {
   console.log('weather api fetch failed node-side too');
 }
 
+await idbCanary('pre-snap (after weather)');
+
 // 22. snapping: drag terminal to the right edge → right half.
 // Gesture IIFE is self-contained (down + moves + up); results land on window.
 await evaluate(`location.href = '${BASE}'`);
@@ -525,6 +595,212 @@ await shot('47-snap-quarter');
 await evaluate(`window.__os?.windows.forEach(w => window.__os.close(w.id))`);
 await sleep(250);
 
+// 24. Files app: VFS upload (synthetic drop), folder, preview, delete, persistence.
+// Drag&drop is driven with a real DataTransfer carrying File objects.
+await idbCanary('pre-files');
+await evaluate(`location.href = '${BASE}?open=files';`);
+await sleep(2000);
+const filesUp = await waitFor(`!!document.querySelector('.files')`);
+console.log('files app mounted:', filesUp);
+const dropFile = (name, content, type) => `
+(() => {
+  const target = document.querySelector('.win[aria-label="Files"] .files') || document.querySelector('.files');
+  if (!target) return 'no target';
+  const dt = new DataTransfer();
+  dt.items.add(new File([${JSON.stringify(content)}], ${JSON.stringify(name)}, { type: ${JSON.stringify(type)} }));
+  const r = target.getBoundingClientRect();
+  const opts = { bubbles: true, cancelable: true, clientX: r.left + r.width / 2, clientY: r.top + 60 };
+  target.dispatchEvent(new DragEvent('dragover', { ...opts, dataTransfer: dt }));
+  target.dispatchEvent(new DragEvent('drop', { ...opts, dataTransfer: dt }));
+  return 'dropped';
+})()`;
+const drop1 = await evaluate(dropFile('hello.txt', 'hello webos files', 'text/plain'));
+await sleep(800);
+const f1 = await evaluate(`(() => {
+  const tiles = [...document.querySelectorAll('.f-tile')];
+  return { tiles: tiles.map(t => t.querySelector('.f-name')?.textContent), hello: tiles.some(t => t.querySelector('.f-name')?.textContent === 'hello.txt') };
+})()`);
+console.log('files drop:', JSON.stringify(drop1.result?.value), JSON.stringify(f1.result?.value));
+if (!f1.result?.value?.hello) {
+  console.log('DROP FAILED — idb counts:', JSON.stringify(await evalAsync(`
+    const db = await new Promise((res, rej) => { const o = indexedDB.open('webos'); o.onsuccess = () => res(o.result); o.onerror = () => rej(o.error); });
+    const out = { stores: [...db.objectStoreNames] };
+    for (const s of out.stores) out[s] = await new Promise((res) => { const t = db.transaction(s, 'readonly'); const q = t.objectStore(s).count(); q.onsuccess = () => res(q.result); q.onerror = () => res(String(t.error)); });
+    db.close(); return out;
+  }`)), 'storage:', JSON.stringify(await evalAsync(`const e = await navigator.storage?.estimate?.(); return e ? { usage: e.usage, quota: e.quota } : 'no estimate';`)));
+  console.log('page errors so far:', pageErrors.slice(-5));
+}
+await shot('48-files-upload');
+// preview: click the hello.txt tile → <pre> with the text
+await evaluate(`[...document.querySelectorAll('.f-tile')].find(t => t.querySelector('.f-name')?.textContent === 'hello.txt')?.click()`);
+await sleep(500);
+const pv = await evaluate(`({ pre: document.querySelector('.f-pv-body pre')?.textContent, name: document.querySelector('.f-pv-name')?.textContent })`);
+console.log('files preview:', JSON.stringify(pv.result?.value));
+await shot('49-files-preview');
+await evaluate(`[...document.querySelectorAll('.f-preview .f-btn')].find(b => b.textContent === 'Close')?.click()`);
+await sleep(250);
+// new folder via the inline form
+await evaluate(`[...document.querySelectorAll('.f-bar .f-btn')].find(b => b.textContent === 'New folder')?.click()`);
+await sleep(250);
+await evaluate(`(() => { const i = document.querySelector('.f-newdir input'); const set = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set; set.call(i, 'Docs'); i.dispatchEvent(new Event('input', { bubbles: true })); return 'typed'; })()`);
+await sleep(150);
+await evaluate(`document.querySelector('.f-newdir input').dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))`);
+await sleep(500);
+const dir = await evaluate(`[...document.querySelectorAll('.f-tile')].some(t => t.querySelector('.f-name')?.textContent === 'Docs')`);
+console.log('folder created (want true):', dir.result?.value);
+// enter folder, drop a second file inside it
+await evaluate(`[...document.querySelectorAll('.f-tile')].find(t => t.querySelector('.f-name')?.textContent === 'Docs')?.click()`);
+await sleep(400);
+const crumb = await evaluate(`document.querySelector('.f-crumbs')?.textContent`);
+await evaluate(dropFile('sub.txt', 'nested content', 'text/plain'));
+await sleep(800);
+const sub = await evaluate(`[...document.querySelectorAll('.f-tile')].some(t => t.querySelector('.f-name')?.textContent === 'sub.txt')`);
+console.log('in-folder drop:', JSON.stringify({ crumb: crumb.result?.value, subThere: sub.result?.value }));
+await shot('50-files-folder');
+// delete sub.txt via its tile action (click event, no hover needed)
+await evaluate(`(() => { const t = [...document.querySelectorAll('.f-tile')].find(t => t.querySelector('.f-name')?.textContent === 'sub.txt'); t?.querySelector('.f-actions button[title="Delete"]')?.click(); return !!t; })()`);
+await sleep(500);
+const subGone = await evaluate(`![...document.querySelectorAll('.f-tile')].some(t => t.querySelector('.f-name')?.textContent === 'sub.txt')`);
+console.log('file deleted (want true):', subGone.result?.value);
+const footer = await evaluate(`document.querySelector('.f-status')?.textContent`);
+console.log('files footer:', JSON.stringify(footer.result?.value));
+// persistence: reload → hello.txt + Docs folder survive (IndexedDB)
+await evaluate(`location.reload()`);
+await sleep(2000);
+if (!(await waitFor(`!!document.querySelector('.files')`))) {
+  await evaluate(`location.href = '${BASE}?open=files'`);
+  await sleep(2000);
+  await waitFor(`!!document.querySelector('.files')`);
+}
+const fp = await evaluate(`(() => {
+  const names = [...document.querySelectorAll('.f-tile .f-name')].map(n => n.textContent);
+  return { hello: names.includes('hello.txt'), docs: names.includes('Docs'), status: document.querySelector('.f-status')?.textContent };
+})()`);
+console.log('files persisted after reload (want hello+docs true):', JSON.stringify(fp.result?.value));
+await shot('51-files-persisted');
+await evaluate(`window.__os?.windows.forEach(w => window.__os.close(w.id)); location.href = '${BASE}'`);
+await sleep(1800);
+
+// 25. icon groups: new group → drag icon in → popup launch/rename/unfile → remove
+await evaluate(`window.__os?.groups.forEach(g => window.__os.removeGroup(g.id))`); // clean slate (prior runs persist)
+await sleep(300);
+await ctxAt(700, 300);
+await sleep(300);
+await evaluate(`[...document.querySelectorAll('.ctx-item')].find(b => b.textContent.includes('New group'))?.click()`);
+await sleep(400);
+const grpNew = await evaluate(`({ groups: window.__os.groups.length, tile: !!document.querySelector('.group-tile'), lbl: document.querySelector('.group-tile .lbl')?.textContent })`);
+console.log('group created:', JSON.stringify(grpNew.result?.value));
+await shot('52-group-new');
+const firstName = (await evaluate(`document.querySelector('#icon-grid .desk-icon:not(.group-tile) .lbl')?.textContent`)).result?.value;
+// drag the first app icon onto the group tile (self-contained IIFE)
+await evaluate(`(() => {
+  const src = document.querySelector('#icon-grid .desk-icon:not(.group-tile)');
+  const dst = document.querySelector('.group-tile');
+  const a = src.getBoundingClientRect(), b = dst.getBoundingClientRect();
+  const sx = a.left + a.width / 2, sy = a.top + a.height / 2;
+  const dx = b.left + b.width / 2, dy = b.top + b.height / 2;
+  src.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerId: 4, clientX: sx, clientY: sy, button: 0 }));
+  let i = 0;
+  const step = () => {
+    i++;
+    window.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, pointerId: 4, clientX: sx + (dx - sx) * i / 5, clientY: sy + (dy - sy) * i / 5 }));
+    if (i < 5) return setTimeout(step, 45);
+    setTimeout(() => {
+      window.__groupHint = dst.classList.contains('drop-hint');
+      window.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId: 4, clientX: dx, clientY: dy }));
+    }, 90);
+  };
+  setTimeout(step, 45);
+})()`);
+await sleep(700);
+const grpFilled = await evaluate(`(() => {
+  const g = window.__os.groups[0];
+  const labels = [...document.querySelectorAll('#icon-grid .desk-icon:not(.group-tile) .lbl')].map(n => n.textContent);
+  return { members: g.appIds, hidden: !labels.includes(${JSON.stringify(firstName)}), count: document.querySelector('.group-tile .ver')?.textContent, hintSeen: window.__groupHint };
+})()`);
+console.log('icon filed into group (drop-hint seen + 1 member, label hidden):', JSON.stringify(grpFilled.result?.value), `src=${firstName}`);
+await shot('53-group-filled');
+// open popup: member row + launch from it
+await evaluate(`document.querySelector('.group-tile')?.click()`);
+await sleep(400);
+const gpOpen = await evaluate(`({ popup: !!document.querySelector('.gp'), rows: [...document.querySelectorAll('.gp-app span')].map(n => n.textContent) })`);
+console.log('group popup:', JSON.stringify(gpOpen.result?.value));
+await shot('54-group-popup');
+await evaluate(`document.querySelector('.gp-app')?.click()`);
+await sleep(500);
+const gpLaunch = await evaluate(`({ windows: window.__os.windows.length, popupClosed: !document.querySelector('.gp') })`);
+console.log('launch from group:', JSON.stringify(gpLaunch.result?.value));
+await evaluate(`window.__os?.windows.forEach(w => window.__os.close(w.id))`);
+await sleep(250);
+// rename via the popup input (set value, let React flush, THEN blur —
+// onBlur reads the component state, so both events can't share one evaluate)
+await evaluate(`document.querySelector('.group-tile')?.click()`);
+await sleep(350);
+await evaluate(`(() => { const i = document.querySelector('.gp-name'); const set = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set; i.focus(); set.call(i, 'Tools'); i.dispatchEvent(new Event('input', { bubbles: true })); return 'typed'; })()`);
+await sleep(250);
+await evaluate(`document.querySelector('.gp-name').blur()`);
+await sleep(400);
+const renamed = await evaluate(`({ name: window.__os.groups[0]?.name, tile: document.querySelector('.group-tile .lbl')?.textContent })`);
+console.log('group renamed (want Tools):', JSON.stringify(renamed.result?.value));
+// unfile the member → back on the grid
+await evaluate(`document.querySelector('.gp-rm')?.click()`);
+await sleep(400);
+const unfound = await evaluate(`({ members: window.__os.groups[0]?.appIds.length, back: document.querySelectorAll('#icon-grid .desk-icon:not(.group-tile)').length })`);
+console.log('member removed from group:', JSON.stringify(unfound.result?.value));
+// persistence: re-add member, reload, group + membership survive
+await evaluate(`window.__os?.groupAdd(window.__os.groups[0].id, window.__os.apps[0].id)`);
+await sleep(300);
+await evaluate(`location.reload()`);
+await sleep(2500);
+const grpPersist = await evaluate(`({ groups: window.__os?.groups.map(g => ({ name: g.name, n: g.appIds.length })), tile: !!document.querySelector('.group-tile') })`);
+console.log('groups persisted after reload:', JSON.stringify(grpPersist.result?.value));
+// remove group via its context menu → members return
+const gt = await evaluate(`(() => { const r = document.querySelector('.group-tile').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; })()`);
+await ctxAt(gt.result.value.x, gt.result.value.y);
+await sleep(300);
+await evaluate(`[...document.querySelectorAll('.ctx-item')].find(b => b.textContent.includes('Remove group'))?.click()`);
+await sleep(400);
+const grpGone = await evaluate(`({ groups: window.__os.groups.length, tile: !!document.querySelector('.group-tile'), icons: document.querySelectorAll('#icon-grid .desk-icon').length })`);
+console.log('group removed (members return):', JSON.stringify(grpGone.result?.value));
+await shot('55-group-removed');
+
+// 26. terminal sqlite: real SQLite (sql.js WASM) persisted to IndexedDB.
+await evaluate(`window.__os?.launch('terminal')`);
+await sleep(700);
+const termCmd = async (cmd) => {
+  await evaluate(`(() => { const i = document.querySelector('.terminal input'); const set = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set; set.call(i, ${JSON.stringify(cmd)}); i.dispatchEvent(new Event('input', { bubbles: true })); })()`);
+  await sleep(140);
+  await evaluate(`document.querySelector('.terminal input').dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))`);
+};
+const waitText = async (needle, tries = 25) => {
+  for (let i = 0; i < tries; i++) {
+    await sleep(400);
+    const r = await evaluate(`[...document.querySelectorAll('.t-line')].map(l => l.textContent).join('\\n').includes(${JSON.stringify(needle)})`);
+    if (r.result?.value) return true;
+  }
+  return false;
+};
+await termCmd('sqlite CREATE TABLE IF NOT EXISTS notes (id INTEGER, body TEXT);');
+console.log('sqlite create+save:', await waitText('— saved'));
+const runTag = `run${Date.now() % 100000}`;
+await termCmd(`sqlite INSERT INTO notes VALUES (1, '${runTag}');`);
+console.log('sqlite insert+save:', await waitText('— saved'));
+await termCmd('sqlite SELECT id, body FROM notes;');
+const sqlSel = await evaluate(`[...document.querySelectorAll('.t-line')].map(l => l.textContent).join('\\n')`);
+console.log('sqlite select shows row (want true):', sqlSel.result?.value?.includes(runTag));
+await shot('56-sqlite');
+// persistence: reload → table + row survive (IndexedDB bytes → new SQL.Database)
+await evaluate(`location.reload()`);
+await sleep(2500);
+await evaluate(`window.__os?.launch('terminal')`);
+await sleep(700);
+await termCmd('sqlite SELECT * FROM notes;');
+console.log('sqlite row survived reload (want true):', await waitText(runTag));
+await shot('57-sqlite-persisted');
+await evaluate(`window.__os?.windows.forEach(w => window.__os.close(w.id))`);
+await sleep(250);
+
 console.log('done');
-chrome.kill();
+clearTimeout(watchdog);
+killTree();
 process.exit(0);

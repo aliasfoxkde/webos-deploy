@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useOS } from '../../os/state.jsx';
+import { kvGet, kvSet } from '../../os/db.js';
+import wasmUrl from 'sql.js/dist/sql-wasm.wasm?url';
 
 /* Built-in terminal: shell-style commands over the OS itself, plus raw JS
    evaluation as the pass-through escape hatch. */
@@ -15,6 +17,7 @@ const HELP = [
   'theme <preset>       midnight | ocean | forest | sunset | light',
   'accent <color>       set accent (name or #hex, e.g. accent emerald)',
   'wallpaper <url>      set a wallpaper image ("" to clear)',
+  'sqlite <sql>         run SQL on the persistent webos database',
   'fullscreen           toggle fullscreen',
   'date | echo | uname | whoami | neofetch',
   'clear                clear the screen',
@@ -27,6 +30,17 @@ const NAMED = {
   blue: '#60a5fa', indigo: '#818cf8', violet: '#a78bfa', purple: '#c084fc', magenta: '#e879f9', pink: '#f472b6',
 };
 
+/* -- sqlite: real SQLite (sql.js WASM) over a database that persists to
+   IndexedDB after every statement. The module + wasm load lazily on first
+   use so the terminal chunk stays light. -- */
+const SQL_DB_KEY = 'sqlite.db';
+const fmtVal = (v) => (v === null ? 'NULL' : v instanceof Uint8Array ? `<blob ${v.length}B>` : String(v));
+const renderTable = (r) => {
+  const rows = [r.columns, ...r.values.map((row) => row.map(fmtVal))];
+  const w = r.columns.map((_, c) => Math.max(...rows.map((row) => String(row[c] ?? '').length)));
+  return rows.map((row) => row.map((cell, c) => String(cell ?? '').padEnd(w[c])).join(' | ')).join('\n');
+};
+
 export default function Terminal() {
   const os = useOS();
   const [lines, setLines] = useState(() => [
@@ -37,10 +51,40 @@ export default function Terminal() {
   const [hIdx, setHIdx] = useState(-1);
   const endRef = useRef(null);
   const inputRef = useRef(null);
+  const sqlRef = useRef(null); // opened SQL.Database, kept for the session
 
   useEffect(() => { endRef.current?.scrollIntoView({ block: 'end' }); }, [lines]);
 
   const push = (t, s) => setLines((ls) => [...ls.slice(-400), { t, s }]);
+
+  const sqlReady = async () => {
+    if (sqlRef.current) return sqlRef.current;
+    push('out', 'loading sql.js…');
+    const initSqlJs = (await import('sql.js')).default;
+    const SQL = await initSqlJs({ locateFile: () => wasmUrl });
+    const saved = await kvGet(SQL_DB_KEY);
+    sqlRef.current = saved ? new SQL.Database(saved) : new SQL.Database();
+    return sqlRef.current;
+  };
+
+  const runSql = async (sql) => {
+    if (!sql.trim()) {
+      push('out', 'usage: sqlite <sql>  — e.g. sqlite CREATE TABLE t (id INTEGER, name TEXT)');
+      push('out', 'one persistent database (IndexedDB, survives reloads) for the whole OS.');
+      return;
+    }
+    try {
+      const db = await sqlReady();
+      const results = db.exec(sql);
+      if (!results.length) push('out', 'ok');
+      results.forEach((r) => push('out', renderTable(r)));
+      const bytes = db.export();
+      await kvSet(SQL_DB_KEY, bytes);
+      push('out', `— saved (${bytes.length} bytes → IndexedDB ${SQL_DB_KEY})`);
+    } catch (err) {
+      push('err', String(err.message || err));
+    }
+  };
 
   function run(raw) {
     const cmd = raw.trim();
@@ -100,6 +144,9 @@ export default function Terminal() {
       case 'wallpaper':
         os.setTheme({ wallpaper: arg });
         push('out', arg ? 'wallpaper set' : 'wallpaper cleared');
+        return;
+      case 'sqlite':
+        runSql(arg);
         return;
       default: {
         // Pass-through: evaluate as JavaScript in a scoped function.

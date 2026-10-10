@@ -76,7 +76,10 @@ created via right-click → Add app…: name, link, icon URL/dataURL, descriptio
 accent, embed preference) · `theme` (preset, accent, wallpaper CSS/URL/dataURL,
 dim, image fit/pos/blur/brightness/saturation — images render in the
 `#wallpaper` fixed layer so filters can apply) · `desktop.order` + `desktop`
-(iconSize, sort) · `taskbar` (position bottom|top, autohide, labels, clock24,
+(iconSize, sort) · `groups` (desktop icon groups: `{ id: 'grp-…', name,
+appIds }` — grouped icons leave the grid and live inside their folder tile;
+`desktop.order` stores group ids too, uninstalling an app unfiles it) ·
+`taskbar` (position bottom|top, autohide, labels, clock24,
 showDate, pinned app ids — drag icons onto the bar to pin, drag within the bar
 to reorder) · `widgets`
 (enabled ids in display order) · `volume` (level, muted; broadcast to apps as a
@@ -84,6 +87,36 @@ to reorder) · `widgets`
 `notes` · `weather.loc` + `weather.units` (metric|imperial; app and sidebar
 widget flip together via the `webos:units` event) · plus per-app keys
 (`webos.calc.*`, `webos.editor.state`).
+
+### Bulk storage: IndexedDB (`os/db.js`)
+
+Small JSON settings live in localStorage (`webos.*`); anything that can grow
+lives in the IndexedDB database `webos` (`os/db.js`, promise-wrapped): the
+`kv` store (SQLite database bytes) and the `files` store — the Files app's
+virtual disk, keyed by path (`/Home/notes.txt`), folders as explicit marker
+records (`{ dir: true }`) plus implicit path prefixes. The Terminal's
+`sqlite` command runs real SQLite (sql.js WASM, loaded lazily with a Vite
+`?url` wasm asset) against one database whose bytes are re-saved to
+`kv['sqlite.db']` after every statement — it survives reloads.
+
+### Files app
+
+Two tabs: **WebOS disk** (the IndexedDB VFS — upload via button or
+drag-and-drop onto the window, inline new-folder form, list with per-tile
+download/delete, two-click folder delete, previews for text/image/video/audio/
+pdf, browser storage quota in the footer) and **This device** (File System
+Access API where available: session-only live browse of a real folder, files
+read on demand, per-file **Import** copies into the VFS at the current path).
+Nothing from the device tab persists unless imported — the footer says so.
+
+### Desktop icon groups
+
+Right-click desktop → **New group** creates a folder tile (2×2 preview of up
+to four member icons). Dragging an app icon onto the tile files it into the
+group (tile highlights, member leaves the grid); clicking the tile opens a
+popup: rename inline, launch members, unfile per member, remove the group
+(members return). Groups participate in drag-reorder and `Sort icons by name`
+keeps them at the end.
 
 ### Window tiling (snapping)
 

@@ -70,6 +70,65 @@ input:focus { outline: 1px solid var(--accent); }
 .desk-icon .lbl { font-size: 0.72rem; line-height: 1.25; text-align: center; color: #f2f5fa; text-shadow: 0 1px 3px rgba(0,0,0,0.9); }
 .desk-icon .ver { font-size: 0.6rem; color: var(--text-dim); text-shadow: 0 1px 3px rgba(0,0,0,0.9); }
 
+/* group tile: a desktop folder with a 2×2 preview of its members */
+.desk-icon .g-thumb {
+  width: 52px; height: 52px; padding: 5px;
+  display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 3px;
+  border-radius: 12px; overflow: hidden;
+  background: rgba(10, 14, 22, 0.55); border: 1px solid var(--chrome-line);
+  filter: drop-shadow(0 3px 6px rgba(0,0,0,0.5));
+}
+.desk-icon .g-thumb img { width: 100%; height: 100%; object-fit: contain; filter: none; }
+.desk-icon.group-tile.drop-hint { background: color-mix(in srgb, var(--accent) 18%, transparent); border-color: var(--accent); }
+
+/* group popup */
+.gp-backdrop { position: fixed; inset: 0; z-index: 560; }
+.gp {
+  position: fixed; z-index: 561; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: min(380px, calc(100vw - 40px)); max-height: min(480px, calc(100vh - 80px));
+  display: flex; flex-direction: column;
+  background: var(--chrome); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--chrome-line); border-radius: 14px;
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.6);
+}
+.gp-head { display: flex; align-items: center; gap: 6px; padding: 10px 12px; border-bottom: 1px solid var(--chrome-line); }
+.gp-name {
+  flex: 1; min-width: 0; border: 1px solid transparent; border-radius: 8px;
+  background: transparent; color: var(--text); font: inherit; font-weight: 600; padding: 4px 8px;
+}
+.gp-name:hover, .gp-name:focus { border-color: var(--chrome-line); background: rgba(255,255,255,0.05); outline: none; }
+.gp-x {
+  border: none; background: transparent; color: var(--text-dim); cursor: pointer;
+  width: 26px; height: 26px; border-radius: 8px; font-size: 0.8rem;
+}
+.gp-x:hover { background: rgba(255,255,255,0.08); color: var(--text); }
+.gp-list { flex: 1; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 2px; }
+.gp-row { display: flex; align-items: center; gap: 4px; }
+.gp-app {
+  flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px;
+  border: none; background: transparent; color: var(--text); cursor: pointer;
+  font: inherit; padding: 7px 8px; border-radius: 9px; text-align: left;
+}
+.gp-app:hover { background: rgba(255,255,255,0.07); }
+.gp-app img { width: 26px; height: 26px; flex: none; }
+.gp-app span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gp-rm {
+  border: none; background: transparent; color: var(--text-dim); cursor: pointer;
+  width: 24px; height: 24px; border-radius: 7px; flex: none; font-size: 0.72rem;
+}
+.gp-rm:hover { color: #f87171; background: rgba(248, 113, 113, 0.12); }
+.gp-empty { color: var(--text-dim); font-size: 0.76rem; text-align: center; padding: 26px 14px; line-height: 1.6; }
+.gp-foot {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 12px; border-top: 1px solid var(--chrome-line);
+}
+.gp-del {
+  border: 1px solid rgba(248, 113, 113, 0.45); background: transparent; color: #f87171;
+  font: inherit; font-size: 0.74rem; padding: 4px 10px; border-radius: 8px; cursor: pointer;
+}
+.gp-del:hover { background: rgba(248, 113, 113, 0.12); }
+.gp-foot .hint { font-size: 0.64rem; color: var(--text-dim); }
+
 /* ---- windows ---- */
 .win {
   position: absolute; min-width: 320px; min-height: 220px;

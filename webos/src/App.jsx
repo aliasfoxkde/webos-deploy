@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useOS } from './os/state.jsx';
 import Window from './shell/Window.jsx';
@@ -68,6 +68,50 @@ function VirtualWindow({ win }) {
 
 const DRAG_THRESHOLD = 6; // px of movement before a press becomes a drag
 
+/* Group popup: rename, launch members, unfile members, remove the group. */
+function GroupPopup({ groupId, onClose }) {
+  const os = useOS();
+  const group = os.groups.find((g) => g.id === groupId);
+  const [name, setName] = useState(group?.name || '');
+  useEffect(() => { setName(group?.name || ''); }, [group?.name]);
+  if (!group) return null;
+  const members = group.appIds.map((id) => os.findApp(id)).filter(Boolean);
+  return (
+    <>
+      <div className="gp-backdrop" onClick={onClose} />
+      <section className="gp" role="dialog" aria-label={group.name}>
+        <header className="gp-head">
+          <input
+            className="gp-name"
+            value={name}
+            aria-label="Group name"
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+            onBlur={() => os.renameGroup(group.id, name.trim() || group.name)}
+          />
+          <button className="gp-x" onClick={onClose} title="Close">✕</button>
+        </header>
+        <div className="gp-list">
+          {members.map((app) => (
+            <div key={app.id} className="gp-row">
+              <button className="gp-app" onClick={() => { os.launch(app.id); onClose(); }} title={`Open ${app.name}`}>
+                <img src={app.icon} alt="" />
+                <span>{app.name}</span>
+              </button>
+              <button className="gp-rm" title={`Remove ${app.name} from group`} onClick={() => os.groupRemove(group.id, app.id)}>✕</button>
+            </div>
+          ))}
+          {!members.length && <div className="gp-empty">Empty group — drag app icons onto the folder tile to file them here.</div>}
+        </div>
+        <footer className="gp-foot">
+          <button className="gp-del" onClick={() => { os.removeGroup(group.id); onClose(); }}>Remove group</button>
+          <span className="hint">icons return to the desktop</span>
+        </footer>
+      </section>
+    </>
+  );
+}
+
 export default function App() {
   const os = useOS();
   const [startOpen, setStartOpen] = useState(false);
@@ -75,7 +119,28 @@ export default function App() {
   const [appDlg, setAppDlg] = useState(null); // null | 'new' | app row (edit)
   const [widgetsOpen, setWidgetsOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [openGroupId, setOpenGroupId] = useState(null);
   const drag = useRef(null); // { id, moved, order }
+
+  /* Desktop flow: loose apps + group tiles arranged by the saved order.
+     `desktop.order` stores app ids AND group ids; grouped apps are hidden
+     from the grid — they live inside their group tile. */
+  const memberOf = useMemo(() => {
+    const m = new Map();
+    os.groups.forEach((g) => g.appIds.forEach((id) => m.set(id, g.id)));
+    return m;
+  }, [os.groups]);
+  const desktopApps = os.apps;
+  const entries = useMemo(() => {
+    const known = new Map(os.groups.map((g) => [g.id, { kind: 'group', id: g.id, group: g }]));
+    desktopApps.forEach((a) => { if (!memberOf.has(a.id)) known.set(a.id, { kind: 'app', id: a.id, app: a }); });
+    const out = [];
+    const seen = new Set();
+    const put = (e) => { if (e && !seen.has(e.id)) { seen.add(e.id); out.push(e); } };
+    os.order.forEach((id) => put(known.get(id)));
+    known.forEach((e) => put(e));
+    return out;
+  }, [desktopApps, os.groups, os.order, memberOf]);
 
   // Context menu items per target kind.
   const buildItems = useCallback((kind, arg) => {
@@ -86,8 +151,9 @@ export default function App() {
           { label: 'App Store…', run: () => os.launch('store') },
           '-',
           { label: 'Sort icons by name', run: () => os.sortDesktop() },
-          { label: 'Rearrange freely', run: () => { os.setDesktop({ sort: 'custom' }); os.setOrder(os.apps.map((a) => a.id)); } },
+          { label: 'Rearrange freely', run: () => { os.setDesktop({ sort: 'custom' }); os.setOrder([...os.apps.map((a) => a.id), ...os.groups.map((g) => g.id)]); } },
           '-',
+          { label: 'New group', hint: 'drag icons in', run: () => os.addGroup({ id: `grp-${Date.now().toString(36)}`, name: 'New group', appIds: [] }) },
           { label: 'Add app…', hint: 'PWA / link', run: () => setAppDlg('new') },
           { label: 'Display settings…', run: () => os.launch('settings') },
           { label: 'Toggle fullscreen', hint: 'F11', run: () => document.dispatchEvent(new CustomEvent('webos:fullscreen')) },
@@ -112,6 +178,15 @@ export default function App() {
           items.push({ label: `${app.name} (system app)`, disabled: true });
         }
         return items;
+      }
+      case 'group': {
+        const g = os.groups.find((x) => x.id === arg);
+        if (!g) return [];
+        return [
+          { label: `Open ${g.name}`, hint: `${g.appIds.length} apps`, run: () => setOpenGroupId(g.id) },
+          '-',
+          { label: 'Remove group', hint: 'icons return', run: () => os.removeGroup(g.id) },
+        ];
       }
       case 'pin': {
         const app = os.findApp(arg);
@@ -222,14 +297,22 @@ export default function App() {
      Press moves after a 6px threshold (so plain clicks still launch); while
      dragging, the hovered slot index is recomputed from live rects and the
      order updates immediately, so the rest of the grid springs aside.
-     Dropping onto the taskbar pins the app instead of reordering. */
+     Dropping onto the taskbar pins the app; dropping onto a group tile files
+     the app into that group. Works for group tiles too (reorder only). */
   const beginIconDrag = (e, id) => {
     if (e.button !== 0 || os.mobile || os.desktop.sort === 'name') return;
     const startX = e.clientX, startY = e.clientY;
     let moved = false;
     let lastTarget = -1;
     let overTaskbar = false;
+    let overGroup = null; // group tile id under the pointer, if any
     const el = e.currentTarget;
+    const swallow = () => {
+      e.preventDefault();
+      e.stopPropagation();
+      drag.current = { swallowed: true }; // swallow the click that follows
+      setTimeout(() => { drag.current = null; }, 0);
+    };
     const move = (ev) => {
       if (!moved && Math.hypot(ev.clientX - startX, ev.clientY - startY) < DRAG_THRESHOLD) return;
       moved = true;
@@ -244,19 +327,30 @@ export default function App() {
       }
       if (overTaskbar) return; // hovering the bar: pin on drop, don't reorder
       const icons = [...document.querySelectorAll('#icon-grid .desk-icon')];
-      const target = icons.findIndex((n) => {
+      const hit = (n) => {
         const r = n.getBoundingClientRect();
         return ev.clientX >= r.left && ev.clientX <= r.right && ev.clientY >= r.top && ev.clientY <= r.bottom;
-      });
+      };
+      // Hovering a group tile files the icon into it on drop (no nesting).
+      const gid = id.startsWith('grp-')
+        ? null
+        : icons.find((n) => n.dataset.gid && n.dataset.gid !== id && hit(n))?.dataset.gid || null;
+      if (gid !== overGroup) {
+        icons.find((n) => n.dataset.gid === overGroup)?.classList.remove('drop-hint');
+        overGroup = gid;
+        icons.find((n) => n.dataset.gid === gid)?.classList.add('drop-hint');
+      }
+      if (overGroup) return;
+      const target = icons.findIndex(hit);
       if (target < 0 || target === lastTarget) return;
       lastTarget = target;
-      const ids = os.apps.map((a) => a.id);
+      const ids = entries.map((x) => x.id);
       const from = ids.indexOf(id);
       if (from < 0) return;
       ids.splice(from, 1);
       const to = Math.max(0, Math.min(ids.length, target > from ? target - 1 : target));
       ids.splice(to, 0, id);
-      if (ids.join() === os.apps.map((a) => a.id).join()) return; // no-op hover
+      if (ids.join() === entries.map((x) => x.id).join()) return; // no-op hover
       drag.current = { order: ids };
       os.setOrder(ids);
     };
@@ -265,6 +359,8 @@ export default function App() {
       window.removeEventListener('pointerup', up);
       el.classList.remove('dragging');
       document.querySelector('#task-apps')?.classList.remove('drop-hint');
+      document.querySelector('#icon-grid .desk-icon.drop-hint')?.classList.remove('drop-hint');
+      if (moved && overGroup) { os.groupAdd(overGroup, id); swallow(); return; }
       if (moved && overTaskbar) {
         // Insert by hovered pinned slot when one is under the pointer.
         const cur = os.taskbar.pinned || [];
@@ -279,18 +375,10 @@ export default function App() {
           else next.push(id);
           os.setTaskbar({ pinned: next });
         }
-        e.preventDefault();
-        e.stopPropagation();
-        drag.current = { swallowed: true }; // swallow the click that follows
-        setTimeout(() => { drag.current = null; }, 0);
+        swallow();
         return;
       }
-      if (moved) {
-        e.preventDefault();
-        e.stopPropagation();
-        drag.current = { swallowed: true }; // swallow the click that follows
-        setTimeout(() => { drag.current = null; }, 0);
-      }
+      if (moved) swallow();
     };
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);
@@ -301,7 +389,10 @@ export default function App() {
     os.launch(id);
   };
 
-  const desktopApps = os.apps;
+  const groupClick = (gid) => {
+    if (drag.current?.swallowed) return;
+    setOpenGroupId(gid);
+  };
 
   // Wallpaper renders in its own fixed layer (behind everything, slightly
   // oversized) so custom images can take blur/brightness/saturation filters.
@@ -311,20 +402,39 @@ export default function App() {
       {wp && <div id="wallpaper" aria-hidden="true" style={wp} />}
       <main id="desktop" data-cm="desktop">
         <section id="icon-grid" aria-label="Applications">
-          {desktopApps.map((app) => (
+          {entries.map((e) => (e.kind === 'group' ? (
             <button
-              key={app.id}
-              className="desk-icon"
-              data-cm={`icon:${app.id}`}
-              onPointerDown={(e) => beginIconDrag(e, app.id)}
-              onClick={() => iconClick(app.id)}
-              title={`${app.name} — ${app.tagline}${newTab(app) ? ' (opens in new tab)' : ''}`}
+              key={e.id}
+              className="desk-icon group-tile"
+              data-gid={e.id}
+              data-cm={`group:${e.id}`}
+              onPointerDown={(ev) => beginIconDrag(ev, e.id)}
+              onClick={() => groupClick(e.id)}
+              title={`${e.group.name} — group of ${e.group.appIds.length}`}
             >
-              <img src={app.icon} alt="" />
-              <span className="lbl">{app.name}</span>
-              <span className="ver">v{app.version}{newTab(app) ? ' ↗' : ''}</span>
+              <span className="g-thumb" aria-hidden="true">
+                {e.group.appIds.slice(0, 4).map((id) => {
+                  const app = os.findApp(id);
+                  return app ? <img key={id} src={app.icon} alt="" /> : null;
+                })}
+              </span>
+              <span className="lbl">{e.group.name}</span>
+              <span className="ver">{e.group.appIds.length} app{e.group.appIds.length === 1 ? '' : 's'}</span>
             </button>
-          ))}
+          ) : (
+            <button
+              key={e.id}
+              className="desk-icon"
+              data-cm={`icon:${e.id}`}
+              onPointerDown={(ev) => beginIconDrag(ev, e.id)}
+              onClick={() => iconClick(e.id)}
+              title={`${e.app.name} — ${e.app.tagline}${newTab(e.app) ? ' (opens in new tab)' : ''}`}
+            >
+              <img src={e.app.icon} alt="" />
+              <span className="lbl">{e.app.name}</span>
+              <span className="ver">v{e.app.version}{newTab(e.app) ? ' ↗' : ''}</span>
+            </button>
+          )))}
         </section>
         <div id="windows">
           {os.windows.map((w) =>
@@ -352,6 +462,7 @@ export default function App() {
       )}
       {drawerOpen && <MobileDrawer onClose={() => setDrawerOpen(false)} />}
       {propsId && <Properties appId={propsId} onClose={() => setPropsId(null)} />}
+      {openGroupId && <GroupPopup groupId={openGroupId} onClose={() => setOpenGroupId(null)} />}
       {appDlg && <AddApp app={appDlg === 'new' ? null : appDlg} onClose={() => setAppDlg(null)} />}
       {menu}
     </>

@@ -70,12 +70,19 @@ const DEFAULT_VOLUME = { level: 0.7, muted: false };
 // toggles them). Order of `enabled` = display order.
 export const WIDGET_IDS = ['weather', 'clock', 'battery', 'events', 'notes', 'storage'];
 
+/* -- desktop icon groups --
+   An app leaving the system (uninstall / removed custom app) leaves its
+   group automatically; empty groups persist until removed by the user. */
+const withoutApp = (groups, appId) =>
+  groups.map((g) => (g.appIds.includes(appId) ? { ...g, appIds: g.appIds.filter((x) => x !== appId) } : g));
+
 /* ---------- reducer ---------- */
 const initial = () => ({
   installed: loadInstalled(),
   userApps: load('userapps', []), // custom apps added via right-click → Add app…
   theme: { ...DEFAULT_THEME, ...load('theme', {}) },
   events: load('events', {}),
+  groups: load('groups', []), // desktop icon groups: [{ id, name, appIds }]
   order: load('desktop.order', []),
   volume: { ...DEFAULT_VOLUME, ...load('volume', {}) },
   widgets: { ...DEFAULT_WIDGETS, ...load('widgets', {}) },
@@ -189,10 +196,13 @@ function reducer(state, action) {
       save('installed', installed);
       const taskbar = { ...state.taskbar, pinned: (state.taskbar.pinned || []).filter((id) => id !== action.appId) };
       save('taskbar', taskbar);
+      const groups = withoutApp(state.groups, action.appId);
+      save('groups', groups);
       return {
         ...state,
         installed,
         taskbar,
+        groups,
         windows: state.windows.filter((w) => w.appId !== action.appId),
         order: state.order.filter((id) => id !== action.appId),
       };
@@ -214,13 +224,45 @@ function reducer(state, action) {
       save('userapps', userApps);
       const taskbar = { ...state.taskbar, pinned: (state.taskbar.pinned || []).filter((id) => id !== action.appId) };
       save('taskbar', taskbar);
+      const groups = withoutApp(state.groups, action.appId);
+      save('groups', groups);
       return {
         ...state,
         userApps,
         taskbar,
+        groups,
         windows: state.windows.filter((w) => w.appId !== action.appId),
         order: state.order.filter((id) => id !== action.appId),
       };
+    }
+
+    /* -- desktop icon groups (right-click desktop → New group; drag an icon
+       onto a group tile to file it there; grouped icons leave the grid) -- */
+    case 'addGroup': {
+      const groups = [...state.groups, action.group];
+      save('groups', groups);
+      return { ...state, groups, order: [...state.order, action.group.id] };
+    }
+    case 'renameGroup': {
+      const groups = state.groups.map((g) => (g.id === action.id ? { ...g, name: action.name } : g));
+      save('groups', groups);
+      return { ...state, groups };
+    }
+    case 'removeGroup': {
+      const groups = state.groups.filter((g) => g.id !== action.id);
+      save('groups', groups);
+      return { ...state, groups, order: state.order.filter((id) => id !== action.id) };
+    }
+    case 'groupAdd': {
+      const groups = state.groups.map((g) =>
+        (g.id === action.id && !g.appIds.includes(action.appId) ? { ...g, appIds: [...g.appIds, action.appId] } : g));
+      save('groups', groups);
+      return { ...state, groups };
+    }
+    case 'groupRemove': {
+      const groups = state.groups.map((g) => (g.id === action.id ? { ...g, appIds: g.appIds.filter((a) => a !== action.appId) } : g));
+      save('groups', groups);
+      return { ...state, groups };
     }
     case 'setTheme': {
       const theme = { ...state.theme, ...action.patch };
@@ -253,8 +295,9 @@ function reducer(state, action) {
         .map((a) => a.id);
       const desktop = { ...state.desktop, sort: 'name' };
       save('desktop', desktop);
-      save('desktop.order', byName);
-      return { ...state, order: byName, desktop };
+      const order = [...byName, ...state.groups.map((g) => g.id)];
+      save('desktop.order', order);
+      return { ...state, order, desktop };
     }
 
     /* -- settings-object patches -- */
@@ -318,6 +361,11 @@ export function OSProvider({ children }) {
     addUserApp: (app) => dispatch({ type: 'addUserApp', app }),
     updateUserApp: (app) => dispatch({ type: 'updateUserApp', app }),
     removeUserApp: (appId) => dispatch({ type: 'removeUserApp', appId }),
+    addGroup: (group) => dispatch({ type: 'addGroup', group }),
+    renameGroup: (id, name) => dispatch({ type: 'renameGroup', id, name }),
+    removeGroup: (id) => dispatch({ type: 'removeGroup', id }),
+    groupAdd: (id, appId) => dispatch({ type: 'groupAdd', id, appId }),
+    groupRemove: (id, appId) => dispatch({ type: 'groupRemove', id, appId }),
     isDefault: (appId) => DEFAULT_APPS.some((a) => a.id === appId),
     isCustom: (appId) => state.userApps.some((a) => a.id === appId),
   }), [apps]);
