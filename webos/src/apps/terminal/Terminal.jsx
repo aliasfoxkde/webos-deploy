@@ -3,6 +3,8 @@ import { useOS } from '../../os/state.jsx';
 import { kvGet, kvSet, fileList } from '../../os/db.js';
 import { join } from './wasi.js';
 import { HOME, tilde, expandTilde } from './paths.js';
+import { edit } from './lineedit.js';
+import { splitPipes } from './pipes.js';
 import wasmUrl from 'sql.js/dist/sql-wasm.wasm?url';
 import { Terminal as XTerm } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
@@ -10,15 +12,14 @@ import '@xterm/xterm/css/xterm.css';
 import { VERSION } from '../../version.js';
 import { UTIL_NAMES, runUtil } from './coreutils.js';
 
-/* Built-in terminal 3.4 — xterm.js frontend (lazy chunk) over the `wosh`
+/* Built-in terminal — xterm.js frontend (lazy chunk) over the `wosh`
    shell: a real command language that mutates OS state (apps, windows,
    settings paths, theme/persona, SQLite), runs real utilities through the
    bundled uutils coreutils.wasm (see coreutils.js — the Files-app disk is
-   the preopen root), with tab completion, ↑/↓ history, Ctrl+C/Ctrl+L.
-   Unknown input still evaluates as JavaScript — the pass-through escape
-   hatch. Craft-app MCP bridge lands in 3.1 once the web builds expose a
-   control channel (audited: vectorcraft-web has none today, wasm can't
-   listen on sockets); commands keep an MCP-shaped envelope. */
+   the preopen root, mounted at the session cwd) with | pipelines, a
+   readline-style line editor (see lineedit.js), tab completion for
+   commands and paths, ↑/↓ history, Ctrl+C/Ctrl+L. Unknown input still
+   evaluates as JavaScript — the pass-through escape hatch. */
 
 const HELP = [
   'wosh — the WebOS shell. Everything here mutates the real OS.',
@@ -42,10 +43,12 @@ const HELP = [
   '  utils                   list the bundled coreutils utilities',
   '  <util> [args…]          run a real utility (ls, cat, wc, seq, sort, sha256sum…)',
   '                          relative paths resolve against the current directory',
+  '  <util> | <util>         pipe stdout → stdin (try: echo hi | tr a-z A-Z)',
   '  coreutils <util> …      force the wasm multicall past the builtins',
   `                          (${UTIL_NAMES.size} utilities; the Files disk is mounted at / — start in ~ and try ls)`,
   '  history | fullscreen | date | echo | uname | whoami | neofetch',
   '  clear                   clear the screen        (Ctrl+L)',
+  '  editing                 ←→ Home End Del · Ctrl+A/E/U/K · Ctrl+W/Alt+B/F words · Tab completes',
   '  <anything else>         evaluated as JavaScript — `os` is in scope',
 ];
 
@@ -101,6 +104,30 @@ const renderTable = (r) => {
 
 const C = { prompt: '\x1b[38;5;81m', dim: '\x1b[90m', err: '\x1b[91m', ok: '\x1b[92m', reset: '\x1b[0m' };
 
+/* xterm.js escape sequences → lineedit actions (readline-style editing). */
+const EDIT_KEYS = {
+  '\x1b[D': 'left', '\x1b[C': 'right',
+  '\x1b[H': 'home', '\x1b[1~': 'home', '\x1bOH': 'home',
+  '\x1b[F': 'end', '\x1b[4~': 'end', '\x1bOF': 'end',
+  '\x1b[3~': 'delete',
+  '\x1bb': 'wordback', '\x1bf': 'wordfwd',
+  '\x1b[1;5D': 'wordback', '\x1b[1;5C': 'wordfwd',
+};
+const CONTROL_KEYS = {
+  '\x01': 'home', '\x02': 'left', '\x05': 'end', '\x06': 'right',
+  '\x0b': 'killafter', '\x15': 'killbefore', '\x17': 'killword',
+};
+
+/* Commands whose plain last argument is a path on the Files disk — these
+   get filesystem completion even without a '/' in the word. */
+const FS_HEADS = new Set([
+  'cd', 'ls', 'cat', 'head', 'tail', 'rm', 'rmdir', 'mkdir', 'touch', 'cp', 'mv',
+  'wc', 'stat', 'sha256sum', 'sha1sum', 'sha512sum', 'md5sum', 'b2sum', 'cksum',
+  'truncate', 'basename', 'dirname', 'realpath', 'tee', 'split', 'paste', 'file',
+  'chmod', 'chown', 'chgrp', 'install', 'grep', 'diff', 'cmp', 'comm', 'csplit',
+  'find', 'join', 'uniq', 'sort', 'shred', 'fold', 'fmt', 'base32', 'base64',
+]);
+
 export default function Terminal() {
   const hostRef = useRef(null);
   const osRef = useRef(null); // latest OS context for the imperative shell
@@ -127,10 +154,23 @@ export default function Terminal() {
     let cwd = HOME; // per-session working directory on the Files disk
     const prompt = () => `${C.prompt}${C.dim}${tilde(cwd)}${C.reset} ${C.prompt}❯${C.reset} `;
     let buf = '';
+    let cur = 0; // cursor position inside buf
     let hist = [];
     let hIdx = -1;
     let busy = false;
-    const redraw = () => { term.write(`\r\x1b[K${prompt()}${buf}`); };
+    /* Rewrite the whole line, then pull the cursor back if it sits mid-line
+       (relative moves stay correct even when the line wraps). */
+    const redraw = () => {
+      term.write(`\r\x1b[K${prompt()}${buf}`);
+      if (cur < buf.length) term.write(`\x1b[${buf.length - cur}D`);
+    };
+    const apply = (action, ch) => {
+      const next = edit(buf, cur, action, ch);
+      if (!next) return;
+      buf = next.buf;
+      cur = next.cur;
+      redraw();
+    };
     term.writeln(`ArtCraft WebOS shell ${C.dim}(wosh 1.0)${C.reset} — type ${C.ok}help${C.reset} for commands.`);
     term.write(prompt());
 
@@ -152,21 +192,58 @@ export default function Terminal() {
       return pool.filter((c) => c.startsWith(last));
     };
 
-    const complete = () => {
-      const part = buf;
-      const hits = candidates(part);
+    /* Filesystem completion: a live cache of the Files disk, refreshed on
+       session start and after every command. `pathCandidates` returns the
+       full replacement tokens (dirs get a trailing '/'), or null when the
+       word isn't path-like and command completion should take over. */
+    let entriesCache = null;
+    const refreshEntries = async () => {
+      try {
+        entriesCache = (await fileList()).map(({ blob: _, path, dir }) => ({ path, dir }));
+      } catch { entriesCache = []; }
+    };
+    refreshEntries();
+    const pathCandidates = (part) => {
       const words = part.split(/\s+/);
       const last = words[words.length - 1] || '';
+      const head = words[0];
+      const pathLike = last.startsWith('/') || last.startsWith('~') || last.includes('/');
+      if (!pathLike && !FS_HEADS.has(head)) return null;
+      if (!entriesCache) return [];
+      const slash = last.lastIndexOf('/');
+      const dirPart = slash >= 0 ? last.slice(0, slash + 1) : '';
+      const namePart = slash >= 0 ? last.slice(slash + 1) : last;
+      const baseDir = join(cwd, expandTilde(dirPart || '.'));
+      const prefix = baseDir.endsWith('/') ? baseDir : `${baseDir}/`;
+      const kids = new Map(); // name → isDir
+      for (const e of entriesCache) {
+        if (!e.path.startsWith(prefix)) continue;
+        const rel = e.path.slice(prefix.length);
+        if (!rel) continue;
+        const cut = rel.indexOf('/');
+        if (cut >= 0) kids.set(rel.slice(0, cut), true);
+        else kids.set(rel, !!e.dir);
+      }
+      return [...kids.entries()]
+        .filter(([name]) => name.startsWith(namePart))
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([name, isDir]) => dirPart + name + (isDir ? '/' : ''));
+    };
+
+    const complete = () => {
+      const part = buf;
+      const words = part.split(/\s+/);
+      const last = words[words.length - 1] || '';
+      const hits = pathCandidates(part) ?? candidates(part);
       if (hits.length === 1) {
         const insert = hits[0].slice(last.length);
         if (!insert) return;
-        buf += insert + ' ';
-        redraw();
+        apply('insert', insert);
       } else if (hits.length > 1) {
         // longest common prefix first, then list the options
         let lcp = hits[0];
         for (const h of hits) { let i = 0; while (i < lcp.length && lcp[i] === h[i]) i++; lcp = lcp.slice(0, i); }
-        if (lcp.length > last.length) { buf += lcp.slice(last.length); redraw(); return; }
+        if (lcp.length > last.length) { apply('insert', lcp.slice(last.length)); return; }
         out();
         out(hits.join('  '));
         redraw();
@@ -192,7 +269,6 @@ export default function Terminal() {
     };
 
     const runSql = async (sql) => {
-      const o = osRef.current;
       if (!sql.trim()) {
         out('usage: sqlite <sql>  — e.g. sqlite CREATE TABLE t (id INTEGER, name TEXT)');
         out(`${C.dim}one persistent database (IndexedDB, survives reloads) for the whole OS.${C.reset}`);
@@ -211,10 +287,46 @@ export default function Terminal() {
       }
     };
 
+    /* Pipeline: each utility's stdout feeds the next one's stdin (WASI fd 0).
+       A leading `echo` builtin is the usual input source; other builtins
+       don't participate — the error names the offending segment. */
+    const runPipe = async (segs) => {
+      let input = '';
+      let code = 0;
+      let truncated = false;
+      for (const segRaw of segs) {
+        const seg = segRaw.trim();
+        const [head, ...rest] = seg.split(/\s+/);
+        if (head === 'echo') { input = `${rest.join(' ')}\n`; continue; }
+        const util = head === 'coreutils' ? rest[0] : head;
+        const utilArgs = head === 'coreutils' ? rest.slice(1) : rest;
+        if (!util || !(UTIL_NAMES.has(util) || head === 'coreutils')) {
+          out(`${C.err}pipes connect utilities — '${seg}' is not one (try: echo hi | tr a-z A-Z)${C.reset}`);
+          return;
+        }
+        try {
+          const r = await runUtil(util, utilArgs, { cwd, stdin: input });
+          if (r.stderr) out(`${C.err}${r.stderr.replace(/\n$/, '').replace(/\n/g, '\r\n')}${C.reset}`);
+          truncated = truncated || r.truncated;
+          code = r.code;
+          input = r.stdout;
+        } catch (err) {
+          out(`${C.err}coreutils: ${String(err.message || err)}${C.reset}`);
+          return;
+        }
+      }
+      if (input) out(input.replace(/\n$/, '').replace(/\n/g, '\r\n'));
+      if (truncated) out(`${C.dim}— output truncated${C.reset}`);
+      else if (code) out(`${C.dim}exit ${code}${C.reset}`);
+    };
+
     const run = async (raw) => {
       const o = osRef.current;
       const cmd = raw.trim();
       if (!cmd) return;
+      const segs = splitPipes(cmd);
+      if (segs === null) { out(`${C.err}unterminated quote${C.reset}`); return; }
+      if (segs.length > 1) { await runPipe(segs); return; }
       const [head, ...rest] = cmd.split(/\s+/);
       const arg = rest.join(' ');
       switch (head) {
@@ -376,31 +488,36 @@ export default function Terminal() {
       if (data === '\x1b[A' || data === '\x1b[B') {
         if (data === '\x1b[A') {
           const i = hIdx < 0 ? hist.length - 1 : Math.max(0, hIdx - 1);
-          if (hist[i] !== undefined) { hIdx = i; buf = hist[i]; redraw(); }
+          if (hist[i] !== undefined) { hIdx = i; buf = hist[i]; cur = buf.length; redraw(); }
         } else if (hIdx >= 0) {
           if (hIdx < hist.length - 1) { hIdx += 1; buf = hist[hIdx]; }
           else { hIdx = -1; buf = ''; }
+          cur = buf.length;
           redraw();
         }
         return;
       }
-      if (data.startsWith('\x1b')) return; // other sequences (arrows, paste prefixes) — ignored
+      const action = EDIT_KEYS[data] ?? CONTROL_KEYS[data];
+      if (action) { apply(action); return; }
+      if (data.startsWith('\x1b')) return; // remaining sequences (paste prefixes etc.) — ignored
       for (const ch of data) {
         if (ch === '\r') {
           term.write('\r\n');
           const line = buf;
           buf = '';
+          cur = 0;
           hIdx = -1;
           if (line.trim()) hist = [...hist, line].slice(-100);
           // serialize commands: sqlite loads are async; don't interleave input
           busy = true;
-          Promise.resolve(run(line)).finally(() => { busy = false; term.write(prompt()); });
+          Promise.resolve(run(line)).finally(() => { refreshEntries(); busy = false; term.write(prompt()); });
           return; // rest of a pasted batch after Enter is dropped — acceptable
         } else if (ch === '\x7f') {
-          if (buf.length) { buf = buf.slice(0, -1); redraw(); }
+          apply('backspace');
         } else if (ch === '\x03') {
           term.write('^C\r\n');
           buf = '';
+          cur = 0;
           hIdx = -1;
           if (!busy) term.write(prompt());
         } else if (ch === '\x0c') {
@@ -408,8 +525,7 @@ export default function Terminal() {
         } else if (ch === '\t') {
           complete();
         } else if (ch >= ' ') {
-          buf += ch;
-          term.write(ch);
+          apply('insert', ch);
         }
       }
     });

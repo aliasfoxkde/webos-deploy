@@ -188,6 +188,8 @@ export class WasiHost {
     this.args = [];
     this.envs = [];
     this.cwd = '/'; // session cwd — fd 3 lookups resolve relative paths against it
+    this.stdin = new Uint8Array(0); // pipeline input, served by fd_read(0)
+    this.stdinPos = 0;
     this.stdout = '';
     this.stderr = '';
     this.maxOut = maxOut;
@@ -195,9 +197,12 @@ export class WasiHost {
     this.truncated = false;
   }
 
-  reset(argv, envs = []) {
+  reset(argv, envs = [], stdin = new Uint8Array(0)) {
     this.args = argv;
     this.envs = envs;
+    this.cwd = this.cwd || '/';
+    this.stdin = stdin;
+    this.stdinPos = 0;
     this.stdout = '';
     this.stderr = '';
     this.fds = new Map();
@@ -338,7 +343,24 @@ export class WasiHost {
       },
       fd_read(fd, iovsPtr, iovsLen, nreadPtr) {
         const handle = host.fds.get(fd);
-        if (!handle) return fd <= 2 ? errno.ENOTSUP : errno.EBADF; // stdin: EOF already returned
+        if (fd === 0 && !handle) {
+          // stdin: serve the pipeline input, then EOF (SUCCESS, nread 0)
+          const bytes = host.stdin;
+          const dv = view();
+          let total = 0;
+          for (let i = 0; i < iovsLen && host.stdinPos < bytes.length; i++) {
+            const base = iovsPtr + i * 8;
+            const ptr = dv.getUint32(base, true);
+            const len = dv.getUint32(base + 4, true);
+            const slice = bytes.subarray(host.stdinPos, host.stdinPos + len);
+            u8().set(slice, ptr);
+            host.stdinPos += slice.length;
+            total += slice.length;
+          }
+          view().setUint32(nreadPtr, total, true);
+          return errno.SUCCESS;
+        }
+        if (!handle) return fd <= 2 ? errno.ENOTSUP : errno.EBADF;
         const entry = host.fs.get(handle.path);
         if (!entry || entry.dir) return errno.EISDIR;
         const dv = view();

@@ -24,6 +24,8 @@ import { fileList, fileGet, filePut, fileDel, dirPut } from '../../os/db.js';
 
 let cu = null; // { module, fs, host, seedBytes: Map, seedDirs: Set, seedFiles: Map }
 
+const encoder = new TextEncoder();
+
 export { UTIL_NAMES };
 
 async function ensure() {
@@ -74,12 +76,14 @@ async function persist() {
 }
 
 /* Run one utility. `opts.cwd` pins the session cwd for this run (relative
-   arguments inside the guest resolve against it). Returns
+   arguments inside the guest resolve against it); `opts.stdin` feeds the
+   pipeline input read from fd 0. Returns
    { code, stdout, stderr, truncated }. */
 export async function runUtil(name, args, opts = {}) {
   const ctx = await ensure();
   const argv = ['coreutils', name, ...args];
-  ctx.host.reset(argv);
+  const stdin = opts.stdin instanceof Uint8Array ? opts.stdin : encoder.encode(opts.stdin || '');
+  ctx.host.reset(argv, [], stdin);
   ctx.host.cwd = opts.cwd || '/';
   // Async instantiate only — Chrome forbids sync `new WebAssembly.Instance`
   // on the main thread once the module's wire bytes exceed 8MB (this one is
