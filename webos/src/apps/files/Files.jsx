@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { filePut, fileGet, fileDel, fileDelTree, fileList, dirPut } from '../../os/db.js';
+import { useContextMenu } from '../../shell/ContextMenu.jsx';
 import './files.css';
 
 /* Files — a small virtual disk over IndexedDB plus a live "this device"
@@ -87,16 +88,25 @@ export default function FilesApp() {
   const [all, setAll] = useState([]);
   const [usage, setUsage] = useState(null);
   const [preview, setPreview] = useState(null); // { rec, url? , text? }
-  const [newDir, setNewDir] = useState(null); // '' while typing a folder name
+  const [creating, setCreating] = useState(null); // { kind: 'dir' | 'file' } while the inline form is open
+  const [newName, setNewName] = useState(''); // pending name for the create form
+  const [renaming, setRenaming] = useState(null); // path whose tile is an inline rename form
+  const [renameVal, setRenameVal] = useState('');
   const [confirmDel, setConfirmDel] = useState(null); // folder path awaiting 2nd click
   const [dragOver, setDragOver] = useState(false);
   const [device, setDevice] = useState(null); // { root, name, path: [names], entries }
   const fileInput = useRef(null);
+  const createInput = useRef(null);
+  const renameInput = useRef(null);
   const alive = useRef(true);
   useEffect(() => () => { alive.current = false; }, []);
+  // Focus the inline create/rename field when its form mounts (a ref-focus,
+  // not autoFocus — the field appears from an explicit user action).
+  useEffect(() => { if (creating !== null) createInput.current?.focus(); }, [creating]);
+  useEffect(() => { if (renaming !== null) renameInput.current?.focus(); }, [renaming]);
 
   const refresh = useCallback(async () => {
-    const list = (await fileList()).map(({ blob, ...meta }) => meta);
+    const list = (await fileList()).map(({ blob: _, ...meta }) => meta);
     if (!alive.current) return;
     setAll(list);
     navigator.storage?.estimate?.().then((u) => { if (alive.current) setUsage(u); }).catch(() => {});
@@ -121,7 +131,7 @@ export default function FilesApp() {
     return { dirs: [...dirs.keys()].sort(), files };
   }, [all, cwd]);
 
-  const openBlob = (rec, blob) => {
+  const openBlob = useCallback((rec, blob) => {
     const kind = kindOf(rec);
     if (kind === 'text' && blob.size <= TEXT_CAP) {
       blob.slice(0, TEXT_CAP).text().then((text) => setPreview({ rec, text }));
@@ -129,19 +139,19 @@ export default function FilesApp() {
       const url = URL.createObjectURL(blob);
       setPreview({ rec, url, kind, raw: blob });
     }
-  };
+  }, []);
 
-  const openFile = async (rec) => {
+  const openFile = useCallback(async (rec) => {
     const full = await fileGet(rec.path);
     if (full) openBlob({ ...rec, name: rec.name || base(rec.path) }, full.blob);
-  };
+  }, [openBlob]);
 
   const upload = async (files) => {
     for (const f of files) await filePut(join(cwd, f.name), f);
     await refresh();
   };
 
-  const download = async (rec) => {
+  const download = useCallback(async (rec) => {
     const full = await fileGet(rec.path);
     if (!full) return;
     const url = URL.createObjectURL(full.blob);
@@ -150,9 +160,9 @@ export default function FilesApp() {
     a.download = rec.name || base(rec.path);
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 5000);
-  };
+  }, []);
 
-  const remove = async (rec) => {
+  const remove = useCallback(async (rec) => {
     if (rec.dir) {
       // Folders delete recursively — first click arms a short confirm window.
       if (confirmDel !== rec.path) {
@@ -167,7 +177,7 @@ export default function FilesApp() {
       setPreview((p) => (p?.rec.path === rec.path ? null : p));
     }
     await refresh();
-  };
+  }, [confirmDel, refresh]);
 
   /* ---- This device (File System Access API — session-only) ---- */
   const hasFsApi = typeof window.showDirectoryPicker === 'function';
@@ -216,12 +226,90 @@ export default function FilesApp() {
   };
 
   const crumbs = cwd === ROOT ? [] : cwd.slice(ROOT.length + 1).split('/');
-  const createDir = () => {
-    const name = newDir.trim();
-    if (name) dirPut(join(cwd, name)).then(refresh);
-    setNewDir(null);
-  };
   const devHasFs = device && hasFsApi;
+
+  /* ---- create / rename (inline forms + context-menu actions) ---- */
+  const cancelCreate = useRef(false);
+  const cancelRename = useRef(false);
+  const parentOf = (p) => p.slice(0, p.lastIndexOf('/')) || ROOT;
+  const validName = (name) => !!name && !name.includes('/') && name !== '.' && name !== '..';
+  const nameTaken = (path) => all.some((r) => r.path === path || r.path.startsWith(`${path}/`));
+
+  const createEntry = () => {
+    const kind = creating?.kind;
+    const name = newName.trim();
+    setCreating(null);
+    setNewName('');
+    if (!kind || !validName(name)) return;
+    const path = join(cwd, name);
+    if (nameTaken(path)) return;
+    const done = kind === 'dir'
+      ? dirPut(path)
+      : filePut(path, new Blob([''], { type: 'text/plain' }), 'text/plain');
+    Promise.resolve(done).then(refresh);
+  };
+
+  const startRename = useCallback((rec) => { setRenaming(rec.path); setRenameVal(base(rec.path)); }, []);
+
+  const commitRename = async () => {
+    const oldPath = renaming;
+    const name = renameVal.trim();
+    setRenaming(null);
+    setRenameVal('');
+    if (!oldPath || !validName(name)) return;
+    const newPath = join(parentOf(oldPath), name);
+    if (newPath === oldPath || nameTaken(newPath)) return;
+    if (all.some((r) => r.path === oldPath && r.dir)) {
+      // Folder rename = move every descendant to the new prefix, then drop
+      // the old subtree (markers and blobs alike).
+      const map = (p) => newPath + p.slice(oldPath.length);
+      for (const r of all.filter((x) => x.path === oldPath || x.path.startsWith(`${oldPath}/`))) {
+        if (r.dir) await dirPut(map(r.path));
+        else {
+          const full = await fileGet(r.path);
+          if (full) await filePut(map(r.path), full.blob, full.type);
+        }
+      }
+      await fileDelTree(oldPath);
+    } else {
+      const full = await fileGet(oldPath);
+      if (!full) return;
+      await filePut(newPath, full.blob, full.type);
+      await fileDel(oldPath);
+    }
+    if (preview?.rec.path === oldPath || preview?.rec.path?.startsWith(`${oldPath}/`)) setPreview(null);
+    await refresh();
+  };
+
+  /* ---- context menu (kinds are Files-scoped: fbg / fdir / ffile) ---- */
+  const buildItems = useCallback((kind, arg) => {
+    if (kind === 'fbg') {
+      if (tab !== 'disk') return []; // device view is read-only — no menu
+      return [
+        { label: 'New folder', run: () => { setCreating({ kind: 'dir' }); setNewName('New folder'); } },
+        { label: 'New text file', run: () => { setCreating({ kind: 'file' }); setNewName('untitled.txt'); } },
+        { label: 'Upload files…', run: () => fileInput.current?.click() },
+        '-',
+        { label: 'Refresh', hint: cwd, run: refresh },
+      ];
+    }
+    const rec = kind === 'fdir'
+      ? { dir: true, path: arg, name: base(arg) }
+      : all.find((r) => r.path === arg);
+    if (!rec) return [];
+    return [
+      ...(kind === 'fdir'
+        ? [{ label: 'Open', run: () => setCwd(arg) }]
+        : [
+          { label: 'Open', run: () => openFile(rec) },
+          { label: 'Download', run: () => download(rec) },
+        ]),
+      '-',
+      { label: 'Rename…', run: () => startRename(rec) },
+      { label: confirmDel === arg ? 'Confirm delete' : 'Delete', run: () => remove(rec) },
+    ];
+  }, [tab, cwd, all, confirmDel, refresh, openFile, download, remove, startRename]);
+  const { menu } = useContextMenu(buildItems);
 
   return (
     <div
@@ -239,7 +327,8 @@ export default function FilesApp() {
         {tab === 'disk' && (
           <>
             <button className="f-btn" disabled={cwd === ROOT} onClick={() => setCwd(cwd.slice(0, cwd.lastIndexOf('/')) || ROOT)} title="Up one folder">↑</button>
-            <button className="f-btn" onClick={() => setNewDir('')}>New folder</button>
+            <button className="f-btn" onClick={() => { setCreating({ kind: 'dir' }); setNewName('New folder'); }}>New folder</button>
+            <button className="f-btn" onClick={() => { setCreating({ kind: 'file' }); setNewName('untitled.txt'); }}>New file</button>
             <button className="f-btn primary" onClick={() => fileInput.current?.click()}>Upload</button>
             <input ref={fileInput} type="file" multiple hidden onChange={(e) => { if (e.target.files?.length) upload([...e.target.files]); e.target.value = ''; }} />
           </>
@@ -255,25 +344,39 @@ export default function FilesApp() {
             ))}
           </nav>
           <div className="f-scroll">
-            <div className="f-grid">
-              {newDir !== null && (
-                <form className="f-tile f-newdir" onSubmit={(e) => { e.preventDefault(); createDir(); }}>
-                  <Glyph kind="dir" />
+            <div className="f-grid" data-cm="fbg">
+              {creating !== null && (
+                <form className="f-tile f-newdir" onSubmit={(e) => { e.preventDefault(); createEntry(); }}>
+                  <Glyph kind={creating.kind === 'dir' ? 'dir' : 'text'} />
                   <input
-                    autoFocus
-                    value={newDir}
-                    placeholder="folder name"
-                    aria-label="New folder name"
-                    onChange={(e) => setNewDir(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); createDir(); } }}
-                    onBlur={() => setNewDir(null)}
+                    ref={createInput}
+                    value={newName}
+                    placeholder={creating.kind === 'dir' ? 'folder name' : 'file name'}
+                    aria-label={creating.kind === 'dir' ? 'New folder name' : 'New file name'}
+                    onFocus={(e) => e.target.select()}
+                    onChange={(e) => setNewName(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Escape') { cancelCreate.current = true; e.target.blur(); } }}
+                    onBlur={() => { if (cancelCreate.current) { cancelCreate.current = false; setCreating(null); setNewName(''); return; } createEntry(); }}
                   />
                 </form>
               )}
               {kids.dirs.map((name) => {
                 const rec = { dir: true, path: join(cwd, name), name };
-                return (
-                  <button key={`d:${name}`} className="f-tile" onClick={() => setCwd(rec.path)} title={`${name} — folder`}>
+                return renaming === rec.path ? (
+                  <form key={`d:${name}`} className="f-tile f-newdir" onSubmit={(e) => { e.preventDefault(); commitRename(); }}>
+                    <Glyph kind="dir" />
+                    <input
+                      ref={renameInput}
+                      value={renameVal}
+                      aria-label="Folder name"
+                      onFocus={(e) => e.target.select()}
+                      onChange={(e) => setRenameVal(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Escape') { cancelRename.current = true; e.target.blur(); } }}
+                      onBlur={() => { if (cancelRename.current) { cancelRename.current = false; setRenaming(null); setRenameVal(''); return; } commitRename(); }}
+                    />
+                  </form>
+                ) : (
+                  <button key={`d:${name}`} className="f-tile" data-cm={`fdir:${rec.path}`} onClick={() => setCwd(rec.path)} title={`${name} — folder`}>
                     <Glyph kind="dir" />
                     <span className="f-name">{name}</span>
                     <span className="f-meta">folder</span>
@@ -288,17 +391,32 @@ export default function FilesApp() {
                 );
               })}
               {kids.files.map((rec) => (
-                <button key={rec.path} className="f-tile" onClick={() => openFile(rec)} title={`${base(rec.path)} — ${fmtBytes(rec.size)}`}>
-                  <Glyph kind={kindOf(rec)} />
-                  <span className="f-name">{base(rec.path)}</span>
-                  <span className="f-meta">{fmtBytes(rec.size)}</span>
-                  <span className="f-actions">
-                    <button onClick={(e) => { e.stopPropagation(); download(rec); }} title="Download">↓</button>
-                    <button onClick={(e) => { e.stopPropagation(); remove(rec); }} title="Delete">✕</button>
-                  </span>
-                </button>
+                renaming === rec.path ? (
+                  <form key={rec.path} className="f-tile f-newdir" onSubmit={(e) => { e.preventDefault(); commitRename(); }}>
+                    <Glyph kind={kindOf(rec)} />
+                    <input
+                      ref={renameInput}
+                      value={renameVal}
+                      aria-label="File name"
+                      onFocus={(e) => e.target.select()}
+                      onChange={(e) => setRenameVal(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Escape') { cancelRename.current = true; e.target.blur(); } }}
+                      onBlur={() => { if (cancelRename.current) { cancelRename.current = false; setRenaming(null); setRenameVal(''); return; } commitRename(); }}
+                    />
+                  </form>
+                ) : (
+                  <button key={rec.path} className="f-tile" data-cm={`ffile:${rec.path}`} onClick={() => openFile(rec)} title={`${base(rec.path)} — ${fmtBytes(rec.size)}`}>
+                    <Glyph kind={kindOf(rec)} />
+                    <span className="f-name">{base(rec.path)}</span>
+                    <span className="f-meta">{fmtBytes(rec.size)}</span>
+                    <span className="f-actions">
+                      <button onClick={(e) => { e.stopPropagation(); download(rec); }} title="Download">↓</button>
+                      <button onClick={(e) => { e.stopPropagation(); remove(rec); }} title="Delete">✕</button>
+                    </span>
+                  </button>
+                )
               ))}
-              {!kids.dirs.length && !kids.files.length && newDir === null && (
+              {!kids.dirs.length && !kids.files.length && creating === null && (
                 <div className="f-empty">Empty — drop files anywhere in this window,<br />or use Upload. Everything here persists in this browser.</div>
               )}
             </div>
@@ -328,7 +446,7 @@ export default function FilesApp() {
                 <button className="on">{device.name}</button>
                 {device.path.map((seg, i) => <button key={seg + i} className={i === device.path.length - 1 ? 'on' : ''}>/ {seg}</button>)}
               </nav>
-              <div className="f-grid">
+              <div className="f-grid" data-cm="fbg">
                 {device.entries.map((entry) => (
                   <button key={entry.name} className="f-tile" onClick={() => devOpen(entry)} title={entry.kind === 'file' ? `${entry.name} — ${fmtBytes(entry.size)} (on your disk)` : entry.name}>
                     <Glyph kind={entry.kind === 'directory' ? 'dir' : kindOf({ name: entry.name, type: entry.type })} />
@@ -378,13 +496,18 @@ export default function FilesApp() {
           <div className="f-pv-body">
             {preview.text !== undefined ? <pre>{preview.text}</pre>
               : preview.kind === 'img' ? <img src={preview.url} alt={preview.rec.name} />
-                : preview.kind === 'vid' ? <video src={preview.url} controls autoPlay />
-                  : preview.kind === 'aud' ? <audio src={preview.url} controls autoPlay />
+                : preview.kind === 'vid'
+                  // eslint-disable-next-line jsx-a11y/media-has-caption -- arbitrary user blob; no caption track exists to attach
+                  ? <video src={preview.url} controls autoPlay />
+                  : preview.kind === 'aud'
+                    // eslint-disable-next-line jsx-a11y/media-has-caption -- audio-only stream; captions not applicable
+                    ? <audio src={preview.url} controls autoPlay />
                     : preview.kind === 'pdf' ? <iframe src={preview.url} title={preview.rec.name} />
                       : <div className="f-empty">No preview for this type — use Download.</div>}
           </div>
         </div>
       )}
+      {menu}
     </div>
   );
 }
