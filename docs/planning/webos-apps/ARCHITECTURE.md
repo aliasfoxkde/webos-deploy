@@ -118,6 +118,24 @@ popup: rename inline, launch members, unfile per member, remove the group
 (members return). Groups participate in drag-reorder and `Sort icons by name`
 keeps them at the end.
 
+### OS personas + welcome screen
+
+`os/personas.js` holds one record per reference desktop (`win`, `mac`,
+`linux`, `bsd`, `android`, `tui`) with its default theme preset, accent and
+taskbar side. `webos.persona` lands on `<body data-persona>` (set in
+`state.jsx`) and drives chrome through CSS only — per-persona
+custom-property overrides (`--radius`, `--chrome-blur`, fonts) plus a small
+behavioral block (mac traffic-light order/colors, GNOME centered titles,
+tiling-WM borders instead of shadows, TUI monospace flat chrome).
+`setPersona` applies the persona's one-shot defaults; user tweaks afterwards
+win until re-applied.
+
+`shell/Welcome.jsx` is the first-run overlay: brand + capabilities + the six
+persona cards (picking one restyles the live shell behind it) + docs links.
+Guarded by `webos.welcomed`, skipped for `?open=` deep links, reopened from
+Settings → About via the `webos:welcome` window event. Shell version lives in
+`src/version.js` (bump alongside `package.json` + `public/sw.js`).
+
 ### Window tiling (snapping)
 
 `os/snap.js` defines the zone geometry: drag a titlebar within 12px of a

@@ -144,6 +144,28 @@ await evaluate(`location.reload()`);
 await sleep(2500);
 await idbCanary('boot');
 
+// 0b. first-run welcome + persona switching (clean slate ⇒ the overlay is up)
+await waitFor(`!!document.querySelector('.welcome')`);
+await shot('01b-welcome');
+console.log('welcome default persona (want win):', (await evaluate(`document.body.dataset.persona`)).result?.value);
+await evaluate(`[...document.querySelectorAll('.wl-p')].find(b => b.textContent.includes('GNOME'))?.click()`);
+await sleep(350);
+console.log('linux persona (want linux/top/#34d399):', JSON.stringify((await evaluate(
+  `({ p: document.body.dataset.persona, tb: document.body.dataset.tb, accent: getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() })`
+)).result?.value));
+await shot('01c-welcome-linux');
+await evaluate(`[...document.querySelectorAll('.wl-p')].find(b => b.textContent.includes('Terminal'))?.click()`);
+await sleep(350);
+console.log('tui persona (want tui/mono true/0px):', JSON.stringify((await evaluate(
+  `({ p: document.body.dataset.persona, mono: getComputedStyle(document.body).fontFamily.includes('mono'), radius: getComputedStyle(document.body).getPropertyValue('--radius').trim() })`
+)).result?.value));
+await shot('01d-welcome-tui');
+await evaluate(`document.querySelector('.wl-enter')?.click()`);
+await sleep(350);
+console.log('welcome entered (want gone+true):', JSON.stringify((await evaluate(
+  `({ gone: !document.querySelector('.welcome'), flag: localStorage.getItem('webos.welcomed') })`
+)).result?.value));
+
 // 1. desktop home (defaults only — no store apps preinstalled)
 await shot('01-home');
 
@@ -799,6 +821,26 @@ console.log('sqlite row survived reload (want true):', await waitText(runTag));
 await shot('57-sqlite-persisted');
 await evaluate(`window.__os?.windows.forEach(w => window.__os.close(w.id))`);
 await sleep(250);
+
+// 28. Settings → About: reopen welcome; restore the default persona
+await evaluate(`window.__os?.launch('settings')`);
+await sleep(900);
+await evaluate(`[...document.querySelectorAll('.set-nav')].find(b => b.textContent.includes('About'))?.click()`);
+await sleep(300);
+console.log('about has reopen button (want true):', (await evaluate(
+  `[...document.querySelectorAll('.set-pane .btn')].some(b => b.textContent.includes('Show welcome'))`
+)).result?.value);
+await evaluate(`[...document.querySelectorAll('.set-pane .btn')].find(b => b.textContent.includes('Show welcome'))?.click()`);
+await sleep(350);
+await shot('58-welcome-reopened');
+console.log('welcome reopened from about (want true):', (await evaluate(`!!document.querySelector('.welcome')`)).result?.value);
+await evaluate(`[...document.querySelectorAll('.wl-p')].find(b => b.textContent.trim().startsWith('Windows'))?.click()`);
+await sleep(350);
+console.log('win persona restored (want win/bottom):', JSON.stringify((await evaluate(
+  `({ p: document.body.dataset.persona, tb: document.body.dataset.tb })`
+)).result?.value));
+await evaluate(`document.querySelector('.wl-enter')?.click()`);
+await sleep(300);
 
 console.log('done');
 clearTimeout(watchdog);

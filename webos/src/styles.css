@@ -87,7 +87,7 @@ input:focus { outline: 1px solid var(--accent); }
   position: fixed; z-index: 561; top: 50%; left: 50%; transform: translate(-50%, -50%);
   width: min(380px, calc(100vw - 40px)); max-height: min(480px, calc(100vh - 80px));
   display: flex; flex-direction: column;
-  background: var(--chrome); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  background: var(--chrome); backdrop-filter: blur(var(--chrome-blur, 16px)); -webkit-backdrop-filter: blur(var(--chrome-blur, 16px));
   border: 1px solid var(--chrome-line); border-radius: 14px;
   box-shadow: 0 22px 60px rgba(0, 0, 0, 0.6);
 }
@@ -133,7 +133,7 @@ input:focus { outline: 1px solid var(--accent); }
 .win {
   position: absolute; min-width: 320px; min-height: 220px;
   display: flex; flex-direction: column;
-  background: var(--chrome); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  background: var(--chrome); backdrop-filter: blur(var(--chrome-blur, 16px)); -webkit-backdrop-filter: blur(var(--chrome-blur, 16px));
   border: 1px solid var(--chrome-line); border-radius: var(--radius);
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
   overflow: hidden;
@@ -201,7 +201,7 @@ body[data-mode="mobile"] .rz { display: none; }
 #taskbar {
   position: fixed; left: 0; right: 0; bottom: 0; height: 52px; z-index: 500;
   display: flex; align-items: center; gap: 8px; padding: 0 10px;
-  background: var(--chrome); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  background: var(--chrome); backdrop-filter: blur(var(--chrome-blur, 16px)); -webkit-backdrop-filter: blur(var(--chrome-blur, 16px));
   border-top: 1px solid var(--chrome-line);
   transition: transform 0.22s ease;
 }
@@ -249,7 +249,7 @@ body[data-tb-autohide] #taskbar:focus-within { transform: none; }
 #tb-portal { position: fixed; inset: 0; z-index: 560; pointer-events: none; }
 .tb-pop {
   position: absolute; right: 10px; pointer-events: auto;
-  background: var(--chrome); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+  background: var(--chrome); backdrop-filter: blur(var(--chrome-blur, 16px)); -webkit-backdrop-filter: blur(var(--chrome-blur, 16px));
   border: 1px solid var(--chrome-line); border-radius: 14px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
   animation: win-in 0.15s ease;
@@ -299,7 +299,7 @@ body[data-tb="top"] .tb-pop { top: 60px; }
 /* ---- start menu ---- */
 #start-menu {
   position: fixed; left: 10px; bottom: 60px; z-index: 600; width: 320px;
-  background: var(--chrome); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+  background: var(--chrome); backdrop-filter: blur(var(--chrome-blur, 16px)); -webkit-backdrop-filter: blur(var(--chrome-blur, 16px));
   border: 1px solid var(--chrome-line); border-radius: 14px; padding: 10px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
   animation: win-in 0.15s ease;
@@ -324,7 +324,7 @@ body[data-tb="top"] .tb-pop { top: 60px; }
 /* ---- context menu ---- */
 .ctx-menu {
   position: fixed; z-index: 900; min-width: 210px; padding: 6px;
-  background: var(--chrome); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+  background: var(--chrome); backdrop-filter: blur(var(--chrome-blur, 16px)); -webkit-backdrop-filter: blur(var(--chrome-blur, 16px));
   border: 1px solid var(--chrome-line); border-radius: 12px;
   box-shadow: 0 16px 44px rgba(0, 0, 0, 0.55);
   animation: win-in 0.12s ease;
@@ -471,7 +471,7 @@ body[data-mode="mobile"] #icon-grid { overflow-y: auto; }
 }
 .props {
   width: min(500px, calc(100vw - 32px)); max-height: 86vh; overflow-y: auto;
-  background: var(--chrome); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  background: var(--chrome); backdrop-filter: blur(var(--chrome-blur, 16px)); -webkit-backdrop-filter: blur(var(--chrome-blur, 16px));
   border: 1px solid var(--chrome-line); border-radius: 16px; padding: 18px;
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.65);
 }
@@ -492,7 +492,7 @@ body[data-mode="mobile"] #icon-grid { overflow-y: auto; }
 #sidebar {
   position: fixed; top: 0; right: 0; bottom: 52px; width: 320px; z-index: 480;
   display: flex; flex-direction: column;
-  background: var(--chrome); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+  background: var(--chrome); backdrop-filter: blur(var(--chrome-blur, 16px)); -webkit-backdrop-filter: blur(var(--chrome-blur, 16px));
   border-left: 1px solid var(--chrome-line);
   box-shadow: -18px 0 50px rgba(0, 0, 0, 0.45);
   animation: sb-in 0.2s ease;
@@ -667,3 +667,114 @@ body[data-mode="mobile"] #start-btn { display: none; } /* the FAB drawer replace
   border-radius: 10px;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35) inset;
 }
+
+/* ---- OS personas (body[data-persona], see os/personas.js) ---- */
+/* Chrome vars per persona; everything else rides the existing theme vars. */
+body[data-persona="mac"] { --radius: 10px; --chrome-blur: 24px; }
+body[data-persona="linux"] { --radius: 8px; --chrome-blur: 10px; }
+body[data-persona="bsd"] { --radius: 3px; --chrome-blur: 0px; }
+body[data-persona="android"] { --radius: 18px; --chrome-blur: 18px; }
+body[data-persona="tui"] {
+  --radius: 0px; --chrome-blur: 0px;
+  font-family: ui-monospace, "Cascadia Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+}
+
+/* mac — traffic lights LEFT (close/min/max, colored), title shifts right */
+body[data-persona="mac"] .titlebar { padding-left: 10px; }
+body[data-persona="mac"] .tb-btn { order: 0; }
+body[data-persona="mac"] .tb-btn.close { order: 1; background: #ff5f57; color: #4a0004; }
+body[data-persona="mac"] .tb-btn.min { order: 2; background: #febc2e; color: #6b4200; }
+body[data-persona="mac"] .tb-btn.max { order: 3; background: #28c840; color: #07530f; }
+body[data-persona="mac"] .tb-btn.close:hover { background: #ff7b74; }
+body[data-persona="mac"] .tb-btn.min:hover { background: #ffd061; color: #6b4200; }
+body[data-persona="mac"] .tb-btn.max:hover { background: #4cd964; color: #07530f; }
+body[data-persona="mac"] .titlebar .t { order: 4; text-align: right; }
+
+/* linux (GNOME) — headerbar feel: title centered, buttons calm */
+body[data-persona="linux"] .titlebar { position: relative; }
+body[data-persona="linux"] .titlebar .t {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  flex: none; max-width: 46%;
+}
+body[data-persona="linux"] .win.focused { border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+
+/* bsd (tiling WM) — borders + gaps instead of shadows, mono accents */
+body[data-persona="bsd"] .win { box-shadow: none; border-color: rgba(255, 255, 255, 0.16); }
+body[data-persona="bsd"] .win.focused { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+body[data-persona="bsd"] .titlebar .t { font-family: ui-monospace, Menlo, Consolas, monospace; }
+body[data-persona="bsd"] .taskbar { border-radius: 0; }
+
+/* android — pill taskbar, round buttons, softer edges everywhere */
+body[data-persona="android"] .taskbar { border-radius: 22px 22px 0 0; }
+body[data-persona="android"] .tb-btn { border-radius: 12px; }
+body[data-persona="android"] .desk-icon { border-radius: 16px; }
+
+/* tui — flat panels, hairline borders, mono is inherited from body */
+body[data-persona="tui"] .win { box-shadow: none; border-color: color-mix(in srgb, var(--accent) 40%, transparent); }
+body[data-persona="tui"] .taskbar, body[data-persona="tui"] .gp,
+body[data-persona="tui"] #snap-preview { border-radius: 0; }
+body[data-persona="tui"] .tb-btn { border-radius: 0; }
+
+/* ---- welcome screen (first run; Settings → About reopens) ---- */
+.welcome {
+  position: fixed; inset: 0; z-index: 600;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(4, 6, 10, 0.55); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+.wl-card {
+  width: min(720px, calc(100vw - 40px)); max-height: calc(100vh - 40px); overflow-y: auto;
+  background: var(--chrome); backdrop-filter: blur(var(--chrome-blur, 16px)); -webkit-backdrop-filter: blur(var(--chrome-blur, 16px));
+  border: 1px solid var(--chrome-line); border-radius: 18px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.65);
+  padding: 26px 28px 20px;
+}
+.wl-head { display: flex; align-items: center; gap: 14px; }
+.wl-head h1 { margin: 0; font-size: 1.35rem; letter-spacing: 0.01em; }
+.wl-head p { margin: 2px 0 0; }
+.wl-feats { margin: 16px 0 4px; padding-left: 1.2em; color: var(--text); font-size: 0.86rem; line-height: 1.75; }
+.wl-h2 { margin: 18px 0 10px; font-size: 0.95rem; }
+.wl-personas {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px;
+}
+.wl-p {
+  display: flex; flex-direction: column; align-items: stretch; gap: 3px; text-align: left;
+  border: 1px solid var(--chrome-line); border-radius: 12px; background: rgba(255,255,255,0.04);
+  padding: 10px 12px; cursor: pointer; color: var(--text);
+}
+.wl-p:hover { background: rgba(255,255,255,0.08); }
+.wl-p.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.wl-p b { font-size: 0.86rem; }
+.wl-tag { font-size: 0.68rem; color: var(--text-dim); line-height: 1.4; }
+
+/* mini chrome preview: title/top bar + body + taskbar strip, laid out per persona */
+.wl-mini {
+  position: relative; display: block; height: 46px; margin-bottom: 7px;
+  border-radius: 7px; overflow: hidden;
+  background: linear-gradient(150deg, #101828, #0a0e16);
+  border: 1px solid var(--chrome-line);
+}
+.wl-mini i { position: absolute; display: block; }
+.wl-mini .wl-m-title { left: 14%; top: 22%; width: 42%; height: 26%; border-radius: 3px; background: rgba(255,255,255,0.22); }
+.wl-mini .wl-m-body { left: 14%; top: 52%; width: 42%; height: 34%; border-radius: 3px; background: rgba(255,255,255,0.10); }
+.wl-mini .wl-m-bar { left: 8%; right: 8%; bottom: 6%; height: 12%; border-radius: 4px; background: rgba(255,255,255,0.28); }
+.wl-mini[data-persona="linux"] .wl-m-bar,
+.wl-mini[data-persona="bsd"] .wl-m-bar,
+.wl-mini[data-persona="tui"] .wl-m-bar { top: 6%; bottom: auto; }
+.wl-mini[data-persona="linux"] .wl-m-title { left: 30%; }
+.wl-mini[data-persona="bsd"] .wl-m-title { left: 8%; top: 30%; border-radius: 0; outline: 1px solid rgba(255,255,255,0.35); outline-offset: -1px; background: rgba(255,255,255,0.14); }
+.wl-mini[data-persona="tui"] .wl-m-title,
+.wl-mini[data-persona="tui"] .wl-m-body { left: 8%; width: 60%; border-radius: 0; background: rgba(74, 222, 128, 0.30); }
+.wl-mini[data-persona="tui"] .wl-m-body { top: 34%; height: 20%; background: rgba(74, 222, 128, 0.16); }
+.wl-mini[data-persona="tui"] .wl-m-bar { left: 8%; right: auto; width: 40%; border-radius: 0; background: rgba(74, 222, 128, 0.40); }
+.wl-mini[data-persona="mac"] .wl-m-bar { height: 20%; bottom: 5%; border-radius: 6px; }
+.wl-mini[data-persona="android"] .wl-m-bar { height: 8%; border-radius: 3px; }
+
+.wl-foot { display: flex; align-items: center; gap: 10px; margin-top: 20px; }
+.wl-links { display: flex; gap: 14px; font-size: 0.78rem; }
+.wl-links a { color: var(--accent); text-decoration: none; }
+.wl-links a:hover { text-decoration: underline; }
+.wl-foot .wl-enter {
+  margin-left: auto; border: 0; border-radius: 10px; cursor: pointer;
+  background: var(--accent); color: #06121c; font-weight: 600; padding: 9px 18px;
+}
+.wl-foot .wl-enter:hover { filter: brightness(1.1); }

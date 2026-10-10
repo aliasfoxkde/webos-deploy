@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useReducer } from 'react';
 import { allApps, findApp, DEFAULT_APPS, APP_INDEX } from './registry.js';
 import { zoneRect } from './snap.js';
+import { personaOf } from './personas.js';
 
 /* ---------- persistence helpers ---------- */
 function load(key, fallback) {
@@ -80,6 +81,7 @@ const withoutApp = (groups, appId) =>
 const initial = () => ({
   installed: loadInstalled(),
   userApps: load('userapps', []), // custom apps added via right-click → Add app…
+  persona: personaOf(load('persona', 'win')).id, // OS skin (see os/personas.js)
   theme: { ...DEFAULT_THEME, ...load('theme', {}) },
   events: load('events', {}),
   groups: load('groups', []), // desktop icon groups: [{ id, name, appIds }]
@@ -300,6 +302,19 @@ function reducer(state, action) {
       return { ...state, order, desktop };
     }
 
+    /* -- OS persona (skin via body[data-persona] + one-shot defaults) -- */
+    case 'setPersona': {
+      const p = personaOf(action.id);
+      save('persona', p.id);
+      // Defaults, not a lockdown: preset/accent/taskbar side, then the user
+      // can override any of them as usual.
+      const theme = { ...state.theme, preset: p.preset, accent: p.accent };
+      save('theme', theme);
+      const taskbar = { ...state.taskbar, position: p.taskbar };
+      save('taskbar', taskbar);
+      return { ...state, persona: p.id, theme, taskbar };
+    }
+
     /* -- settings-object patches -- */
     case 'setVolume': return patched(state, 'volume', action.patch);
     case 'setWidgets': return patched(state, 'widgets', action.patch);
@@ -349,6 +364,7 @@ export function OSProvider({ children }) {
     install: (appId) => dispatch({ type: 'install', appId }),
     uninstall: (appId) => dispatch({ type: 'uninstall', appId }),
     setTheme: (patch) => dispatch({ type: 'setTheme', patch }),
+    setPersona: (id) => dispatch({ type: 'setPersona', id }),
     addEvent: (date, text) => dispatch({ type: 'addEvent', date, text }),
     removeEvent: (date, index) => dispatch({ type: 'removeEvent', date, index }),
     setOrder: (order) => dispatch({ type: 'setOrder', order }),
@@ -400,12 +416,13 @@ export function OSProvider({ children }) {
 
   /* -- taskbar layout to body attrs (position / autohide) -- */
   useEffect(() => {
+    document.body.dataset.persona = state.persona;
     document.body.dataset.tb = state.taskbar.position;
     document.body.toggleAttribute('data-tb-autohide', !!state.taskbar.autohide);
     document.body.toggleAttribute('data-icons', false);
     document.body.dataset.icons = state.desktop.iconSize;
     document.body.dataset.mode = state.mobile ? 'mobile' : 'desktop';
-  }, [state.taskbar.position, state.taskbar.autohide, state.desktop.iconSize, state.mobile]);
+  }, [state.persona, state.taskbar.position, state.taskbar.autohide, state.desktop.iconSize, state.mobile]);
 
   /* -- volume broadcast: apps opt in by listening for the event -- */
   useEffect(() => {

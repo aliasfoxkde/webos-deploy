@@ -11,6 +11,7 @@ import Properties from './shell/Properties.jsx';
 import AddApp from './shell/AddApp.jsx';
 import Sidebar from './shell/Sidebar.jsx';
 import MobileDrawer from './shell/MobileDrawer.jsx';
+import Welcome from './shell/Welcome.jsx';
 import { startMoveDrag } from './shell/winDrag.js';
 import { zoneRect } from './os/snap.js';
 import { PLUGIN_IDS } from './os/registry.js';
@@ -120,7 +121,21 @@ export default function App() {
   const [widgetsOpen, setWidgetsOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [openGroupId, setOpenGroupId] = useState(null);
+  // First-run welcome: skipped for ?open= deep links (app-first UX), reopenable
+  // from Settings → About via the webos:welcome event.
+  const [welcome, setWelcome] = useState(() =>
+    !localStorage.getItem('webos.welcomed') && !new URLSearchParams(location.search).get('open'));
   const drag = useRef(null); // { id, moved, order }
+
+  useEffect(() => {
+    const h = () => setWelcome(true);
+    window.addEventListener('webos:welcome', h);
+    return () => window.removeEventListener('webos:welcome', h);
+  }, []);
+  const enterWelcome = () => {
+    try { localStorage.setItem('webos.welcomed', 'true'); } catch { /* private mode */ }
+    setWelcome(false);
+  };
 
   /* Desktop flow: loose apps + group tiles arranged by the saved order.
      `desktop.order` stores app ids AND group ids; grouped apps are hidden
@@ -464,6 +479,7 @@ export default function App() {
       {propsId && <Properties appId={propsId} onClose={() => setPropsId(null)} />}
       {openGroupId && <GroupPopup groupId={openGroupId} onClose={() => setOpenGroupId(null)} />}
       {appDlg && <AddApp app={appDlg === 'new' ? null : appDlg} onClose={() => setAppDlg(null)} />}
+      {welcome && <Welcome onEnter={enterWelcome} />}
       {menu}
     </>
   );

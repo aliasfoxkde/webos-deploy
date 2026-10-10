@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useOS, WIDGET_IDS } from '../../os/state.jsx';
+import { VERSION } from '../../version.js';
 
 /* --- Desktop: icon size + arrangement --- */
 export function DesktopPanel() {
@@ -281,12 +282,13 @@ export function AboutPanel() {
     <section>
       <h3>About WebOS</h3>
       <dl className="props-grid">
-        <dt>Shell</dt><dd>WebOS 2.1 (Vite + React, fully client-rendered)</dd>
+        <dt>Shell</dt><dd>WebOS {VERSION} (Vite + React, fully client-rendered)</dd>
         <dt>Apps</dt><dd>Bundled plugins + external web apps, installed per browser</dd>
         <dt>Privacy</dt><dd>No analytics, no server-side state, no accounts</dd>
         <dt>Deep links</dt><dd><code>?open=&lt;app-id&gt;</code> launches any app — e.g. <code>?open=weather</code></dd>
       </dl>
       <div className="row">
+        <button className="btn" onClick={() => window.dispatchEvent(new Event('webos:welcome'))}>Show welcome screen…</button>
         <a className="btn" href="https://github.com/aliasfoxkde/webos-deploy" target="_blank" rel="noopener noreferrer">Source ↗</a>
         <a className="btn" href="https://getartcraft.com/" target="_blank" rel="noopener noreferrer">ArtCraft ↗</a>
       </div>

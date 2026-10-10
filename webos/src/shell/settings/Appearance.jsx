@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { useOS, ACCENTS, THEME_PRESETS } from '../../os/state.jsx';
 import { WALLPAPERS, FITS, POSITIONS } from '../../os/wallpapers.js';
+import { PERSONAS } from '../../os/personas.js';
 
 // Uploaded wallpapers are data URLs in localStorage — cap them so the theme
 // key can never blow past quota (2.5MB compressed-ish JPEG territory).
@@ -32,6 +33,25 @@ export default function Appearance() {
 
   return (
     <>
+      <section>
+        <h3>Persona</h3>
+        <p className="dim" style={{ marginTop: -6 }}>
+          The overall desktop skin. Applying one sets its theme, accent and taskbar
+          side — everything stays adjustable afterwards.
+        </p>
+        <div className="seg-row" role="radiogroup" aria-label="OS persona">
+          {PERSONAS.map((p) => (
+            <button
+              key={p.id}
+              role="radio" aria-checked={os.persona === p.id}
+              className={`chip ${os.persona === p.id ? 'on' : ''}`}
+              onClick={() => os.setPersona(p.id)}
+              title={p.tagline}
+            >{p.label}</button>
+          ))}
+        </div>
+      </section>
+
       <section>
         <h3>Theme</h3>
         <div className="preset-row">
