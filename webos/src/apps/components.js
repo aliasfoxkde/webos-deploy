@@ -16,4 +16,5 @@ export const APP_COMPONENTS = {
   files: lazy(() => import('./files/Files.jsx')),
   chat: lazy(() => import('./chat/Chat.jsx')),
   photos: lazy(() => import('./photos/Photos.jsx')),
+  notepad: lazy(() => import('./notepad/Notepad.jsx')),
 };

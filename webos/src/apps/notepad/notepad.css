@@ -1,0 +1,198 @@
+/* Notepad — two-pane notes list + editor. */
+
+.notepad {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  background: #0b0f16;
+  color: var(--text, #dbe4ee);
+}
+
+.np-side {
+  flex: 0 0 220px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.np-search {
+  display: flex;
+  gap: 6px;
+  padding: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.np-search input {
+  flex: 1;
+  min-width: 0;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 7px;
+  color: inherit;
+  padding: 5px 8px;
+  font: inherit;
+  font-size: 0.8rem;
+}
+.np-search input::placeholder { color: rgba(219, 228, 238, 0.45); }
+
+.np-new {
+  flex: 0 0 auto;
+  width: 30px;
+  border-radius: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: var(--accent, #34d399);
+  color: #052014;
+  font-size: 1.05rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.np-new:hover { filter: brightness(1.08); }
+
+.np-list { flex: 1; overflow-y: auto; padding: 4px; }
+
+.np-item {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 7px 9px;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-bottom: 2px;
+}
+.np-item:hover { background: rgba(255, 255, 255, 0.06); }
+.np-item.on { background: rgba(52, 211, 153, 0.14); }
+.np-item.on .np-item-title { color: var(--accent, #34d399); }
+.np-item:focus-visible { outline: 2px solid var(--accent, #34d399); outline-offset: -2px; }
+
+.np-item-title {
+  font-size: 0.84rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.np-item-snippet {
+  font-size: 0.72rem;
+  opacity: 0.55;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.np-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.66rem;
+  opacity: 0.5;
+}
+
+.np-del {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 0.72rem;
+  padding: 0 3px;
+  border-radius: 4px;
+  opacity: 0;
+}
+.np-item:hover .np-del, .np-del:focus-visible, .np-del.armed { opacity: 1; }
+.np-del:hover:not(.armed) { color: #f87171; }
+.np-del.armed { color: #fca5a5; font-weight: 700; }
+
+.np-none { padding: 18px 10px; font-size: 0.8rem; opacity: 0.6; text-align: center; }
+
+.np-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.np-title {
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 1.05rem;
+  font-weight: 700;
+  padding: 10px 14px 8px;
+}
+.np-title:focus { outline: none; border-bottom-color: var(--accent, #34d399); }
+
+.np-mode {
+  display: inline-flex;
+  align-self: flex-start;
+  margin: 8px 14px 0;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.np-mode button {
+  background: transparent;
+  border: none;
+  color: inherit;
+  font: inherit;
+  font-size: 0.76rem;
+  padding: 4px 12px;
+  cursor: pointer;
+}
+.np-mode button.on { background: var(--accent, #34d399); color: #052014; font-weight: 600; }
+
+.np-text {
+  flex: 1;
+  min-height: 0;
+  resize: none;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: 0.9rem/1.55 ui-monospace, SFMono-Regular, Menlo, monospace;
+  padding: 12px 14px;
+}
+.np-text:focus { outline: none; }
+
+.np-preview {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 14px 18px;
+}
+
+.np-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.72rem;
+  opacity: 0.85;
+}
+.np-spring { flex: 1; }
+.np-md { color: var(--accent, #34d399); }
+.np-msg { color: var(--accent, #34d399); }
+
+.np-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 7px;
+  color: inherit;
+  font: inherit;
+  font-size: 0.76rem;
+  padding: 4px 12px;
+  cursor: pointer;
+}
+.np-btn:hover { background: rgba(255, 255, 255, 0.08); }
+.np-btn.accent { background: var(--accent, #34d399); border-color: transparent; color: #052014; font-weight: 600; }
+
+.np-empty {
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-align: center;
+  opacity: 0.8;
+}

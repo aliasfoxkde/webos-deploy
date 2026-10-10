@@ -25,6 +25,7 @@ export default function Editor({ args } = {}) {
   const saveRef = useRef(() => {});
   const persistTimer = useRef(null);
   const openedRef = useRef(false);
+  const renameInput = useRef(null);
 
   // Latest state without re-creating the CM view on every keystroke.
   const stateRef = useRef(state);
@@ -57,12 +58,18 @@ export default function Editor({ args } = {}) {
     return () => { cm.destroy(); view.current = null; };
     // active.text intentionally excluded: the doc is owned by CodeMirror; the
     // update listener keeps state in sync instead of resetting the view.
-    // preview is a dep: the host div unmounts while previewing, so the view
-    // must be rebuilt on return.
+    // showPreview is a dep: the host div unmounts while previewing, so the
+    // view must be rebuilt on return.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.activeId, extensions, preview]);
+  }, [state.activeId, extensions, showPreview]);
 
   useEffect(() => () => clearTimeout(persistTimer.current), []);
+
+  // Focus the inline tab-rename field when it mounts (a ref-focus, not
+  // autoFocus — the field appears from an explicit double-click).
+  useEffect(() => {
+    if (renaming !== null) renameInput.current?.focus();
+  }, [renaming]);
 
   // Launched from Files (args.path): open the store file once per mount and
   // keep a live preview only when the buffer is markdown.
@@ -78,10 +85,9 @@ export default function Editor({ args } = {}) {
     }).catch((e) => setStatus(`open failed: ${e.message ?? e}`));
   }, [args, applyState]);
 
-  // Preview makes no sense for non-markdown buffers — fall back to editing.
-  useEffect(() => {
-    if (preview && !isMarkdownName(active.name)) setPreview(false);
-  }, [preview, active.name]);
+  // Preview only applies to markdown buffers — derived, so switching to a
+  // non-markdown tab while previewing drops back to the editor by itself.
+  const showPreview = preview && isMarkdownName(active.name);
 
   // ---- file IO ------------------------------------------------------------
   const readFile = () => new Promise((resolve) => {
@@ -169,8 +175,8 @@ export default function Editor({ args } = {}) {
         <span className="ed-flex" />
         {isMarkdownName(active.name) && (
           <span className="ed-mode" role="group" aria-label="Editor mode">
-            <button type="button" className={!preview ? 'toggled' : ''} onClick={() => setPreview(false)}>Edit</button>
-            <button type="button" className={preview ? 'toggled' : ''} onClick={() => setPreview(true)}>Preview</button>
+            <button type="button" className={!showPreview ? 'toggled' : ''} onClick={() => setPreview(false)}>Edit</button>
+            <button type="button" className={showPreview ? 'toggled' : ''} onClick={() => setPreview(true)}>Preview</button>
           </span>
         )}
         <button
@@ -197,7 +203,7 @@ export default function Editor({ args } = {}) {
           >
             {renaming?.id === b.id ? (
               <input
-                autoFocus
+                ref={renameInput}
                 value={renaming.name}
                 onChange={(e) => setRenaming({ id: b.id, name: e.target.value })}
                 onBlur={() => { applyState(reducer(state, { type: 'rename', id: b.id, name: renaming.name })); setRenaming(null); }}
@@ -213,7 +219,7 @@ export default function Editor({ args } = {}) {
         ))}
       </div>
 
-      {preview ? (
+      {showPreview ? (
         <div className="ed-preview">
           <MarkdownView src={active.text} />
         </div>
@@ -222,7 +228,7 @@ export default function Editor({ args } = {}) {
       )}
 
       <div className="ed-status">
-        <span>{preview ? 'preview — editing paused' : `Ln ${line.number}, Col ${col + 1}`}</span>
+        <span>{showPreview ? 'preview — editing paused' : `Ln ${line.number}, Col ${col + 1}`}</span>
         <span>{active.text.length} chars</span>
         <span>{languageLabel(active.name)}</span>
         {active.storePath && <em title={active.storePath}>Files: {active.storePath}</em>}
