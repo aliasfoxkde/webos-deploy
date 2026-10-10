@@ -1,6 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import { useOS } from '../../os/state.jsx';
-import { kvGet, kvSet } from '../../os/db.js';
+import { kvGet, kvSet, fileList } from '../../os/db.js';
+import { join } from './wasi.js';
+import { HOME, tilde, expandTilde } from './paths.js';
 import wasmUrl from 'sql.js/dist/sql-wasm.wasm?url';
 import { Terminal as XTerm } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
@@ -36,10 +38,12 @@ const HELP = [
   '  volume <0-100>          master volume',
   '  os | os.status          system status',
   '  sqlite <sql>            SQL on the persistent OS database',
+  '  cd <dir> | pwd          change / print directory on the Files disk (~ = home)',
   '  utils                   list the bundled coreutils utilities',
   '  <util> [args…]          run a real utility (ls, cat, wc, seq, sort, sha256sum…)',
+  '                          relative paths resolve against the current directory',
   '  coreutils <util> …      force the wasm multicall past the builtins',
-  `                          (${UTIL_NAMES.size} utilities; files = the Files-app disk: try ls Home)`,
+  `                          (${UTIL_NAMES.size} utilities; the Files disk is mounted at / — start in ~ and try ls)`,
   '  history | fullscreen | date | echo | uname | whoami | neofetch',
   '  clear                   clear the screen        (Ctrl+L)',
   '  <anything else>         evaluated as JavaScript — `os` is in scope',
@@ -120,18 +124,19 @@ export default function Terminal() {
     ro.observe(hostRef.current);
 
     const out = (s = '') => term.write(`${s}\r\n`);
-    const PROMPT = `${C.prompt}❯${C.reset} `;
+    let cwd = HOME; // per-session working directory on the Files disk
+    const prompt = () => `${C.prompt}${C.dim}${tilde(cwd)}${C.reset} ${C.prompt}❯${C.reset} `;
     let buf = '';
     let hist = [];
     let hIdx = -1;
     let busy = false;
-    const redraw = () => { term.write(`\r\x1b[K${PROMPT}${buf}`); };
+    const redraw = () => { term.write(`\r\x1b[K${prompt()}${buf}`); };
     term.writeln(`ArtCraft WebOS shell ${C.dim}(wosh 1.0)${C.reset} — type ${C.ok}help${C.reset} for commands.`);
-    term.write(PROMPT);
+    term.write(prompt());
 
     const candidates = (part) => {
       const o = osRef.current;
-      const cmds = ['help', 'apps', 'open', 'launch', 'close', 'windows', 'install', 'uninstall', 'store', 'settings', 'get', 'set', 'persona', 'personas', 'theme', 'accent', 'wallpaper', 'volume', 'os', 'sqlite', 'utils', 'coreutils', 'history', 'fullscreen', 'date', 'echo', 'uname', 'whoami', 'neofetch', 'clear', ...UTIL_NAMES];
+      const cmds = ['help', 'apps', 'open', 'launch', 'close', 'windows', 'install', 'uninstall', 'store', 'settings', 'get', 'set', 'persona', 'personas', 'theme', 'accent', 'wallpaper', 'volume', 'os', 'sqlite', 'utils', 'coreutils', 'history', 'fullscreen', 'date', 'echo', 'uname', 'whoami', 'neofetch', 'cd', 'pwd', 'clear', ...UTIL_NAMES];
       const words = part.split(/\s+/);
       const last = words[words.length - 1];
       let pool = cmds;
@@ -218,6 +223,17 @@ export default function Terminal() {
         case 'date': out(new Date().toString()); return;
         case 'echo': out(arg); return;
         case 'whoami': out('webos-user'); return;
+        case 'pwd': out(tilde(cwd)); return;
+        case 'cd': {
+          const dest = arg ? expandTilde(arg.split(/\s+/)[0]) : HOME;
+          const target = join(cwd, dest);
+          if (target !== '/' && !(await fileList()).some((r) => r.dir && r.path === target)) {
+            out(`${C.err}cd: no such directory: ${dest}${C.reset}`);
+            return;
+          }
+          cwd = target;
+          return;
+        }
         case 'uname': out(`ArtCraft WebOS (browser) — ${navigator.userAgent.slice(0, 72)}…`); return;
         case 'history': hist.forEach((h, i) => out(`${C.dim}${String(i + 1).padStart(3)}${C.reset}  ${h}`)); return;
         case 'neofetch':
@@ -331,7 +347,7 @@ export default function Terminal() {
           if (head === 'coreutils' && !util) { out('usage: coreutils <util> [args…] — try utils for the list'); return; }
           if (util && (UTIL_NAMES.has(util) || head === 'coreutils')) {
             try {
-              const r = await runUtil(util, utilArgs);
+              const r = await runUtil(util, utilArgs, { cwd });
               if (r.stdout) out(r.stdout.replace(/\n$/, '').replace(/\n/g, '\r\n'));
               if (r.stderr) out(`${C.err}${r.stderr.replace(/\n$/, '').replace(/\n/g, '\r\n')}${C.reset}`);
               if (r.truncated) out(`${C.dim}— output truncated${C.reset}`);
@@ -378,7 +394,7 @@ export default function Terminal() {
           if (line.trim()) hist = [...hist, line].slice(-100);
           // serialize commands: sqlite loads are async; don't interleave input
           busy = true;
-          Promise.resolve(run(line)).finally(() => { busy = false; term.write(PROMPT); });
+          Promise.resolve(run(line)).finally(() => { busy = false; term.write(prompt()); });
           return; // rest of a pasted batch after Enter is dropped — acceptable
         } else if (ch === '\x7f') {
           if (buf.length) { buf = buf.slice(0, -1); redraw(); }
@@ -386,7 +402,7 @@ export default function Terminal() {
           term.write('^C\r\n');
           buf = '';
           hIdx = -1;
-          if (!busy) term.write(PROMPT);
+          if (!busy) term.write(prompt());
         } else if (ch === '\x0c') {
           term.clear(); term.write('\x1b[2J\x1b[H'); redraw();
         } else if (ch === '\t') {

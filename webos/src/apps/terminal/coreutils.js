@@ -9,9 +9,11 @@
    mutated it — ref comparison against the seeded byte arrays decides what
    to persist (MemFS never mutates in place).
 
-   Path model (v1, documented in the shell help): the disk root '/' is the
-   Files app store root, so relative arguments resolve there and absolute
-   paths ('/Home/notes.txt') always work. wosh builtins keep precedence over
+   Path model (v2): the disk root '/' is the Files app store root and the
+   shell owns a per-session cwd — runUtil pins it on the WASI host each run
+   (`opts.cwd`), so utility-relative arguments ('notes', '../docs') resolve
+   against the session cwd like a real shell, and absolute paths
+   ('/Home/notes.txt') always work. wosh builtins keep precedence over
    shadowing utilities (echo/date/uname/whoami/pwd stay OS-wired); escape
    hatch: `coreutils <util> <args…>` always dispatches into wasm. */
 
@@ -71,11 +73,14 @@ async function persist() {
   cu.fs.dirty = false;
 }
 
-/* Run one utility. Returns { code, stdout, stderr, truncated }. */
-export async function runUtil(name, args) {
+/* Run one utility. `opts.cwd` pins the session cwd for this run (relative
+   arguments inside the guest resolve against it). Returns
+   { code, stdout, stderr, truncated }. */
+export async function runUtil(name, args, opts = {}) {
   const ctx = await ensure();
   const argv = ['coreutils', name, ...args];
   ctx.host.reset(argv);
+  ctx.host.cwd = opts.cwd || '/';
   // Async instantiate only — Chrome forbids sync `new WebAssembly.Instance`
   // on the main thread once the module's wire bytes exceed 8MB (this one is
   // ~10MB), and suggests exactly this API in the error text. The module

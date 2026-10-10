@@ -187,6 +187,7 @@ export class WasiHost {
     this.nextFd = 4; // 0-2 std streams, 3 the preopen root
     this.args = [];
     this.envs = [];
+    this.cwd = '/'; // session cwd — fd 3 lookups resolve relative paths against it
     this.stdout = '';
     this.stderr = '';
     this.maxOut = maxOut;
@@ -550,10 +551,11 @@ export class WasiHost {
     };
   }
 
-  /* Map a dirfd to its guest directory path. fd 3 is the preopen root "/";
-     open directory handles resolve to their own path. */
+  /* Map a dirfd to its guest directory path. fd 3 is the preopen root; its
+     lookups resolve against the session cwd (absolute paths bypass via
+     join), while open directory handles resolve to their own path. */
   resolveDir(fd) {
-    if (fd === 3) return '/';
+    if (fd === 3) return this.cwd;
     const handle = this.fds.get(fd);
     if (!handle) return undefined;
     return handle.dir ? handle.path : undefined;
