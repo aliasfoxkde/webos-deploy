@@ -37,6 +37,10 @@ APPS_LIST=(
   "vectorcraft 0.7.0"
   "wordcraft 0.3.0"
 )
+# NOTE: DeckCraft is NOT in this list yet — apps/deckcraft currently holds a
+# full source checkout, and fetch_one does `rm -rf apps/<name>` on --force,
+# which would destroy it. Add "deckcraft <ver>" here only once the checkout
+# is gone and releases exist under the org.
 
 mkdir -p "$ZIPS" "$APPS"
 

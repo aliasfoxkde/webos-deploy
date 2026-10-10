@@ -479,3 +479,21 @@ Validation: driver step 35 groups two calc windows (one button, dot, both
 windows), reads the menu items, closes all from the menu, asserts the
 centred first rect and the +28/+28 second rect, launches weather twice
 (1 window, 1 button), and drives the deep link into the Taskbar section.
+
+### DeckCraft joins the desktop (3.2.0)
+
+DeckCraft 0.4.0 (clean-room presentation suite) is now a default app: registry
+row → `https://deckcraft-web.pages.dev/`, icon `icons/craft/deckcraft.png`
+(256 px downscale of its `assets/app-icon/deckcraft-1024.png`, Apache-2.0 OR
+MIT, attributed in `docs/ATTRIBUTION.md`). Unlike the other eight craft apps
+it has no upstream release zip yet — the site was built locally from the
+source checkout at `apps/deckcraft/` (`trunk build --release`, own
+`CARGO_TARGET_DIR` on NVMe) and deployed to a dedicated Pages project
+`deckcraft-web`. The 24 MB wasm sits just under the 25 MiB Pages per-file
+limit, so no R2 pass-through is needed. Two guards recorded:
+`packaging/fetch-apps.sh` deliberately does NOT list deckcraft (its
+`--force` path does `rm -rf apps/<name>`, which would delete the checkout —
+add the entry only after the checkout is gone and releases exist), and the
+Pages project needed `wrangler pages project create` first (newer wrangler
+no longer auto-creates on deploy). Boot verified headlessly: wasm binds,
+loading screen clears, zero console errors.

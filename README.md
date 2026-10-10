@@ -28,6 +28,7 @@ cadcraft/ … zed/   sibling independent source repos (NOT part of this repo)
 |---|---|
 | artcraft-webos (the desktop) | https://artcraft-webos.pages.dev/ |
 | craft apps | `https://<app>-web.pages.dev/` (vectorcraft: `vectorcraft-web-9y7`) |
+| deckcraft | https://deckcraft-web.pages.dev/ (built from the `apps/deckcraft` source checkout — no upstream release zip yet) |
 | Browser in Browser (Firefox WASM) | https://browserinbrowser.pages.dev/ |
 
 ## Quickstart

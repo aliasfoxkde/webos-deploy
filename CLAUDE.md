@@ -22,8 +22,9 @@ A checkout area holding 8 sibling **ArtCraft "craft" apps** — clean-room, pure
 | `photocraft/` | PhotoCraft | Photoshop | 0.5.0 |
 | `vectorcraft/` | VectorCraft | Illustrator | 0.7.0 |
 | `wordcraft/` | WordCraft | Word | 0.3.0 |
+| `apps/deckcraft/` | DeckCraft | PowerPoint | 0.4.0 |
 
-(`filmcraft`, `effectcraft` are referenced in docs as siblings but are not checked out here. Docs reference `storytold/<app>` repos; the actual remotes use the `aliasfoxkde` org.)
+DeckCraft's checkout lives at `apps/deckcraft/` (inside the gitignored apps/ dir, not a sibling) and its web build is deployed from that checkout to `deckcraft-web.pages.dev` — it has no upstream release zip yet, so it is NOT in `packaging/fetch-apps.sh`'s list (`--force` would `rm -rf` the checkout). (`filmcraft`, `effectcraft` are referenced in docs as siblings but are not checked out here. Docs reference `storytold/<app>` repos; the actual remotes use the `aliasfoxkde` org.)
 
 ## Read the per-repo agent doc first
 
