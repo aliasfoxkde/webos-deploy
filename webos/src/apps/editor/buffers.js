@@ -64,7 +64,7 @@ export function reducer(state, action) {
         ...state,
         nextId: id + 1,
         activeId: id,
-        buffers: [...state.buffers, { id, name, text: action.text ?? '', dirty: false, handle: action.handle }],
+        buffers: [...state.buffers, { id, name, text: action.text ?? '', dirty: false, handle: action.handle, storePath: action.storePath }],
       };
     }
     case 'edit':

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { filePut, fileGet, fileDel, fileDelTree, fileList, dirPut } from '../../os/db.js';
+import { useOS } from '../../os/state.jsx';
 import { useContextMenu } from '../../shell/ContextMenu.jsx';
 import './files.css';
 
@@ -11,7 +12,7 @@ const ROOT = '/Home';
 const join = (dir, name) => `${dir === ROOT ? ROOT : dir}/${name}`.replace(/\/+/g, '/');
 const base = (path) => path.slice(path.lastIndexOf('/') + 1);
 
-const TEXT_EXT = /\.(txt|md|markdown|json|js|jsx|ts|tsx|css|html|htm|xml|svg|csv|log|toml|yaml|yml|ini|rs|py|sh)$/i;
+const TEXT_EXT = /\.(txt|md|mdx|markdown|json|js|jsx|ts|tsx|css|html|htm|xml|svg|csv|log|toml|yaml|yml|ini|rs|py|sh)$/i;
 const TEXT_CAP = 2_000_000; // don't slurp huge files as text
 
 const fmtBytes = (n) => {
@@ -83,6 +84,7 @@ function Glyph({ kind }) {
 }
 
 export default function FilesApp() {
+  const os = useOS();
   const [cwd, setCwd] = useState(ROOT);
   const [tab, setTab] = useState('disk'); // 'disk' | 'device'
   const [all, setAll] = useState([]);
@@ -302,13 +304,16 @@ export default function FilesApp() {
         ? [{ label: 'Open', run: () => setCwd(arg) }]
         : [
           { label: 'Open', run: () => openFile(rec) },
+          ...(TEXT_EXT.test(rec.name || base(rec.path)) || (rec.type || '').startsWith('text/')
+            ? [{ label: 'Open in Editor', run: () => os.launch('editor', { path: rec.path }) }]
+            : []),
           { label: 'Download', run: () => download(rec) },
         ]),
       '-',
       { label: 'Rename…', run: () => startRename(rec) },
       { label: confirmDel === arg ? 'Confirm delete' : 'Delete', run: () => remove(rec) },
     ];
-  }, [tab, cwd, all, confirmDel, refresh, openFile, download, remove, startRename]);
+  }, [tab, cwd, all, confirmDel, refresh, openFile, download, remove, startRename, os]);
   const { menu } = useContextMenu(buildItems);
 
   return (

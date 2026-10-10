@@ -95,3 +95,75 @@
 }
 
 .ed-msg { color: var(--accent); }
+
+/* Edit/Preview segmented toggle */
+.ed-mode {
+  display: inline-flex;
+  border: 1px solid var(--chrome-line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.ed-mode button {
+  border: 0;
+  background: transparent;
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 11px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+.ed-mode button.toggled {
+  background: var(--accent);
+  color: var(--accent-contrast, #06121f);
+}
+
+/* Markdown preview pane */
+.ed-preview {
+  flex: 1;
+  overflow: auto;
+  padding: 18px 26px 40px;
+  background: var(--panel, rgba(0, 0, 0, 0.18));
+}
+.md-view { max-width: 78ch; margin: 0 auto; line-height: 1.6; font-size: 14px; }
+.md-view h1, .md-view h2, .md-view h3, .md-view h4, .md-view h5, .md-view h6 {
+  line-height: 1.25;
+  margin: 1.1em 0 0.45em;
+  color: var(--text);
+}
+.md-view h1 { font-size: 1.7em; border-bottom: 1px solid var(--chrome-line); padding-bottom: 0.25em; }
+.md-view h2 { font-size: 1.4em; border-bottom: 1px solid var(--chrome-line); padding-bottom: 0.2em; }
+.md-view h3 { font-size: 1.2em; }
+.md-view h4, .md-view h5, .md-view h6 { font-size: 1.05em; }
+.md-view p { margin: 0.55em 0; }
+.md-view a { color: var(--accent); text-underline-offset: 2px; }
+.md-view code {
+  font-family: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  font-size: 0.88em;
+  background: var(--chrome-line);
+  border-radius: 4px;
+  padding: 0.1em 0.4em;
+}
+.md-view pre {
+  background: var(--chrome-line);
+  border: 1px solid var(--chrome-line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  overflow: auto;
+}
+.md-view pre code { background: transparent; padding: 0; font-size: 12.5px; }
+.md-view blockquote {
+  margin: 0.7em 0;
+  padding: 0.35em 1em;
+  border-left: 3px solid var(--accent);
+  color: var(--text-dim);
+}
+.md-view hr { border: 0; border-top: 1px solid var(--chrome-line); margin: 1.3em 0; }
+.md-view img { max-width: 100%; border-radius: 8px; }
+.md-view .md-list { margin: 0.5em 0; padding-left: 1.5em; }
+.md-view .md-list.d2, .md-view .md-list.d3 { font-size: 0.96em; }
+.md-view li { margin: 0.2em 0; }
+.md-view li > ul, .md-view li > ol { margin: 0.15em 0; }
+.md-table-wrap { overflow-x: auto; margin: 0.8em 0; }
+.md-view table { border-collapse: collapse; font-size: 13px; }
+.md-view th, .md-view td { border: 1px solid var(--chrome-line); padding: 5px 10px; }
+.md-view th { background: var(--chrome-line); }

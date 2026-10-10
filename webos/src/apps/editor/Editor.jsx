@@ -1,22 +1,30 @@
 // Editor — bundled code editor plugin (CodeMirror 6).
 // Buffers persist in localStorage; Open/Save use the File System Access API
-// where available, with a download fallback elsewhere.
+// where available, with a download fallback elsewhere. Buffers opened from
+// the Files disk (args.path) save straight back to the store.
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { EditorState } from '@codemirror/state';
 import { EditorView } from 'codemirror';
 import { loadState, persist, reducer } from './buffers.js';
 import { detectLanguage, editorExtensions, languageLabel } from './language.js';
+import MarkdownView from './MarkdownView.jsx';
+import { fileGet, filePut } from '../../os/db.js';
 import './editor.css';
 
-export default function Editor() {
+const base = (p) => p.slice(p.lastIndexOf('/') + 1);
+const isMarkdownName = (name) => /\.(md|mdx|markdown)$/i.test(name || '');
+
+export default function Editor({ args } = {}) {
   const [state, dispatch] = useState(loadState);
   const [wrap, setWrap] = useState(true);
+  const [preview, setPreview] = useState(false);
   const [status, setStatus] = useState('');
   const [renaming, setRenaming] = useState(null);
   const host = useRef(null);
   const view = useRef(null);
   const saveRef = useRef(() => {});
   const persistTimer = useRef(null);
+  const openedRef = useRef(false);
 
   // Latest state without re-creating the CM view on every keystroke.
   const stateRef = useRef(state);
@@ -49,10 +57,31 @@ export default function Editor() {
     return () => { cm.destroy(); view.current = null; };
     // active.text intentionally excluded: the doc is owned by CodeMirror; the
     // update listener keeps state in sync instead of resetting the view.
+    // preview is a dep: the host div unmounts while previewing, so the view
+    // must be rebuilt on return.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.activeId, extensions]);
+  }, [state.activeId, extensions, preview]);
 
   useEffect(() => () => clearTimeout(persistTimer.current), []);
+
+  // Launched from Files (args.path): open the store file once per mount and
+  // keep a live preview only when the buffer is markdown.
+  useEffect(() => {
+    if (openedRef.current || !args?.path) return;
+    openedRef.current = true;
+    fileGet(args.path).then((rec) => {
+      if (!rec?.blob) { setStatus(`not found: ${args.path}`); return; }
+      return rec.blob.text().then((text) => {
+        applyState(reducer(stateRef.current, { type: 'new', name: base(args.path), text, storePath: args.path }));
+        if (isMarkdownName(args.path)) setPreview(true);
+      });
+    }).catch((e) => setStatus(`open failed: ${e.message ?? e}`));
+  }, [args, applyState]);
+
+  // Preview makes no sense for non-markdown buffers — fall back to editing.
+  useEffect(() => {
+    if (preview && !isMarkdownName(active.name)) setPreview(false);
+  }, [preview, active.name]);
 
   // ---- file IO ------------------------------------------------------------
   const readFile = () => new Promise((resolve) => {
@@ -105,6 +134,13 @@ export default function Editor() {
   const save = async () => {
     const buffer = stateRef.current.buffers.find((b) => b.id === stateRef.current.activeId);
     try {
+      if (buffer.storePath) {
+        // Opened from the Files disk — write straight back to the store.
+        await filePut(buffer.storePath, new Blob([buffer.text], { type: 'text/plain' }));
+        applyState(reducer(stateRef.current, { type: 'saved', id: buffer.id }));
+        setStatus(`saved ${buffer.name} → Files`);
+        return;
+      }
       const handle = await writeFile(buffer, buffer.handle);
       applyState(reducer(stateRef.current, { type: 'saved', id: buffer.id, handle, name: handle ? undefined : buffer.name }));
       setStatus(handle ? `saved ${buffer.name}` : `exported ${buffer.name}`);
@@ -131,6 +167,12 @@ export default function Editor() {
         <button type="button" className="tb-btn" onClick={openFile}>Open</button>
         <button type="button" className="tb-btn" onClick={save}>Save</button>
         <span className="ed-flex" />
+        {isMarkdownName(active.name) && (
+          <span className="ed-mode" role="group" aria-label="Editor mode">
+            <button type="button" className={!preview ? 'toggled' : ''} onClick={() => setPreview(false)}>Edit</button>
+            <button type="button" className={preview ? 'toggled' : ''} onClick={() => setPreview(true)}>Preview</button>
+          </span>
+        )}
         <button
           type="button"
           className={`tb-btn ${wrap ? 'toggled' : ''}`}
@@ -171,12 +213,19 @@ export default function Editor() {
         ))}
       </div>
 
-      <div className="ed-host" ref={host} />
+      {preview ? (
+        <div className="ed-preview">
+          <MarkdownView src={active.text} />
+        </div>
+      ) : (
+        <div className="ed-host" ref={host} />
+      )}
 
       <div className="ed-status">
-        <span>Ln {line.number}, Col {col + 1}</span>
+        <span>{preview ? 'preview — editing paused' : `Ln ${line.number}, Col ${col + 1}`}</span>
         <span>{active.text.length} chars</span>
         <span>{languageLabel(active.name)}</span>
+        {active.storePath && <em title={active.storePath}>Files: {active.storePath}</em>}
         {active.needsHandle && !active.handle && <em title="Re-open the file to save in place again">link lost</em>}
         {status && <span className="ed-msg">{status}</span>}
       </div>

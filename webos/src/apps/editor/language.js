@@ -17,7 +17,7 @@ const LANGS = [
   { ext: ['html', 'htm', 'svg', 'vue'], lang: () => html() },
   { ext: ['css'], lang: () => css() },
   { ext: ['json', 'webmanifest', 'map'], lang: () => json() },
-  { ext: ['md', 'markdown'], lang: () => markdown() },
+  { ext: ['md', 'mdx', 'markdown'], lang: () => markdown() },
   { ext: ['py', 'pyw'], lang: () => python() },
   { ext: ['rs'], lang: () => rust() },
 ];
