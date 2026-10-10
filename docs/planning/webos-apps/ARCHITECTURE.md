@@ -497,3 +497,50 @@ add the entry only after the checkout is gone and releases exist), and the
 Pages project needed `wrangler pages project create` first (newer wrangler
 no longer auto-creates on deploy). Boot verified headlessly: wasm binds,
 loading screen clears, zero console errors.
+
+### Screen saver (3.3.0)
+
+New `Screensaver` shell component (mounted last in `App.jsx`, overlay
+`#screensaver` z 1900 — above modals (950) and persona scanlines (1500),
+below the halt screen (2000); `cursor: none`). State slice `os.saver` =
+`{ kind, timeoutMin, speed, photoSecs }` (default off / 10 min), edited in
+Settings → Screen saver and included in Reset look & layout. Kinds: the five
+FX canvases (reusing `FxWallpaper`, which gained `id` and `speed` props so
+the saver canvas doesn't collide with `#fx-wallpaper`), a photo slideshow
+over the bundled CC wallpapers (key-remount fade-through-black — no stacked
+layers), and a big clock following the taskbar's 12/24-h setting.
+
+Idle model: a ref timestamp bumped by passive window listeners
+(pointermove/down, keydown, wheel); a 1 s interval activates after
+`timeoutMin` minutes (skips while `document.hidden`); `webos:saver-preview`
+(CustomEvent) activates immediately for the Settings "Preview now" button and
+the driver. Dismissal while active: pointerdown/keydown instantly;
+pointermove only after 24 px of travel from the first-seen point, so the
+settling jitter that activated it can't instantly dismiss it.
+
+### App Store persona skins (3.3.0)
+
+One JSX tree, per-persona layout via a `body[data-persona="…"] .store-*` CSS
+block (attribute OUTSIDE `:where()` — these rules must outrank the base
+`.store-*` class rules; same contract as the persona token block):
+
+- **win → Microsoft Store**: 10 px hero, squared "Get" buttons (4 px, min
+  width), cards lift on hover with an accent-tinted border.
+- **mac → Mac App Store**: 1.55 rem title, soft 16 px cards, pill (999 px)
+  uppercase GET/OPEN/DELETE buttons.
+- **linux → GNOME Software**: flat 12 px tiles, quiet accent left-border hero
+  ("Editor's pick").
+- **android → Play**: pill search (999 px, wider), 20 px cards, 26 px hero,
+  pill Install buttons.
+- **bsd/tui → dense list**: hero hidden, grid becomes a single-column
+  bordered list, tag chips hidden, buttons become accent-outlined bracket
+  verbs.
+
+Wording follows each platform's store convention via a `LABELS` map in
+`AppStore.jsx` (MS "Get", Apple "GET", terminals speak `[ install ]`); a
+featured hero (highest-rated listing, stable by name) shows the full
+description + rating above the grid, hidden when searching or filtering.
+Driver step 37 asserts per-persona hero radius/display, kicker, button label
+and radius for all five skins; step 36 drives the saver (section deep link,
+FX preview + z-index + pointerdown dismissal, clock preview, and the photos
+kind is probed separately: slider gating, slideshow advance, dismissal).

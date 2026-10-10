@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Appearance from './settings/Appearance.jsx';
 import {
-  DesktopPanel, TaskbarPanel, WidgetsPanel, SoundPanel,
+  DesktopPanel, TaskbarPanel, WidgetsPanel, SoundPanel, SaverPanel,
   NetworkPanel, StoragePanel, AppsPanel, AboutPanel,
 } from './settings/Panels.jsx';
 
@@ -11,6 +11,7 @@ export const SECTIONS = [
   { id: 'taskbar', label: 'Taskbar', icon: '▭', body: TaskbarPanel },
   { id: 'widgets', label: 'Widgets', icon: '▦', body: WidgetsPanel },
   { id: 'sound', label: 'Sound', icon: '🔊', body: SoundPanel },
+  { id: 'saver', label: 'Screen saver', icon: '🌙', body: SaverPanel },
   { id: 'network', label: 'Network', icon: '📶', body: NetworkPanel },
   { id: 'apps', label: 'Apps', icon: '🧩', body: AppsPanel },
   { id: 'storage', label: 'Storage', icon: '💾', body: StoragePanel },

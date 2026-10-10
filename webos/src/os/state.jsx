@@ -80,6 +80,9 @@ const DEFAULT_TASKBAR = { position: 'bottom', align: 'left', iconSize: 'md', aut
 const DEFAULT_WIDGETS = { enabled: ['weather', 'clock', 'battery', 'events', 'notes', 'storage', 'chat'] };
 const DEFAULT_DESKTOP = { iconSize: 'md', gap: 'normal', sort: 'custom' };
 const DEFAULT_VOLUME = { level: 0.7, muted: false };
+// Screen saver: kind off|starfield|aurora|tide|mesh|rain|photos|clock,
+// idle minutes until it starts, FX speed multiplier, photo seconds per slide.
+const DEFAULT_SAVER = { kind: 'off', timeoutMin: 10, speed: 1, photoSecs: 8 };
 
 // Widget ids the sidebar understands (Sidebar.jsx renders each; Settings
 // toggles them). Order of `enabled` = display order.
@@ -113,6 +116,7 @@ const initial = () => ({
   groups: load('groups', []), // desktop icon groups: [{ id, name, appIds }]
   order: load('desktop.order', []),
   volume: { ...DEFAULT_VOLUME, ...load('volume', {}) },
+  saver: { ...DEFAULT_SAVER, ...load('saver', {}) },
   widgets: { ...DEFAULT_WIDGETS, ...load('widgets', {}) },
   taskbar: { ...DEFAULT_TASKBAR, ...load('taskbar', {}) },
   desktop: { ...DEFAULT_DESKTOP, ...load('desktop', {}) },
@@ -374,15 +378,17 @@ function reducer(state, action) {
       const desktop = { ...DEFAULT_DESKTOP };
       const widgets = { ...DEFAULT_WIDGETS };
       const volume = { ...DEFAULT_VOLUME };
-      [ ['theme', theme], ['ui', ui], ['taskbar', taskbar], ['desktop', desktop], ['widgets', widgets], ['volume', volume] ]
+      const saver = { ...DEFAULT_SAVER };
+      [ ['theme', theme], ['ui', ui], ['taskbar', taskbar], ['desktop', desktop], ['widgets', widgets], ['volume', volume], ['saver', saver] ]
         .forEach(([k, v]) => save(k, v));
       save('persona', 'win');
-      return { ...state, persona: 'win', theme, ui, taskbar, desktop, widgets, volume };
+      return { ...state, persona: 'win', theme, ui, taskbar, desktop, widgets, volume, saver };
     }
 
     /* -- settings-object patches -- */
     case 'setUi': return patched(state, 'ui', action.patch);
     case 'setVolume': return patched(state, 'volume', action.patch);
+    case 'setSaver': return patched(state, 'saver', action.patch);
     case 'setWidgets': return patched(state, 'widgets', action.patch);
     case 'setTaskbar': return patched(state, 'taskbar', action.patch);
     case 'setDesktop': return patched(state, 'desktop', action.patch);
@@ -437,6 +443,7 @@ export function OSProvider({ children }) {
     setOrder: (order) => dispatch({ type: 'setOrder', order }),
     sortDesktop: () => dispatch({ type: 'sortDesktop' }),
     setVolume: (patch) => dispatch({ type: 'setVolume', patch }),
+    setSaver: (patch) => dispatch({ type: 'setSaver', patch }),
     setWidgets: (patch) => dispatch({ type: 'setWidgets', patch }),
     setTaskbar: (patch) => dispatch({ type: 'setTaskbar', patch }),
     setDesktop: (patch) => dispatch({ type: 'setDesktop', patch }),

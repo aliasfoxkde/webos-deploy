@@ -189,6 +189,99 @@ export function SoundPanel() {
   );
 }
 
+/* --- Screen saver: kind, idle timeout, per-kind options, preview --- */
+export function SaverPanel() {
+  const os = useOS();
+  const s = os.saver;
+  const kinds = [
+    ['off', 'Off'], ['starfield', 'Starfield'], ['aurora', 'Aurora'], ['tide', 'Tide'],
+    ['mesh', 'Mesh'], ['rain', 'Code rain'], ['photos', 'Photo shuffle'], ['clock', 'Clock'],
+  ];
+  const isFx = ['starfield', 'aurora', 'tide', 'mesh', 'rain'].includes(s.kind);
+  return (
+    <>
+      <section>
+        <h3>Screen saver</h3>
+        <div className="seg-row" role="radiogroup" aria-label="Screen saver kind">
+          {kinds.map(([id, label]) => (
+            <button
+              key={id}
+              role="radio" aria-checked={s.kind === id}
+              className={`chip ${s.kind === id ? 'on' : ''}`}
+              onClick={() => os.setSaver({ kind: id })}
+            >{label}</button>
+          ))}
+        </div>
+        <p className="dim">Starts after the idle timeout and covers the desktop. Any mouse move or key press dismisses it.</p>
+      </section>
+      <section>
+        <h3>Timeout</h3>
+        <div className="row">
+          <label className="dim" htmlFor="saver-timeout">Idle for</label>
+          <input
+            id="saver-timeout" type="range" min="1" max="60" step="1"
+            value={s.timeoutMin}
+            onChange={(e) => os.setSaver({ timeoutMin: Number(e.target.value) })}
+            disabled={s.kind === 'off'}
+            aria-label="Idle minutes before the screen saver starts"
+          />
+          <span className="dim" style={{ minWidth: 52, textAlign: 'right' }}>{s.timeoutMin} min</span>
+        </div>
+      </section>
+      {isFx && (
+        <section>
+          <h3>Speed</h3>
+          <div className="row">
+            <label className="dim" htmlFor="saver-speed">Animation speed</label>
+            <input
+              id="saver-speed" type="range" min="0.25" max="3" step="0.25"
+              value={s.speed}
+              onChange={(e) => os.setSaver({ speed: Number(e.target.value) })}
+              aria-label="Screen saver animation speed"
+            />
+            <span className="dim" style={{ minWidth: 52, textAlign: 'right' }}>{s.speed}×</span>
+          </div>
+        </section>
+      )}
+      {s.kind === 'photos' && (
+        <section>
+          <h3>Slideshow</h3>
+          <div className="row">
+            <label className="dim" htmlFor="saver-photo">Per photo</label>
+            <input
+              id="saver-photo" type="range" min="3" max="30" step="1"
+              value={s.photoSecs}
+              onChange={(e) => os.setSaver({ photoSecs: Number(e.target.value) })}
+              aria-label="Seconds per photo"
+            />
+            <span className="dim" style={{ minWidth: 52, textAlign: 'right' }}>{s.photoSecs} s</span>
+          </div>
+          <p className="dim">Shuffles the bundled CC-licensed wallpapers (docs/ATTRIBUTION.md).</p>
+        </section>
+      )}
+      {s.kind === 'clock' && (
+        <section>
+          <h3>Clock</h3>
+          <p className="dim">Shows a large clock using the taskbar's 12/24-hour setting. Customize the format in Taskbar settings.</p>
+        </section>
+      )}
+      <section>
+        <h3>Try it</h3>
+        <div className="row">
+          <button
+            className="btn"
+            disabled={s.kind === 'off'}
+            onClick={() => window.dispatchEvent(new Event('webos:saver-preview'))}
+          >
+            Preview now
+          </button>
+          <span className="dim">Move the mouse to come back.</span>
+        </div>
+      </section>
+    </>
+  );
+}
+
 /* --- Network: live connection readout --- */
 export function NetworkPanel() {
   const [net, setNet] = useState(() => navigator.connection || {});

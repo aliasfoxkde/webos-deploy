@@ -162,7 +162,7 @@ const KINDS = {
   },
 };
 
-export default function FxWallpaper({ kind }) {
+export default function FxWallpaper({ kind, id = 'fx-wallpaper', speed = 1 }) {
   const ref = useRef(null);
   const fx = KINDS[kind] || KINDS.starfield;
   useEffect(() => {
@@ -193,7 +193,7 @@ export default function FxWallpaper({ kind }) {
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const start = performance.now();
     const frame = () => {
-      const t = (performance.now() - start) / 1000;
+      const t = ((performance.now() - start) / 1000) * speed;
       ctx.fillStyle = '#05070d';
       ctx.fillRect(0, 0, w, h);
       fx.draw.call(fx, ctx, w, h, t, px, py);
@@ -217,7 +217,7 @@ export default function FxWallpaper({ kind }) {
       window.removeEventListener('pointermove', onMove);
       document.removeEventListener('visibilitychange', onVis);
     };
-  }, [fx]);
+  }, [fx, speed]);
 
-  return <canvas ref={ref} id="fx-wallpaper" aria-hidden="true" />;
+  return <canvas ref={ref} id={id} aria-hidden="true" />;
 }

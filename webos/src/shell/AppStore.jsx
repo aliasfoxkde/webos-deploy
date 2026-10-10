@@ -5,20 +5,36 @@ import { Stars } from './Properties.jsx';
 
 const CATS = ['All', ...new Set(STORE_APPS.map((a) => a.category))].sort((a, b) => (a === 'All' ? -1 : b === 'All' ? 1 : a.localeCompare(b)));
 
+/* Featured banner pick — the highest-rated listing, stable by name on ties. */
+const FEATURED = [...STORE_APPS].sort((a, b) => (b.rating - a.rating) || a.name.localeCompare(b.name))[0];
+
+/* Per-persona store voice: button and banner wording follows each platform's
+   store convention (MS Store "Get", Mac App Store "GET", terminals speak in
+   bracket verbs). Layout differences live in the persona CSS block. */
+const LABELS = {
+  win: { install: 'Get', open: 'Open', remove: 'Uninstall', kicker: 'Featured' },
+  mac: { install: 'GET', open: 'OPEN', remove: 'DELETE', kicker: 'Featured' },
+  linux: { install: 'Install', open: 'Open', remove: 'Uninstall', kicker: 'Editor’s pick' },
+  android: { install: 'Install', open: 'Open', remove: 'Uninstall', kicker: 'Featured today' },
+  bsd: { install: '[install]', open: '[open]', remove: '[remove]', kicker: 'featured' },
+  tui: { install: '[ install ]', open: '[ open ]', remove: '[ remove ]', kicker: 'featured' },
+};
+
 function InstallActions({ app }) {
   const os = useOS();
   const installed = os.installed.includes(app.id);
+  const L = LABELS[os.persona] || LABELS.linux;
   if (installed) {
     return (
       <div className="store-actions row">
-        <button className="btn accent" onClick={() => os.launch(app.id)}>Open</button>
-        <button className="btn danger" onClick={() => os.uninstall(app.id)}>Remove</button>
+        <button className="btn accent" onClick={() => os.launch(app.id)}>{L.open}</button>
+        <button className="btn danger" onClick={() => os.uninstall(app.id)}>{L.remove}</button>
       </div>
     );
   }
   return (
     <div className="store-actions">
-      <button className="btn accent" onClick={() => os.install(app.id)}>Install</button>
+      <button className="btn accent" onClick={() => os.install(app.id)}>{L.install}</button>
       {!app.embed && <span className="dim">opens in a tab</span>}
     </div>
   );
@@ -28,6 +44,7 @@ function InstallActions({ app }) {
 function StoreDetail({ app, onBack }) {
   const os = useOS();
   const installed = os.installed.includes(app.id);
+  const L = LABELS[os.persona] || LABELS.linux;
   return (
     <div className="store-detail">
       <button className="btn slim back" onClick={onBack}>← All apps</button>
@@ -44,8 +61,8 @@ function StoreDetail({ app, onBack }) {
         </div>
         <span className="flex1" />
         {installed
-          ? <button className="btn accent" onClick={() => os.launch(app.id)}>Open</button>
-          : <button className="btn accent" onClick={() => os.install(app.id)}>Install</button>}
+          ? <button className="btn accent" onClick={() => os.launch(app.id)}>{L.open}</button>
+          : <button className="btn accent" onClick={() => os.install(app.id)}>{L.install}</button>}
       </header>
       <p className="sd-desc">{app.description}</p>
       <dl className="props-grid">
@@ -77,6 +94,7 @@ export default function AppStore() {
     if (!needle) return true;
     return [a.name, a.tagline, a.description, a.developer, a.category].join(' ').toLowerCase().includes(needle);
   });
+  const L = LABELS[os.persona] || LABELS.linux;
 
   return (
     <div className="store">
@@ -96,6 +114,25 @@ export default function AppStore() {
           ))}
         </div>
       </header>
+      {cat === 'All' && !needle && (
+        <section className="store-hero" style={{ '--win-accent': FEATURED.accent }}>
+          <button className="hero-icon" onClick={() => setDetail(FEATURED)} title={`${FEATURED.name} details`}>
+            <img src={FEATURED.icon} alt="" />
+          </button>
+          <div className="hero-copy">
+            <span className="hero-kicker">{L.kicker}</span>
+            <h3>{FEATURED.name}</h3>
+            <p>{FEATURED.description}</p>
+            <div className="hero-meta">
+              <Stars rating={FEATURED.rating} />
+              <span>{FEATURED.rating.toFixed(1)} · {FEATURED.reviews} reviews · {FEATURED.developer}</span>
+            </div>
+          </div>
+          <div className="hero-action">
+            <InstallActions app={FEATURED} />
+          </div>
+        </section>
+      )}
       <div className="store-grid">
         {list.map((app) => (
           <article key={app.id} className="store-card" style={{ '--win-accent': app.accent }}>

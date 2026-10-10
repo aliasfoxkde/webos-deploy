@@ -1297,6 +1297,104 @@ console.log('taskbar settings deep link (want true):', JSON.stringify(deep.resul
 await evaluate(`[...document.querySelectorAll('.win')].forEach((w) => window.__os.close(Number(w.dataset.id)))`);
 await sleep(200);
 
+// 36. screen saver: settings section, FX preview + dismissal, clock preview.
+// Seed a non-off kind + short timeout in storage, reload so initial() picks
+// it up, then drive the panel like a user.
+await evaluate(`localStorage.setItem('webos.saver', JSON.stringify({ kind: 'starfield', timeoutMin: 1, speed: 1, photoSecs: 8 }))`);
+await evaluate(`location.reload()`);
+await sleep(3500);
+await evaluate(`window.__os.launch('settings', { initial: 'saver' })`);
+await sleep(700);
+const saverPanel = await evaluate(`(() => {
+  const wins = [...document.querySelectorAll('.win')];
+  const body = wins.at(-1)?.textContent || '';
+  return { open: wins.length, isSaver: body.includes('Screen saver') && body.includes('Idle for') };
+})()`);
+console.log('saver settings section (want isSaver true):', JSON.stringify(saverPanel.result?.value));
+await shot('50-saver-settings');
+await evaluate(`[...document.querySelectorAll('.win .btn')].find((b) => b.textContent.includes('Preview now'))?.click()`);
+await sleep(800);
+const saverOn = await evaluate(`(() => {
+  const ss = document.querySelector('#screensaver');
+  return {
+    active: !!ss,
+    fx: !!document.querySelector('#saver-fx'),
+    hint: !!ss?.querySelector('.saver-hint'),
+    z: ss ? getComputedStyle(ss).zIndex : '',
+  };
+})()`);
+console.log('saver FX preview (want active/fx/z1900):', JSON.stringify(saverOn.result?.value));
+await shot('51-saver-fx');
+await evaluate(`window.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))`);
+await sleep(300);
+const saverOff = await evaluate(`!document.querySelector('#screensaver')`);
+console.log('saver dismissed by pointerdown (want true):', saverOff.result?.value);
+// clock kind through the panel chips, then preview again
+await evaluate(`[...document.querySelectorAll('.win [role="radio"]')].find((b) => b.textContent.trim() === 'Clock')?.click()`);
+await sleep(300);
+await evaluate(`[...document.querySelectorAll('.win .btn')].find((b) => b.textContent.includes('Preview now'))?.click()`);
+await sleep(500);
+const clockOn = await evaluate(`(() => {
+  const t = document.querySelector('#screensaver .saver-time');
+  return { active: !!t, looksLikeTime: /\\d{1,2}:\\d{2}/.test(t?.textContent || '') };
+})()`);
+console.log('saver clock preview (want true):', JSON.stringify(clockOn.result?.value));
+await shot('52-saver-clock');
+await evaluate(`window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))`);
+await sleep(300);
+// kill the idle timer before the remaining steps (in-memory state + storage)
+await evaluate(`[...document.querySelectorAll('.win')].forEach((w) => window.__os.close(Number(w.dataset.id)))`);
+await evaluate(`window.__os.setSaver({ kind: 'off' })`);
+await sleep(200);
+
+// 37. App Store persona skins: same JSX, per-persona hero/layout/wording.
+// win is the boot default — shot it directly, then switch persona from
+// Settings → Appearance (persisted exactly like a user click) and re-open.
+await evaluate(`window.__os.launch('store')`);
+await sleep(900);
+const storeWin = await evaluate(`(() => {
+  const hero = document.querySelector('.store-hero');
+  const btn = document.querySelector('.store .store-actions .btn');
+  return {
+    persona: document.body.dataset.persona,
+    hero: !!hero,
+    radius: hero ? getComputedStyle(hero).borderRadius : '',
+    kicker: hero?.querySelector('.hero-kicker')?.textContent,
+    btn: btn?.textContent,
+  };
+})()`);
+console.log('store win (Get/10px):', JSON.stringify(storeWin.result?.value));
+await shot('53-store-win');
+await evaluate(`[...document.querySelectorAll('.win')].forEach((w) => window.__os.close(Number(w.dataset.id)))`);
+await sleep(300);
+for (const [pid, chipLabel] of [['mac', 'macOS'], ['linux', 'GNOME / Linux'], ['android', 'Android'], ['tui', 'Terminal']]) {
+  await evaluate(`window.__os.launch('settings', { initial: 'appearance' })`);
+  await sleep(600);
+  await evaluate(`[...document.querySelectorAll('.win [role="radio"]')].find((b) => b.textContent.trim() === ${JSON.stringify(chipLabel)})?.click()`);
+  await sleep(600);
+  await evaluate(`[...document.querySelectorAll('.win')].forEach((w) => window.__os.close(Number(w.dataset.id)))`);
+  await sleep(300);
+  await evaluate(`window.__os.launch('store')`);
+  await sleep(900);
+  const st = await evaluate(`(() => {
+    const hero = document.querySelector('.store-hero');
+    const btn = document.querySelector('.store .store-actions .btn');
+    return {
+      persona: document.body.dataset.persona,
+      hero: !!hero,
+      heroDisplay: hero ? getComputedStyle(hero).display : '(none)',
+      radius: hero ? getComputedStyle(hero).borderRadius : '',
+      kicker: hero?.querySelector('.hero-kicker')?.textContent,
+      btn: btn?.textContent,
+      btnRadius: btn ? getComputedStyle(btn).borderRadius : '',
+    };
+  })()`);
+  console.log('store persona', pid + ':', JSON.stringify(st.result?.value));
+  await shot('53-store-' + pid);
+  await evaluate(`[...document.querySelectorAll('.win')].forEach((w) => window.__os.close(Number(w.dataset.id)))`);
+  await sleep(300);
+}
+
 console.log('done');
 clearTimeout(watchdog);
 killTree();

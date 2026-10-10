@@ -12,6 +12,7 @@ import AddApp from './shell/AddApp.jsx';
 import Sidebar from './shell/Sidebar.jsx';
 import MobileDrawer from './shell/MobileDrawer.jsx';
 import Welcome from './shell/Welcome.jsx';
+import Screensaver from './shell/Screensaver.jsx';
 import { startMoveDrag } from './shell/winDrag.js';
 import { zoneRect } from './os/snap.js';
 import { PLUGIN_IDS } from './os/registry.js';
@@ -527,6 +528,7 @@ export default function App() {
       {openGroupId && <GroupPopup groupId={openGroupId} onClose={() => setOpenGroupId(null)} />}
       {appDlg && <AddApp app={appDlg === 'new' ? null : appDlg} onClose={() => setAppDlg(null)} />}
       {welcome && <Welcome onEnter={enterWelcome} />}
+      <Screensaver />
       {halted && (
         <div id="halt" role="alertdialog" aria-label="System shut down">
           <div className="halt-card">
