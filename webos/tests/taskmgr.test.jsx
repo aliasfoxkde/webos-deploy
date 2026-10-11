@@ -139,8 +139,48 @@ describe('TaskManager component', () => {
     expect(screen.getAllByText('focused')).toHaveLength(1);
     expect(screen.getByText('suspended')).toBeTruthy();
     expect(screen.getAllByText('End task').length).toBe(2);
-    expect(screen.getByText(/2 windows · up /)).toBeTruthy();
+    expect(screen.getByText(/1 running · 1 minimized · up /)).toBeTruthy();
     expect(screen.getByText(/per-app CPU isn.t observable/)).toBeTruthy(); // honesty note
+  });
+
+  it('the filter box narrows rows and clears back to all', async () => {
+    mount();
+    await act(async () => { cur.launch('calc'); cur.launch('notepad'); });
+    fireEvent.change(screen.getByLabelText('Filter processes by name'), { target: { value: 'calc' } });
+    expect(screen.getAllByText('End task').length).toBe(1);
+    expect(screen.getByText('Calculator')).toBeTruthy();
+    expect(screen.queryByText('Notepad')).toBeNull();
+    fireEvent.change(screen.getByLabelText('Filter processes by name'), { target: { value: 'zzz' } });
+    expect(screen.getByText('No processes match the filter.')).toBeTruthy();
+    fireEvent.click(screen.getByText('Clear filter'));
+    expect(screen.getAllByText('End task').length).toBe(2);
+  });
+
+  it('column headers sort rows and carry aria-sort', async () => {
+    mount();
+    await act(async () => { cur.launch('notepad'); cur.launch('calc'); });
+    const names = () => [...document.querySelectorAll('tbody .tm-app')].map((el) => el.textContent);
+    // default: newest z first → Calculator (launched last) on top
+    expect(names()[0]).toBe('Calculator');
+    fireEvent.click(screen.getByRole('button', { name: /^Name/ })); // asc
+    expect(names()[0]).toBe('Calculator'); // C < N
+    expect(document.querySelector('th[aria-sort="ascending"]')?.textContent).toContain('Name');
+    fireEvent.click(screen.getByRole('button', { name: /^Name/ })); // desc
+    expect(names()[0]).toBe('Notepad');
+    expect(document.querySelector('th[aria-sort="descending"]')?.textContent).toContain('Name');
+    fireEvent.click(screen.getByRole('button', { name: /^Uptime/ })); // asc = oldest first
+    expect(names()[0]).toBe('Notepad');
+  });
+
+  it('Switch to raises a minimized window', async () => {
+    mount();
+    await act(async () => { cur.launch('calc'); cur.launch('notepad'); });
+    await act(async () => { cur.minimize(cur.windows[1].id); });
+    const row = [...document.querySelectorAll('tbody tr')].find((tr) => tr.textContent.includes('Notepad'));
+    fireEvent.click(row.querySelector('.tm-switch'));
+    await act(async () => {});
+    expect(cur.focused).toBe(cur.windows[1].id);
+    expect(cur.windows[1].min).toBe(false);
   });
 
   it('End task closes just that window', async () => {

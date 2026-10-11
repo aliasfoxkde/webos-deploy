@@ -3,12 +3,12 @@
 // Processes lists live windows (status, uptime, End task), Performance
 // charts the real signals a page CAN see (heap, event-loop lag, FPS, long
 // tasks, storage), and Startup inventories what the OS actually restores.
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useOS } from '../../os/state.jsx';
 import { fmtBytes } from '../../os/format.js';
 import {
-  fmtUptime, pct, fpsFrom, pushSeries, sparkPoints, heapInfo,
-  classifyWindows, storageRows,
+  fmtUptime, pct, fpsFrom, pushSeries, sparkPoints, areaPoints, seriesStats,
+  heapInfo, classifyWindows, storageRows, storageShare, sortRows, filterRows,
 } from './sysmon.js';
 import './taskmgr.css';
 
@@ -16,8 +16,11 @@ const CAP = 60; // sparkline history (one sample per second)
 /* Captured once at chunk load (≈ app open), never during render. */
 const BOOT_AT = Date.now() - (typeof performance !== 'undefined' ? performance.now() : 0);
 
-/* One metric card: label, big number, sub-detail, SVG sparkline. */
-function Metric({ label, value, sub, series, max, accent }) {
+/* One metric card: label, big number, area-filled sparkline, stats line.
+   `fmt` renders stat values (defaults to rounded + unit suffix). */
+function Metric({ label, value, sub, series, max, accent, unit = '', fmt }) {
+  const stats = seriesStats(series);
+  const stat = fmt ?? ((v) => (v == null ? '—' : `${Math.round(v)}${unit}`));
   return (
     <div className="tm-metric">
       <div className="tm-metric-head">
@@ -25,8 +28,25 @@ function Metric({ label, value, sub, series, max, accent }) {
         <span className="tm-metric-value">{value}</span>
       </div>
       <svg className="tm-spark" viewBox="0 0 100 28" preserveAspectRatio="none" aria-hidden="true">
-        <polyline points={sparkPoints(series, 100, 28, max)} fill="none" stroke={accent} strokeWidth="1.5" />
+        <polygon className="tm-spark-area" points={areaPoints(series, 100, 28, max)} fill={accent} opacity="0.18" />
+        <polyline
+          points={sparkPoints(series, 100, 28, max)}
+          fill="none" stroke={accent} strokeWidth="1.5"
+          strokeLinejoin="round" strokeLinecap="round"
+        />
+        {series.length > 0 && (
+          <circle
+            cx="100"
+            cy={28 - Math.max(0, Math.min(1, series[series.length - 1] / (max > 0 ? max : 1))) * 28}
+            r="1.6" fill={accent}
+          />
+        )}
       </svg>
+      <div className="tm-metric-stats">
+        <span>min {stat(stats.min)}</span>
+        <span>max {stat(stats.max)}</span>
+        <span>now {stat(stats.last)}</span>
+      </div>
       <div className="tm-metric-sub">{sub}</div>
     </div>
   );
@@ -45,12 +65,26 @@ export default function TaskManager() {
   const [longTasks, setLongTasks] = useState({ count: 0, last: 0, worst: 0 });
   const [storage, setStorage] = useState(null); // { usage, quota, persisted }
   const [swState, setSwState] = useState(null);
+  const [query, setQuery] = useState('');
+  const [sort, setSort] = useState({ key: 'z', dir: 1 }); // 'z' = newest-first default
   const alive = useRef(true);
+
+  const appOf = useCallback((id) => os.findApp(id), [os]);
+  const nameOf = useCallback((r) => appOf(r.appId)?.name ?? r.appId, [appOf]);
 
   const rows = useMemo(
     () => classifyWindows(os.windows, os.focused, now),
     [os.windows, os.focused, now],
   );
+  const visible = useMemo(
+    () => (sort.key === 'z' ? filterRows(rows, query, nameOf) : sortRows(filterRows(rows, query, nameOf), sort.key, sort.dir, nameOf)),
+    [rows, query, sort, nameOf],
+  );
+  const counts = useMemo(() => ({
+    focused: rows.filter((r) => r.status === 'focused').length,
+    running: rows.filter((r) => r.status === 'running').length,
+    minimized: rows.filter((r) => r.status === 'suspended').length,
+  }), [rows]);
 
   useEffect(() => () => { alive.current = false; }, []);
 
@@ -126,11 +160,21 @@ export default function TaskManager() {
     })();
   }, []);
 
-  const appOf = (id) => os.findApp(id);
   const heapUsedPct = heap ? pct(heap.used, heap.limit) : null;
   const storePct = storage ? pct(storage.usage, storage.quota) : null;
   const settingsRows = useMemo(() => storageRows(), []);
+  const shares = useMemo(() => storageShare(settingsRows), [settingsRows]);
   const totalSettings = settingsRows.reduce((n, r) => n + r.bytes, 0);
+
+  const toggleSort = (key) => {
+    setSort((s) => (s.key === key
+      ? { key, dir: -s.dir }
+      : { key, dir: 1 }));
+  };
+  const ariaSort = (key) => {
+    if (sort.key !== key) return 'none';
+    return sort.dir === 1 ? 'ascending' : 'descending';
+  };
 
   return (
     <div className="taskmgr">
@@ -151,23 +195,50 @@ export default function TaskManager() {
         </div>
         <span className="tm-spring" />
         <span className="tm-summary">
-          {rows.length} window{rows.length === 1 ? '' : 's'} · up {fmtUptime(now - BOOT_AT)}
+          {counts.running + counts.focused} running · {counts.minimized} minimized · up {fmtUptime(now - BOOT_AT)}
         </span>
       </header>
 
       {tab === 'processes' && (
         <div className="tm-body">
+          <div className="tm-toolbar">
+            <input
+              type="search"
+              className="tm-search"
+              placeholder="Filter by name…"
+              aria-label="Filter processes by name"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+            {query && (
+              <button type="button" className="tm-clear" onClick={() => setQuery('')}>
+                Clear filter
+              </button>
+            )}
+          </div>
           <table className="tm-table">
             <thead>
               <tr>
-                <th scope="col">Name</th>
-                <th scope="col">Status</th>
-                <th scope="col">Uptime</th>
+                <th scope="col" aria-sort={ariaSort('name')}>
+                  <button type="button" className="tm-sort" onClick={() => toggleSort('name')}>
+                    Name<span className="tm-arrow">{sort.key === 'name' ? (sort.dir === 1 ? ' ↑' : ' ↓') : ''}</span>
+                  </button>
+                </th>
+                <th scope="col" aria-sort={ariaSort('status')}>
+                  <button type="button" className="tm-sort" onClick={() => toggleSort('status')}>
+                    Status<span className="tm-arrow">{sort.key === 'status' ? (sort.dir === 1 ? ' ↑' : ' ↓') : ''}</span>
+                  </button>
+                </th>
+                <th scope="col" aria-sort={ariaSort('uptime')}>
+                  <button type="button" className="tm-sort" onClick={() => toggleSort('uptime')}>
+                    Uptime<span className="tm-arrow">{sort.key === 'uptime' ? (sort.dir === 1 ? ' ↑' : ' ↓') : ''}</span>
+                  </button>
+                </th>
                 <th scope="col"><span className="visually-hidden">Actions</span></th>
               </tr>
             </thead>
             <tbody>
-              {rows.map((r) => {
+              {visible.map((r) => {
                 const app = appOf(r.appId);
                 return (
                   <tr key={r.id}>
@@ -184,9 +255,17 @@ export default function TaskManager() {
                     <td className="tm-actions">
                       <button
                         type="button"
+                        className="tm-switch"
+                        onClick={() => os.focus(r.id, true)}
+                        disabled={r.status === 'focused'}
+                        title="Bring this window to the front"
+                      >
+                        Switch to
+                      </button>
+                      <button
+                        type="button"
                         className="tm-end"
                         onClick={() => os.close(r.id)}
-                        disabled={os.windows.length === 0}
                         title="Close this window"
                       >
                         End task
@@ -197,6 +276,9 @@ export default function TaskManager() {
               })}
               {!rows.length && (
                 <tr><td colSpan={4} className="tm-none">No apps are running.</td></tr>
+              )}
+              {!!rows.length && !visible.length && (
+                <tr><td colSpan={4} className="tm-none">No processes match the filter.</td></tr>
               )}
             </tbody>
           </table>
@@ -218,6 +300,7 @@ export default function TaskManager() {
               series={heapSeries}
               max={heap?.limit}
               accent="#4ade80"
+              fmt={(v) => (v == null ? '—' : fmtBytes(v))}
             />
             <Metric
               label="Event loop lag"
@@ -226,6 +309,7 @@ export default function TaskManager() {
               series={lagSeries}
               max={250}
               accent="#fbbf24"
+              unit=" ms"
             />
             <Metric
               label="Frame rate"
@@ -234,6 +318,7 @@ export default function TaskManager() {
               series={fpsSeries}
               max={120}
               accent="#38bdf8"
+              unit=" fps"
             />
           </div>
           <div className="tm-facts">
@@ -266,13 +351,22 @@ export default function TaskManager() {
           <h3 className="tm-section">Settings in localStorage ({fmtBytes(totalSettings)})</h3>
           <table className="tm-table">
             <thead>
-              <tr><th scope="col">Key</th><th scope="col">Size</th></tr>
+              <tr><th scope="col">Key</th><th scope="col">Share</th><th scope="col">Size</th></tr>
             </thead>
             <tbody>
-              {settingsRows.map((r) => (
-                <tr key={r.key}><td>{r.key}</td><td>{fmtBytes(r.bytes)}</td></tr>
+              {shares.map((r) => (
+                <tr key={r.key}>
+                  <td>{r.key}</td>
+                  <td className="tm-share">
+                    <span className="tm-share-bar" aria-hidden="true">
+                      <span className="tm-share-fill" style={{ width: `${Math.max(2, r.share)}%` }} />
+                    </span>
+                    <span className="tm-share-num">{r.share}%</span>
+                  </td>
+                  <td>{fmtBytes(r.bytes)}</td>
+                </tr>
               ))}
-              {!settingsRows.length && <tr><td colSpan={2} className="tm-none">No settings stored yet.</td></tr>}
+              {!settingsRows.length && <tr><td colSpan={3} className="tm-none">No settings stored yet.</td></tr>}
             </tbody>
           </table>
           <p className="tm-note">

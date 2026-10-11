@@ -1,8 +1,8 @@
 // Task Manager pure helpers: uptime, series, sparkline geometry, windows.
 import { describe, it, expect } from 'vitest';
 import {
-  fmtUptime, pct, fpsFrom, pushSeries, sparkPoints, heapInfo,
-  classifyWindows, storageRows,
+  fmtUptime, pct, fpsFrom, pushSeries, sparkPoints, areaPoints, seriesStats,
+  heapInfo, classifyWindows, sortRows, filterRows, storageRows, storageShare,
 } from '../src/apps/taskmgr/sysmon.js';
 
 describe('uptime formatting', () => {
@@ -108,5 +108,87 @@ describe('storageRows', () => {
   it('is empty with no webos keys', () => {
     localStorage.clear();
     expect(storageRows()).toEqual([]);
+  });
+});
+
+describe('sortRows', () => {
+  const rows = [
+    { id: 1, appId: 'notepad', status: 'running', uptime: 5000 },
+    { id: 2, appId: 'calc', status: 'focused', uptime: 9000 },
+    { id: 3, appId: 'editor', status: 'suspended', uptime: null },
+  ];
+  const nameOf = (r) => ({ notepad: 'Notepad', calc: 'Calculator', editor: 'Editor' }[r.appId]);
+
+  it('sorts by display name, case-insensitive, with a stable id tiebreak', () => {
+    expect(sortRows(rows, 'name', 1, nameOf).map((r) => r.appId))
+      .toEqual(['calc', 'editor', 'notepad']);
+    expect(sortRows(rows, 'name', -1, nameOf).map((r) => r.appId))
+      .toEqual(['notepad', 'editor', 'calc']);
+  });
+
+  it('sorts by status and treats unknown uptime as oldest', () => {
+    expect(sortRows(rows, 'status', 1).map((r) => r.status))
+      .toEqual(['focused', 'running', 'suspended']);
+    expect(sortRows(rows, 'uptime', 1)[0].id).toBe(3); // null uptime → first (oldest)
+    expect(sortRows(rows, 'uptime', -1)[0].id).toBe(2); // 9s beats 5s
+  });
+
+  it('does not mutate the input', () => {
+    const before = rows.map((r) => r.id);
+    sortRows(rows, 'name', 1, nameOf);
+    expect(rows.map((r) => r.id)).toEqual(before);
+  });
+});
+
+describe('filterRows', () => {
+  const rows = [
+    { id: 1, appId: 'notepad', status: 'running' },
+    { id: 2, appId: 'calc', status: 'focused' },
+  ];
+  const nameOf = (r) => ({ notepad: 'Notepad', calc: 'Calculator' }[r.appId]);
+
+  it('matches display name or app id, case-insensitively, trimmed', () => {
+    expect(filterRows(rows, 'CAL', nameOf)).toHaveLength(1); // matches both via id 'calc'… by name 'Calculator'
+    expect(filterRows(rows, 'calc', nameOf).map((r) => r.id)).toEqual([2]);
+    expect(filterRows(rows, '  note ', nameOf).map((r) => r.id)).toEqual([1]);
+  });
+
+  it('returns everything for a blank query', () => {
+    expect(filterRows(rows, '   ', nameOf)).toBe(rows);
+  });
+});
+
+describe('seriesStats', () => {
+  it('gives min, max and last', () => {
+    expect(seriesStats([3, 1, 4, 1, 5])).toEqual({ min: 1, max: 5, last: 5 });
+  });
+  it('is all null on an empty series', () => {
+    expect(seriesStats([])).toEqual({ min: null, max: null, last: null });
+  });
+});
+
+describe('areaPoints', () => {
+  it('wraps sparkPoints with baseline corners', () => {
+    const line = sparkPoints([10, 20], 100, 28, 100);
+    expect(areaPoints([10, 20], 100, 28, 100)).toBe(`0,28 ${line} 100,28`);
+  });
+  it('is empty for an empty series', () => {
+    expect(areaPoints([], 100, 28, 100)).toBe('');
+  });
+});
+
+describe('storageShare', () => {
+  it('adds a whole-number share of the total, preserving order', () => {
+    const rows = [
+      { key: 'webos.a', bytes: 75 },
+      { key: 'webos.b', bytes: 25 },
+    ];
+    expect(storageShare(rows)).toEqual([
+      { key: 'webos.a', bytes: 75, share: 75 },
+      { key: 'webos.b', bytes: 25, share: 25 },
+    ]);
+  });
+  it('is empty when nothing is stored', () => {
+    expect(storageShare([])).toEqual([]);
   });
 });

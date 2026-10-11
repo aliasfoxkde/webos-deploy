@@ -69,6 +69,58 @@ export function classifyWindows(windows, focusedId = null, now = Date.now()) {
     }));
 }
 
+/* Sort process rows by column. `nameOf` resolves the display label (the
+   component passes app.name ?? appId); ties break by window id so the
+   order is stable across re-renders. dir is 1 (asc) or -1 (desc). */
+export function sortRows(rows, key, dir = 1, nameOf = (r) => r.appId) {
+  const sign = dir >= 0 ? 1 : -1;
+  const val = (r) => {
+    if (key === 'name') return nameOf(r).toLowerCase();
+    if (key === 'status') return r.status;
+    return r.uptime ?? -1; // unknown uptime sorts as "oldest"
+  };
+  return [...rows].sort((a, b) => {
+    const va = val(a);
+    const vb = val(b);
+    if (va < vb) return -1 * sign;
+    if (va > vb) return 1 * sign;
+    return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+  });
+}
+
+/* Case-insensitive substring filter over the display name and app id. */
+export function filterRows(rows, query, nameOf = (r) => r.appId) {
+  const q = query.trim().toLowerCase();
+  if (!q) return rows;
+  return rows.filter((r) => nameOf(r).toLowerCase().includes(q) || r.appId.toLowerCase().includes(q));
+}
+
+/* min/max/last for a sparkline's stats line (nulls when empty). */
+export function seriesStats(series) {
+  if (!series.length) return { min: null, max: null, last: null };
+  return {
+    min: Math.min(...series),
+    max: Math.max(...series),
+    last: series[series.length - 1],
+  };
+}
+
+/* Closed area polygon for a filled sparkline: the same tops as sparkPoints,
+   then down to the baseline corners so `fill` covers to the floor. */
+export function areaPoints(data, w, h, max) {
+  const line = sparkPoints(data, w, h, max);
+  if (!line) return '';
+  return `0,${h} ${line} ${w},${h}`;
+}
+
+/* Per-key share of the total settings footprint, 0-100 (whole numbers,
+   largest first — input is already sorted that way by storageRows). */
+export function storageShare(rows) {
+  const total = rows.reduce((n, r) => n + r.bytes, 0);
+  if (!total) return [];
+  return rows.map((r) => ({ key: r.key, bytes: r.bytes, share: Math.round((r.bytes / total) * 100) }));
+}
+
 /* localStorage footprint rows (Startup/Resources tab): every webos.* key
    with an approximate UTF-16 byte size, largest first. */
 export function storageRows(ls = typeof localStorage !== 'undefined' ? localStorage : null) {
