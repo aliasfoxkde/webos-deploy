@@ -8,13 +8,23 @@ export function useContextMenu(buildItems) {
   const [menu, setMenu] = useState(null); // { x, y, items }
   const menuRef = useRef(null);
 
+  // The item builder is read at dispatch time through a ref mirrored in a
+  // layout effect: layout effects run synchronously with their commit, so a
+  // right-click always sees the latest committed list. (Reaching the builder
+  // through the effect closure instead meant the listeners were re-subscribed
+  // passively — a right-click landing between a listing's commit and its
+  // effect flush built items from the stale closure and silently opened
+  // nothing.) Listeners therefore subscribe once.
+  const buildRef = useRef(buildItems);
+  useLayoutEffect(() => { buildRef.current = buildItems; });
+
   useEffect(() => {
     const onCtx = (e) => {
       const el = e.target.closest('[data-cm]');
       if (!el) return;
       e.preventDefault();
       const [kind, arg] = el.dataset.cm.split(':');
-      const items = buildItems(kind, arg);
+      const items = buildRef.current(kind, arg);
       if (!items || !items.length) return;
       setMenu({ x: e.clientX, y: e.clientY, items });
     };
@@ -27,7 +37,7 @@ export function useContextMenu(buildItems) {
       window.removeEventListener('click', onClose);
       window.removeEventListener('blur', onClose);
     };
-  }, [buildItems]);
+  }, []);
 
   // Flip near edges once rendered and measured.
   useLayoutEffect(() => {
