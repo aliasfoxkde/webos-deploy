@@ -933,6 +933,27 @@ body[data-persona="mac"] #sidebar .widget {
     rgba(255, 255, 255, 0.04);
 }
 
+/* -- LG3: floating-layer fluidity (LIQUID-GLASS.md §3) --
+   Every floating surface grows out of what launched it: taskbar-anchored
+   panels rise out of the bar (or drop from it when the bar is on top),
+   context menus unfold from their opening point. Transform+opacity only,
+   so the motion composites on the GPU and stays under 200ms. */
+@keyframes rise-in { from { opacity: 0; transform: translateY(8px) scale(0.98); } }
+@keyframes drop-in { from { opacity: 0; transform: translateY(-8px) scale(0.98); } }
+@keyframes unfold-in { from { opacity: 0; transform: scale(0.97); } }
+
+#start-menu { animation: rise-in 0.18s cubic-bezier(0.2, 0.9, 0.3, 1); transform-origin: bottom left; }
+body[data-tb="top"] #start-menu { animation: drop-in 0.18s cubic-bezier(0.2, 0.9, 0.3, 1); transform-origin: top left; }
+.tb-pop { animation: rise-in 0.16s cubic-bezier(0.2, 0.9, 0.3, 1); transform-origin: bottom right; }
+body[data-tb="top"] .tb-pop { animation: drop-in 0.16s cubic-bezier(0.2, 0.9, 0.3, 1); transform-origin: top right; }
+.ctx-menu { animation: unfold-in 0.12s cubic-bezier(0.2, 0.9, 0.3, 1); transform-origin: top left; }
+
+/* Motion is a privilege, not the default: vestibular users (OS setting)
+   and the Settings animation knob both get instant surfaces. */
+@media (prefers-reduced-motion: reduce) {
+  #start-menu, .tb-pop, .ctx-menu, .win, .gp, #sidebar { animation: none; }
+}
+
 /* Reduce Transparency users get the same surfaces without the material:
    triple-stacking the theme's own translucent chrome drives composite alpha
    to ~0.99 (polarity-correct for every preset) and the frost switches off. */
