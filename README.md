@@ -51,6 +51,16 @@ are served from the R2 bucket `craftweb` through a per-app `_worker.js` — the
 only place Workers compute is involved, and only as a pass-through. See
 `packaging/HOSTING.md`.
 
+## Shell design
+
+The WebOS shell (`webos/`) is plain Vite + React — no Rust. Its win/mac
+personas implement a four-phase **Liquid Glass** design language (frost
+tokens + specular window rims, anchored rise/drop motion, and Chromium-only
+edge refraction via an SVG feDisplacementMap behind a `CSS.supports`
+probe — other engines keep the base frost). The design is documented in
+`docs/planning/webos-apps/LIQUID-GLASS.md` and
+`docs/planning/webos-apps/ARCHITECTURE.md`.
+
 ## Rules that hold across this project
 
 - **Clean-room** — the parity apps are observed black-box only; every

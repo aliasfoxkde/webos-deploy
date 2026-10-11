@@ -151,6 +151,41 @@ synthetic `pointerover` doesn't drive it, so the driver uses CDP
 default too. Everything persists under `webos.ui` / `webos.taskbar` /
 `webos.desktop`.
 
+### Liquid Glass design language (win/mac)
+
+The win and mac personas layer a four-phase glass treatment (plan:
+`LIQUID-GLASS.md`), all of it CSS/attribute-driven so the `:where()`
+specificity contract above still holds:
+
+- **Frost + rims (LG1/LG2).** Shared custom properties (`--chrome`,
+  `--glass-rim-hi/lo`, `--glass-sat`) and per-preset `--paper` (opaque
+  document fill — window bodies must not go dark-on-dark in light themes;
+  `--panel` derives from it via `color-mix`). The focused window wears a
+  specular rim as a `::after` inset-shadow overlay (`content: none` when
+  maximized) so box-shadow stays owned by the Settings shadow knob. The
+  widgets sidebar is the "clear" variant: wallpaper shows through the rail,
+  each widget carries a near-opaque scrim for text contrast.
+- **Motion (LG3).** `rise-in`/`drop-in`/`unfold-in` keyframes — transform +
+  opacity only, <=180 ms, anchored to the taskbar side
+  (`body[data-tb="top"] #start-menu` outranks the base `#start-menu` rule,
+  (1,1,0) vs (1,0,0)). Gated by both `body[data-anim-off]` and
+  `prefers-reduced-motion`.
+- **Refraction (LG4).** `os/lens.js` is pure map math — signed distance to a
+  rounded-rect boundary (sdRoundBox **with** the trailing `- r` term), axis
+  and radial edge normals, a convex squircle profile — rasterised into an
+  feDisplacementMap where 128/128 is neutral (the buffer is pre-filled;
+  untouched pixels must read zero displacement, not a full-scale shift).
+  `os/LensFilters.jsx` measures `#taskbar`/`#start-menu`, encodes each map to
+  a PNG data URL and swaps it into one persistent `<filter>` per surface
+  (ResizeObserver + MutationObserver, 150 ms debounce); static CSS references
+  the ids under `body[data-lens="on"]`, set only once a map exists so the
+  `url(#…)` never dangles. Ships behind a
+  `CSS.supports('backdrop-filter', 'url(#…)')` probe — Chromium engages it,
+  Safari/Firefox keep the base frost. `-webkit-backdrop-filter` deliberately
+  omits the `url()` (Safari rejects the whole value otherwise), and the
+  `data-lens` rules sit before the reduced-transparency media block so that
+  gate still wins the tie.
+
 ### Window tiling (snapping)
 
 `os/snap.js` defines the zone geometry: drag a titlebar within 12px of a
@@ -585,3 +620,15 @@ IndexedDB, types real keystrokes at xterm, and asserts wasm output
 (`seq`, `ls`, `cat`, `wc`), the builtin-precedence escape hatch, write-back
 persistence (the `mkdir`'d directory is read back from IndexedDB), and the
 JS-eval fallback.
+
+### Liquid Glass design language (3.6.0)
+
+The win/mac personas gained the four-phase glass treatment described in
+"OS personas" above (frost tokens, focused-window specular rim, `--paper`
+document fill fixing the Daylight dark-on-dark defect, anchored
+rise/drop/unfold motion with reduced-motion gates, and the Chromium-only
+feDisplacementMap edge refraction shipped behind a `CSS.supports` probe).
+LG work was driven by `LIQUID-GLASS.md`; the lens map math is pure
+(`os/lens.js`) and unit-tested (`tests/lens.test.js` — 11 tests covering SDF
+sign conventions, band neutrality, inward displacement directions, corner
+behaviour, and the stable filter ids CSS references).
