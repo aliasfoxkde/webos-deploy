@@ -2,7 +2,7 @@
 // Buffers persist in localStorage; Open/Save use the File System Access API
 // where available, with a download fallback elsewhere. Buffers opened from
 // the Files disk (args.path) save straight back to the store.
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { EditorState } from '@codemirror/state';
 import { EditorView } from 'codemirror';
 import { loadState, persist, reducer } from './buffers.js';
@@ -27,10 +27,20 @@ export default function Editor({ args } = {}) {
   const openedRef = useRef(false);
   const renameInput = useRef(null);
 
-  // Latest state without re-creating the CM view on every keystroke.
+  // Latest state without re-creating the CM view on every keystroke. The
+  // mirror is written in a layout effect: refs are off-limits during render.
   const stateRef = useRef(state);
-  stateRef.current = state;
+  useLayoutEffect(() => { stateRef.current = state; }, [state]);
   const active = state.buffers.find((b) => b.id === state.activeId);
+
+  // Preview only applies to markdown buffers — derived, so switching to a
+  // non-markdown tab while previewing drops back to the editor by itself.
+  // (Declared before the view effect: its dependency array reads this.)
+  const showPreview = preview && isMarkdownName(active.name);
+
+  // Caret position for the status bar, tracked as state — the view ref must
+  // not be read during render. Same values skip the update (render bail-out).
+  const [caret, setCaret] = useState({ line: 1, col: 1 });
 
   const applyState = useCallback((next) => {
     dispatch(next);
@@ -38,30 +48,38 @@ export default function Editor({ args } = {}) {
     persistTimer.current = setTimeout(() => persist(stateRef.current), 400);
   }, []);
 
-  // (Re)configure the CodeMirror view whenever the active buffer or wrap flips.
-  const extensions = useMemo(
-    () => editorExtensions(
-      (text) => applyState(reducer(stateRef.current, { type: 'edit', text })),
-      { key: 'Mod-s', run: () => { saveRef.current(); return true; }, preventDefault: true },
-      wrap,
-    ),
-    [wrap, applyState],
-  );
-
   useEffect(() => {
     if (!host.current) return undefined;
+    // Position the caret readout from the view's own updates.
+    const syncCaret = (v) => {
+      const head = v.state.selection.main.head;
+      const ln = v.state.doc.lineAt(head);
+      setCaret((c) => (c.line === ln.number && c.col === head - ln.from + 1 ? c : { line: ln.number, col: head - ln.from + 1 }));
+    };
     const cm = new EditorView({
-      state: EditorState.create({ doc: active.text, extensions: [...extensions, detectLanguage(active.name)] }),
+      state: EditorState.create({
+        doc: active.text,
+        extensions: [
+          ...editorExtensions(
+            (text) => applyState(reducer(stateRef.current, { type: 'edit', text })),
+            { key: 'Mod-s', run: () => { saveRef.current(); return true; }, preventDefault: true },
+            wrap,
+          ),
+          EditorView.updateListener.of((v) => { if (v.docChanged || v.selectionSet) syncCaret(v); }),
+          detectLanguage(active.name),
+        ],
+      }),
       parent: host.current,
     });
     view.current = cm;
+    syncCaret(cm);
     return () => { cm.destroy(); view.current = null; };
     // active.text intentionally excluded: the doc is owned by CodeMirror; the
     // update listener keeps state in sync instead of resetting the view.
     // showPreview is a dep: the host div unmounts while previewing, so the
     // view must be rebuilt on return.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.activeId, extensions, showPreview]);
+  }, [state.activeId, wrap, showPreview, applyState]);
 
   useEffect(() => () => clearTimeout(persistTimer.current), []);
 
@@ -84,10 +102,6 @@ export default function Editor({ args } = {}) {
       });
     }).catch((e) => setStatus(`open failed: ${e.message ?? e}`));
   }, [args, applyState]);
-
-  // Preview only applies to markdown buffers — derived, so switching to a
-  // non-markdown tab while previewing drops back to the editor by itself.
-  const showPreview = preview && isMarkdownName(active.name);
 
   // ---- file IO ------------------------------------------------------------
   const readFile = () => new Promise((resolve) => {
@@ -154,17 +168,15 @@ export default function Editor({ args } = {}) {
       if (e?.name !== 'AbortError') setStatus(`save failed: ${e.message ?? e}`);
     }
   };
-  saveRef.current = save;
+  // saveRef mirrors the latest save closure for the CM keymap; written in a
+  // layout effect like stateRef (refs are off-limits during render).
+  useLayoutEffect(() => { saveRef.current = save; });
 
   const close = (id) => {
     const b = state.buffers.find((x) => x.id === id);
     if (b?.dirty && !window.confirm(`${b.name} has unsaved changes. Close anyway?`)) return;
     applyState(reducer(state, { type: 'close', id }));
   };
-
-  const cursor = view.current?.state.selection.main.head ?? 0;
-  const line = view.current ? view.current.state.doc.lineAt(cursor) : { number: 1, from: 0 };
-  const col = cursor - line.from;
 
   return (
     <div className="editor">
@@ -228,7 +240,7 @@ export default function Editor({ args } = {}) {
       )}
 
       <div className="ed-status">
-        <span>{showPreview ? 'preview — editing paused' : `Ln ${line.number}, Col ${col + 1}`}</span>
+        <span>{showPreview ? 'preview — editing paused' : `Ln ${caret.line}, Col ${caret.col}`}</span>
         <span>{active.text.length} chars</span>
         <span>{languageLabel(active.name)}</span>
         {active.storePath && <em title={active.storePath}>Files: {active.storePath}</em>}

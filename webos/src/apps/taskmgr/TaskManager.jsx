@@ -245,7 +245,9 @@ export default function TaskManager() {
             <div>
               <span>Site storage</span>
               <b>
-                {storage ? `${fmtBytes(storage.usage)} of ${fmtBytes(storage.quota)} (${storePct?.toFixed(2)}%)${storage.persisted ? ' · persistent' : ''}` : 'estimating…'}
+                {storage
+                  ? `${fmtBytes(storage.usage)} of ${fmtBytes(storage.quota)}${storePct != null ? ` (${storePct.toFixed(2)}%)` : ''}${storage.persisted ? ' · persistent' : ''}`
+                  : 'estimating…'}
               </b>
             </div>
           </div>

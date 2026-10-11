@@ -283,6 +283,7 @@ export default function Photos({ args } = {}) {
             {cropping && (
               <div
                 className="ph-crop-pad"
+                ref={ovRef}
                 onPointerDown={onDown}
                 onPointerMove={onMove}
                 onPointerUp={onUp}
