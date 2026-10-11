@@ -14,6 +14,7 @@ describe('initialTabs', () => {
     expect(d.tabs).toHaveLength(1);
     expect(d.tabs[0].entries).toHaveLength(1);
     expect(d.tabs[0].entries[0]).toMatchObject({ url: 'https://example.com/', mode: 'direct' });
+    expect(d.active).toBe(d.tabs[0].id); // a real tab id — `0` poisoned sessions (see below)
     expect(initialTabs().tabs).toHaveLength(1);
     expect(initialTabs().tabs[0].entries).toEqual([]);
   });
@@ -33,6 +34,18 @@ describe('initialTabs', () => {
     expect(r.tabs[0].entries.map((e) => e.raw)).toEqual(['a', 'b']);
     expect(r.active).toBe(r.tabs[1].id);
     expect(initialTabs(null, { tabs: [] }).tabs).toHaveLength(1);
+  });
+
+  it('a negative stored active (-1) clamps instead of crashing the next launch', () => {
+    // The arg-launch bug: `active: 0` matched no string tab id, the session
+    // persist saved findIndex() = -1, and this restore path then read
+    // `tabs[-1].id` — "Browser can't start" on every later launch.
+    const r = initialTabs(null, {
+      active: -1,
+      tabs: [{ index: 0, entries: [{ raw: 'example.com' }] }],
+    });
+    expect(r.tabs).toHaveLength(1);
+    expect(r.active).toBe(r.tabs[0].id);
   });
 });
 

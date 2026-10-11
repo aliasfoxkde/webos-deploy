@@ -143,6 +143,12 @@ const patched = (state, key, patch) => {
   return { ...state, [key]: next };
 };
 
+// Resolve a window by id. Ids crossing the DOM/JSON boundary come back as
+// strings (data-id attributes, control payloads) while state ids are the
+// numeric seq — match loosely and use the resolved window's own id from
+// there, so every comparison below stays type-exact.
+const winById = (windows, id) => windows.find((w) => String(w.id) === String(id));
+
 function reducer(state, action) {
   switch (action.type) {
     case 'launch': {
@@ -204,46 +210,59 @@ function reducer(state, action) {
         focused: id,
       };
     }
-    case 'close':
-      return { ...state, windows: state.windows.filter((w) => w.id !== action.id) };
+    case 'close': {
+      const win = winById(state.windows, action.id);
+      if (!win) return state;
+      return { ...state, windows: state.windows.filter((w) => w.id !== win.id) };
+    }
     case 'focus': {
-      const win = state.windows.find((w) => w.id === action.id);
+      const win = winById(state.windows, action.id);
       if (!win) return state;
       return {
         ...state,
-        focused: action.id,
+        focused: win.id,
         zTop: state.zTop + 1,
         windows: state.windows.map((w) =>
-          w.id === action.id ? { ...w, z: state.zTop + 1, min: action.unminimize ? false : w.min } : w
+          w.id === win.id ? { ...w, z: state.zTop + 1, min: action.unminimize ? false : w.min } : w
         ),
       };
     }
     case 'minimize': {
-      const isFocused = state.focused === action.id;
+      const win = winById(state.windows, action.id);
+      if (!win) return state;
+      const isFocused = state.focused === win.id;
       return {
         ...state,
         focused: isFocused ? null : state.focused,
-        windows: state.windows.map((w) => (w.id === action.id ? { ...w, min: action.unmin ? false : !w.min } : w)),
+        windows: state.windows.map((w) => (w.id === win.id ? { ...w, min: action.unmin ? false : !w.min } : w)),
       };
     }
-    case 'toggleMax':
+    case 'toggleMax': {
       // Maximizing abandons a tile (snap cleared) but KEEPS `pre`: restore
       // after maximize — and a tear-off drag of the un-maximized window —
       // goes back to the floating rect, not the tile.
-      return { ...state, windows: state.windows.map((w) => (w.id === action.id ? { ...w, max: !w.max, snap: null } : w)) };
-    case 'setRect':
+      const win = winById(state.windows, action.id);
+      if (!win) return state;
+      return { ...state, windows: state.windows.map((w) => (w.id === win.id ? { ...w, max: !w.max, snap: null } : w)) };
+    }
+    case 'setRect': {
       // Any manual move clears the snapped-tile flag (pre is kept so a later
       // restore can still put the window back).
-      return { ...state, windows: state.windows.map((w) => (w.id === action.id ? { ...w, rect: action.rect, snap: null } : w)) };
+      const win = winById(state.windows, action.id);
+      if (!win) return state;
+      return { ...state, windows: state.windows.map((w) => (w.id === win.id ? { ...w, rect: action.rect, snap: null } : w)) };
+    }
 
     /* -- tiling: halves + quadrants (see os/snap.js) --
        `pre` remembers the floating rect so the window can be unsnapped back
        to it; snapping a maximized window keeps its untouched rect as pre. */
-    case 'snapWin':
+    case 'snapWin': {
+      const win = winById(state.windows, action.id);
+      if (!win) return state;
       return {
         ...state,
         windows: state.windows.map((w) => {
-          if (w.id !== action.id || action.zone === 'top' || w.snap === action.zone) return w;
+          if (w.id !== win.id || action.zone === 'top' || w.snap === action.zone) return w;
           return {
             ...w,
             max: false,
@@ -253,11 +272,15 @@ function reducer(state, action) {
           };
         }),
       };
-    case 'restoreWin':
+    }
+    case 'restoreWin': {
+      const win = winById(state.windows, action.id);
+      if (!win) return state;
       return {
         ...state,
-        windows: state.windows.map((w) => (w.id === action.id ? { ...w, snap: null, pre: null, rect: w.pre || w.rect } : w)),
+        windows: state.windows.map((w) => (w.id === win.id ? { ...w, snap: null, pre: null, rect: w.pre || w.rect } : w)),
       };
+    }
     case 'install': {
       const installed = state.installed.includes(action.appId) ? state.installed : [...state.installed, action.appId];
       save('installed', installed);

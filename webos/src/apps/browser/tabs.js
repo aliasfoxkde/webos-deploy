@@ -20,7 +20,15 @@ export const makeTab = (raw = '', resolved = null) => ({
 
 /* `active` is always a tab ID — stable across closes, no index shifting. */
 export function initialTabs(argUrl, restore = null) {
-  if (argUrl) return { tabs: [makeTab(argUrl, classify(argUrl))], active: 0 };
+  // `active` is a tab ID everywhere (see above) — an arg-launched browser
+  // used to seed `0`, which no tab ever has, so the session persist saved
+  // `active: -1` (findIndex miss) and the NEXT plain launch crashed on
+  // `tabs[-1].id` ("Browser can't start"). Seed the real id, and clamp the
+  // restored index into range — stored sessions are hostile input.
+  if (argUrl) {
+    const t = makeTab(argUrl, classify(argUrl));
+    return { tabs: [t], active: t.id };
+  }
   if (restore && Array.isArray(restore.tabs) && restore.tabs.length) {
     const tabs = restore.tabs
       .filter((t) => t && Array.isArray(t.entries))
@@ -31,7 +39,8 @@ export function initialTabs(argUrl, restore = null) {
         reloadKey: 0,
       }));
     if (tabs.length) {
-      return { tabs, active: tabs[Math.min(restore.active ?? 0, tabs.length - 1)].id };
+      const at = Math.min(Math.max(restore.active ?? 0, 0), tabs.length - 1);
+      return { tabs, active: tabs[at].id };
     }
   }
   const t = makeTab();
