@@ -90,18 +90,26 @@ function reducer(state, action) {
     case 'memClear':
       save('memory', 0);
       return { ...state, memory: 0 };
+    /* Memory ops evaluate the entry and silently ignore invalid math —
+       compute() throws CalcError on bad input, which must not escape a
+       reducer (an M+ on `1/0` would otherwise crash the app). */
     case 'memStore': {
-      const v = compute(state.entry, state.angle);
-      if (!Number.isNaN(v)) { save('memory', v); return { ...state, memory: v }; }
+      try {
+        const v = compute(state.entry, state.angle);
+        if (!Number.isNaN(v)) { save('memory', v); return { ...state, memory: v }; }
+      } catch { /* invalid entry — keep the register */ }
       return state;
     }
     case 'memAdd':
     case 'memSub': {
-      const v = compute(state.entry, state.angle);
-      if (Number.isNaN(v)) return state;
-      const memory = action.type === 'memAdd' ? state.memory + v : state.memory - v;
-      save('memory', memory);
-      return { ...state, memory };
+      try {
+        const v = compute(state.entry, state.angle);
+        if (Number.isNaN(v)) return state;
+        const memory = action.type === 'memAdd' ? state.memory + v : state.memory - v;
+        save('memory', memory);
+        return { ...state, memory };
+      } catch { /* invalid entry — keep the register */ }
+      return state;
     }
     case 'memRecall':
       return { ...state, entry: state.entry + formatNumber(state.memory, { grouping: false }), justEvaluated: false, error: null };
