@@ -36,6 +36,9 @@ webos/src/
 │   └── format.js             bytes/duration/number formatting helpers
 ├── shell/                    window-system UI
 │   ├── Window.jsx            window chrome; 8-direction resize; plugin vs EmbedFrame
+│   ├── ErrorBoundary.jsx     crash containment: soft per-window card + hard root
+│   │                         boundary (a rejected lazy import or render throw
+│   │                         renders a recovery card, never a blank desktop)
 │   ├── EmbedFrame.jsx        iframe hosting + honest "open in new tab" panel
 │   ├── Taskbar.jsx           tray (volume/network popups via body portal), clock config;
 │   │                         position/autohide via body[data-tb]

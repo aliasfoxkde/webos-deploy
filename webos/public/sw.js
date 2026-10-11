@@ -1,6 +1,6 @@
 /* ArtCraft WebOS service worker: app-shell cache-first, everything else
    network-first. Version bump invalidates the previous shell. */
-const VERSION = 'webos-v3.9.0';
+const VERSION = 'webos-v3.10.0';
 const SHELL = [
   './',
   './index.html',
@@ -29,7 +29,6 @@ self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET' || url.origin !== self.location.origin) return;
   if (!/\.(js|css|svg|png|webp|woff2?|json|webmanifest)$/.test(url.pathname) && url.pathname !== '/') return;
 
-  const isShell = url.pathname === '/' || url.pathname.endsWith('index.html');
   event.respondWith(
     caches.match(event.request).then((cached) => {
       const fetchPromise = fetch(event.request)
@@ -41,7 +40,11 @@ self.addEventListener('fetch', (event) => {
           return response;
         })
         .catch(() => cached);
-      return isShell && cached ? cached : fetchPromise;
+      /* Network-first for everything, the shell especially: a cached shell
+         references hashed chunks that a deploy deletes, so serving it stale
+         blanked the whole desktop on the first app launch. The cache only
+         answers when the network is unreachable (offline fallback). */
+      return fetchPromise;
     })
   );
 });

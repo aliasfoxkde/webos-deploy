@@ -70,7 +70,8 @@ export default function Screensaver() {
   const isFx = ['starfield', 'aurora', 'waves', 'mesh', 'matrix', 'tide', 'rain'].includes(saver.kind);
   return (
     <div id="screensaver" role="timer" aria-label="Screen saver active — press any key or move the mouse to dismiss">
-      {isFx && <FxWallpaper kind={saver.kind} id="saver-fx" speed={saver.speed || 1} />}
+      {/* gentle: reduced motion slows the saver to 0.35× instead of freezing it */}
+      {isFx && <FxWallpaper kind={saver.kind} id="saver-fx" speed={saver.speed || 1} motion="gentle" />}
       {saver.kind === 'photos' && <PhotoShowcase secs={saver.photoSecs || 8} />}
       {saver.kind === 'clock' && <BigClock />}
       <span className="saver-hint">Move the mouse or press a key</span>

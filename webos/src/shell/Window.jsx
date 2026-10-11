@@ -4,6 +4,7 @@ import { useOS } from '../os/state.jsx';
 import { zoneRect } from '../os/snap.js';
 import { APP_COMPONENTS } from '../apps/components.js';
 import EmbedFrame from './EmbedFrame.jsx';
+import ErrorBoundary from './ErrorBoundary.jsx';
 import { startMoveDrag } from './winDrag.js';
 
 const MIN_W = 320, MIN_H = 220;
@@ -110,7 +111,9 @@ export default function Window({ win }) {
         <button className="tb-btn close" title="Close" onClick={() => os.close(win.id)}>✕</button>
       </header>
       <div className="win-body" style={{ '--win-accent': app.accent }}>
-        {pluginBody}
+        <ErrorBoundary soft label={app.name} onClose={() => os.close(win.id)}>
+          {pluginBody}
+        </ErrorBoundary>
         {!loaded && !APP_COMPONENTS[win.appId] && app.embed ? (
           <div className="win-loading" style={{ opacity: loaded ? 0 : 1 }}>
             <div className="spin" />

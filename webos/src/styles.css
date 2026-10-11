@@ -1339,3 +1339,18 @@ body[data-persona="mac"] #start-menu { bottom: 74px; }
 
 .blocked .btn { margin-top: 4px; }
 .blocked { gap: 10px; }
+
+/* -- error containment cards (Window soft boundary + root hard boundary):
+      a render crash or a rejected lazy import shows this instead of
+      unmounting the subtree above it -- */
+.bdry {
+  height: 100%; display: flex; flex-direction: column; gap: 10px;
+  align-items: center; justify-content: center; padding: 24px; text-align: center;
+  background: var(--paper); color: var(--text);
+}
+.bdry h3 { margin: 0; font-size: 0.95rem; }
+.bdry-msg {
+  margin: 0; max-width: 46ch; font-size: 0.78rem;
+  color: var(--text-dim); word-break: break-word; user-select: text; -webkit-user-select: text;
+}
+.bdry-actions { display: flex; gap: 8px; margin-top: 4px; }

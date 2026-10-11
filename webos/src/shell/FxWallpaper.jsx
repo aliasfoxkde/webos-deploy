@@ -2,8 +2,10 @@ import React, { useEffect, useRef } from 'react';
 
 /* Interactive canvas wallpapers (`fx:<kind>` in theme.wallpaper). Drawn in
    code — no assets, no licenses. Pointer parallax on every effect; the rAF
-   loop pauses when the tab is hidden and never starts under
-   prefers-reduced-motion (one static frame is drawn instead). */
+   loop pauses when the tab is hidden and, under prefers-reduced-motion,
+   draws one static frame instead — unless motion="gentle" (the screen
+   saver's mode), which keeps looping at 0.35×: motion is the saver's whole
+   job, so it slows rather than freezes. */
 
 const TAU = Math.PI * 2;
 const rand = (seedStr) => {
@@ -167,7 +169,7 @@ const KINDS = {
 KINDS.tide = KINDS.waves;
 KINDS.rain = KINDS.matrix;
 
-export default function FxWallpaper({ kind, id = 'fx-wallpaper', speed = 1 }) {
+export default function FxWallpaper({ kind, id = 'fx-wallpaper', speed = 1, motion = 'auto' }) {
   const ref = useRef(null);
   const fx = KINDS[kind] || KINDS.starfield;
   useEffect(() => {
@@ -196,15 +198,18 @@ export default function FxWallpaper({ kind, id = 'fx-wallpaper', speed = 1 }) {
     window.addEventListener('pointermove', onMove);
 
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // gentle mode (screen saver): reduced motion throttles the loop rather
+    // than killing it — a saver that never moves is a broken feature.
+    const effSpeed = reduced && motion === 'gentle' ? speed * 0.35 : speed;
     const start = performance.now();
     const frame = () => {
-      const t = ((performance.now() - start) / 1000) * speed;
+      const t = ((performance.now() - start) / 1000) * effSpeed;
       ctx.fillStyle = '#05070d';
       ctx.fillRect(0, 0, w, h);
       fx.draw.call(fx, ctx, w, h, t, px, py);
       raf = requestAnimationFrame(frame);
     };
-    if (reduced) {
+    if (reduced && motion !== 'gentle') {
       ctx.fillStyle = '#05070d';
       ctx.fillRect(0, 0, w, h);
       fx.draw.call(fx, ctx, w, h, 0, 0, 0); // one static frame, no loop
@@ -222,7 +227,7 @@ export default function FxWallpaper({ kind, id = 'fx-wallpaper', speed = 1 }) {
       window.removeEventListener('pointermove', onMove);
       document.removeEventListener('visibilitychange', onVis);
     };
-  }, [fx, speed]);
+  }, [fx, speed, motion]);
 
   return <canvas ref={ref} id={id} aria-hidden="true" />;
 }

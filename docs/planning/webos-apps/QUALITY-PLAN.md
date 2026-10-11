@@ -110,3 +110,10 @@ user-visible batch, per repo convention.
   auth blocks automation, that's a named blocker to surface, not skip.
 - The NAS JBOD spins down; browser-e2e on the NAS is slow for the same
   reason (25s cold boot) — another reason E2E belongs on the Fedora lane.
+
+## Defect ledger (operator-reported, fixed + verified)
+
+| Date | Symptom | Root cause | Fix | Verification |
+|---|---|---|---|---|
+| 2026-10-11 | FX screensavers + the Settings preview render one frozen frame | FxWallpaper honored `prefers-reduced-motion: reduce` by never starting the rAF loop — savers froze at frame zero whenever the OS/browser reports reduce | `motion="gentle"` prop: savers loop at 0.35× under reduced motion; wallpapers keep the honest static frame | headless A/B: reduced=true was 1/3 identical canvas samples → now 3/3 distinct; `motion="gentle"` regression test in shell-window.test.jsx |
+| 2026-10-11 | Clicking Browser blanked the entire desktop | SW served the shell cache-first → after a deploy an old `index.html` lazy-imports a hashed chunk the deploy deleted → rejected import, **zero error boundaries anywhere** → React unmounted the whole tree (reproduced: `rootChildren: 0`) | (1) `ErrorBoundary` two tiers — soft per-window card (Reload/Close) + hard root boundary; (2) SW shell now network-first, cache only as offline fallback | e2e chunk-block repro: was DESKTOP-BLANK → now desktop intact with in-window card (screenshot); 5 containment tests in shell-boundary.test.jsx |

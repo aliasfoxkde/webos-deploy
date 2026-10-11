@@ -577,6 +577,20 @@ describe('FxWallpaper', () => {
     mm.mockRestore();
   });
 
+  it('motion="gentle" (the saver) keeps the loop alive under reduced motion', () => {
+    // Regression: reduced motion froze the saver at frame zero — the whole
+    // preview read as a static image. Savers slow to 0.35×, never freeze.
+    const mm = vi.spyOn(window, 'matchMedia').mockReturnValue({ matches: true });
+    const c = render(<FxWallpaper kind="starfield" motion="gentle" />);
+    expect(rafCalls).toHaveLength(1); // loop armed despite the preference
+    const before = ctx2d.calls.filter(([n]) => n === 'arc').length;
+    act(() => { rafCb()(1000); });
+    expect(ctx2d.calls.filter(([n]) => n === 'arc').length).toBeGreaterThan(before);
+    c.unmount();
+    expect(cancelSpy).toHaveBeenCalledTimes(1);
+    mm.mockRestore();
+  });
+
   it('pausing on a hidden tab cancels the loop and resuming restarts it', () => {
     const c = render(<FxWallpaper kind="waves" />);
     expect(rafCalls).toHaveLength(1);
