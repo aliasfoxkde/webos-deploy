@@ -11,7 +11,7 @@ export const PERSONAS = [
   { id: 'linux', label: 'GNOME / Linux', tagline: 'Top bar, centered titles, Adwaita calm', preset: 'forest', accent: '#34d399', taskbar: 'top', align: 'left' },
   { id: 'bsd', label: 'Tiling WM', tagline: 'Borders + gaps, mono, no shadows', preset: 'cobalt', accent: '#a78bfa', taskbar: 'top', align: 'left' },
   { id: 'android', label: 'Android', tagline: 'Material You, large radii, color', preset: 'sunset', accent: '#f472b6', taskbar: 'bottom', align: 'center' },
-  { id: 'tui', label: 'Terminal', tagline: 'Monospace grid, ASCII chrome, no blur', preset: 'grid', accent: '#4ade80', taskbar: 'top', align: 'left' },
+  { id: 'tui', label: 'Omarchy', tagline: 'Tokyo Night dark, waybar, keybind tiling', preset: 'omarchy', accent: '#7aa2f7', taskbar: 'top', align: 'left' },
 ];
 
 export const personaOf = (id) => PERSONAS.find((p) => p.id === id) || PERSONAS[0];

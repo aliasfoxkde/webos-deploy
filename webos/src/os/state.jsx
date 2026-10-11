@@ -43,11 +43,11 @@ export const ACCENTS = ['#38bdf8', '#22d3ee', '#34d399', '#a3e635', '#fbbf24', '
 
 export const THEME_PRESETS = {
   midnight: {
-    label: 'Midnight', text: '#e8ecf4', dim: '#9aa4b5', chrome: 'rgba(16,20,30,0.82)', line: 'rgba(255,255,255,0.09)',
+    label: 'Midnight', text: '#e8ecf4', dim: '#9fa9ba', chrome: 'rgba(16,20,30,0.82)', line: 'rgba(255,255,255,0.09)',
     bg: 'radial-gradient(1100px 700px at 78% 18%, rgba(56,189,248,0.14), transparent 60%), radial-gradient(900px 640px at 12% 82%, rgba(167,139,250,0.12), transparent 60%), radial-gradient(700px 500px at 45% 45%, rgba(52,211,153,0.05), transparent 60%), linear-gradient(160deg, #0d1220, #07090d 70%)',
   },
   ocean: {
-    label: 'Ocean', text: '#e4f2fa', dim: '#8fb0c4', chrome: 'rgba(10,26,40,0.82)', line: 'rgba(255,255,255,0.10)',
+    label: 'Ocean', text: '#e4f2fa', dim: '#90b1c5', chrome: 'rgba(10,26,40,0.82)', line: 'rgba(255,255,255,0.10)',
     bg: 'radial-gradient(1000px 700px at 20% 15%, rgba(34,211,238,0.16), transparent 60%), radial-gradient(900px 700px at 85% 85%, rgba(59,130,246,0.18), transparent 60%), linear-gradient(165deg, #06202e, #030b13 75%)',
   },
   forest: {
@@ -59,8 +59,18 @@ export const THEME_PRESETS = {
     bg: 'radial-gradient(1100px 700px at 80% 80%, rgba(251,146,60,0.20), transparent 60%), radial-gradient(900px 600px at 15% 15%, rgba(244,114,182,0.14), transparent 55%), linear-gradient(160deg, #1d0f0a, #0b0505 75%)',
   },
   light: {
-    label: 'Daylight', text: '#1a2230', dim: '#5b6b80', chrome: 'rgba(250,251,253,0.86)', line: 'rgba(15,25,40,0.12)',
+    label: 'Daylight', text: '#1a2230', dim: '#314156', chrome: 'rgba(250,251,253,0.86)', line: 'rgba(15,25,40,0.12)',
     bg: 'radial-gradient(1100px 700px at 78% 18%, rgba(96,165,250,0.18), transparent 60%), radial-gradient(900px 640px at 12% 82%, rgba(167,139,250,0.14), transparent 60%), linear-gradient(160deg, #eef2f8, #dde4ee 75%)',
+  },
+  /* Tokyo Night family — text/dim verified ≥ 7:1 (AAA) on their dark bases;
+     the accent-tinted `line` is decorative chrome (≥ 3:1 not required). */
+  omarchy: {
+    label: 'Omarchy', text: '#c0caf5', dim: '#a9b1d6', chrome: 'rgba(26,27,38,0.92)', line: 'rgba(122,162,247,0.16)',
+    bg: 'radial-gradient(1100px 700px at 80% 12%, rgba(122,162,247,0.12), transparent 60%), radial-gradient(900px 640px at 10% 85%, rgba(187,154,247,0.10), transparent 60%), linear-gradient(160deg, #1a1b26, #101017 75%)',
+  },
+  cobalt: {
+    label: 'Cobalt', text: '#d6e2ff', dim: '#93a8ce', chrome: 'rgba(10,14,28,0.90)', line: 'rgba(167,139,250,0.16)',
+    bg: 'radial-gradient(1000px 700px at 75% 20%, rgba(167,139,250,0.14), transparent 60%), radial-gradient(900px 650px at 15% 80%, rgba(96,165,250,0.10), transparent 60%), linear-gradient(160deg, #0e1428, #070a14 75%)',
   },
 };
 
