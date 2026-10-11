@@ -18,8 +18,10 @@ import { zoneRect } from './os/snap.js';
 import { PLUGIN_IDS } from './os/registry.js';
 import { wallpaperLayer, isFx } from './os/wallpapers.js';
 import { resolveParams } from './os/waterfx.js';
+import { resolveTheme } from './os/themes.js';
 import FxWallpaper from './shell/FxWallpaper.jsx';
 import WaterWallpaper from './shell/WaterWallpaper.jsx';
+import CompositeWallpaper from './shell/CompositeWallpaper.jsx';
 import LensFilters from './os/LensFilters.jsx';
 
 /* Virtual apps that render in-window instead of an iframe. */
@@ -499,9 +501,13 @@ export default function App() {
   // Wallpaper renders in its own fixed layer (behind everything, slightly
   // oversized) so custom images can take blur/brightness/saturation filters.
   // `fx:*` wallpapers render the interactive canvas instead — `fx:water` the
-  // WebGL ripple sim, the rest the 2D canvas FX.
+  // WebGL ripple sim, the rest the 2D canvas FX — and `wp-*` ids render the
+  // composited stack (base + pattern + effect + floats) from Wallpaper studio.
   const wp = wallpaperLayer(os.theme);
   const fxKind = isFx(os.theme.wallpaper) ? os.theme.wallpaper.slice(3) : null;
+  const wpComposite = os.theme.wallpaper.startsWith('wp-')
+    ? os.composites.find((c) => c.id === os.theme.wallpaper)
+    : null;
   return (
     <>
       {fxKind === 'water' && (
@@ -511,6 +517,12 @@ export default function App() {
         />
       )}
       {fxKind && fxKind !== 'water' && <FxWallpaper kind={fxKind} speed={os.theme.fxSpeed ?? 1} />}
+      {wpComposite && (
+        <CompositeWallpaper
+          spec={wpComposite}
+          themeBg={resolveTheme(os.theme.preset, os.userThemes).bg}
+        />
+      )}
       {wp && <div id="wallpaper" aria-hidden="true" style={wp} />}
       <LensFilters />
       <main id="desktop" data-cm="desktop">

@@ -15,16 +15,16 @@ export default defineConfig({
       exclude: ['src/main.jsx', 'src/version.js'],
       reporter: ['text', 'lcov'],
       reportsDirectory: 'coverage',
-      // Ratchet: floors sit just under the measured baseline (79.50/74.09/
-      // 72.19/82.48 after the theming overhaul: themes.js core, builder +
-      // pack library UI, Terminal theme integration).
+      // Ratchet: floors sit just under the measured baseline (79.70/74.75/
+      // 72.11/82.67 after the wallpaper compositor: wpcompose.js core,
+      // studio builder UI, CompositeWallpaper renderer).
       // Raise as tests land; a regression in any metric fails `npm run
       // coverage`.
       thresholds: {
-        statements: 79.4,
-        branches: 74.0,
+        statements: 79.6,
+        branches: 74.6,
         functions: 72.1,
-        lines: 82.4,
+        lines: 82.5,
       },
     },
   },

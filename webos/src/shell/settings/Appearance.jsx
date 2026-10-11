@@ -2,8 +2,13 @@ import React, { useRef } from 'react';
 import { useOS, ACCENTS, THEME_PRESETS } from '../../os/state.jsx';
 import {
   deriveTheme, draftFromTheme, newThemeId, resolveTheme,
-  searchPacks, packToUserTheme, THEME_PACKS, contrast,
+  searchPacks, packToUserTheme, THEME_PACKS, contrast, mix,
 } from '../../os/themes.js';
+import {
+  BASE_KINDS, PATTERN_KINDS, EFFECT_KINDS, FLOAT_ANIMS, MAX_FLOATS,
+  newCompositeId,
+} from '../../os/wpcompose.js';
+import CompositeWallpaper from '../CompositeWallpaper.jsx';
 import { WALLPAPERS, FITS, POSITIONS } from '../../os/wallpapers.js';
 import { PERSONAS } from '../../os/personas.js';
 import { DEFAULTS, PRESET_NAMES, mergeParams } from '../../os/waterfx.js';
@@ -15,6 +20,15 @@ const MAX_UPLOAD = 2.5 * 1024 * 1024;
 const CATS = ['All', ...new Set(WALLPAPERS.map((w) => w.cat))];
 const presetLabel = (id) => id.replace(/\b\w/g, (ch) => ch.toUpperCase());
 
+/* Wallpaper studio chip labels + upload limits (data-URL chars ≈ 4/3 ×
+   bytes; both sit under the pure caps in os/wpcompose.js). */
+const BASE_LABELS = { theme: 'Theme colors', color: 'Solid color', gradient: 'Gradient', image: 'Image' };
+const PATTERN_LABELS = { none: 'No pattern', dots: 'Dots', grid: 'Grid', stripes: 'Stripes', checker: 'Checkers', diagonal: 'Diagonal', cross: 'Cross' };
+const EFFECT_LABELS = { none: 'No effect', vignette: 'Vignette', glow: 'Glow', scanlines: 'Scanlines', grain: 'Grain' };
+const ANIM_LABELS = { none: 'Still', float: 'Float', drift: 'Drift', pulse: 'Pulse', spin: 'Spin' };
+const MAX_BASE_FILE = 1.6 * 1024 * 1024; // ≈ 2.13 MB as a data URL
+const MAX_FLOAT_FILE = 700 * 1024;       // ≈ 0.93 MB as a data URL
+
 export default function Appearance() {
   const os = useOS();
   const t = os.theme;
@@ -23,7 +37,11 @@ export default function Appearance() {
   const [draft, setDraft] = React.useState(null); // theme-builder fields when open
   const [pack, setPack] = React.useState('all');
   const [pq, setPq] = React.useState('');
+  const [wpDraft, setWpDraft] = React.useState(null); // composite draft when open
+  const [floatUrl, setFloatUrl] = React.useState('');
   const fileRef = useRef(null);
+  const wpFileRef = useRef(null);
+  const floatFileRef = useRef(null);
 
   /* ---- theme builder ----
      Draft fields derive live through deriveTheme — the preview and the
@@ -46,6 +64,73 @@ export default function Appearance() {
     setDraft(null);
   };
   const ratioLabel = (ratio) => (ratio >= 7 ? 'AAA' : ratio >= 4.5 ? 'AA' : 'low');
+
+  /* ---- wallpaper studio ----
+     A composite draft edits the same spec shape wpcompose.js stores; the
+     preview is the real CompositeWallpaper component, so what you see is
+     what the desktop renders. wpSave normalizes — hostile values clamp or
+     drop at the pure boundary. */
+  const startWpNew = () => setWpDraft({
+    id: null,
+    name: 'My wallpaper',
+    base: { kind: 'gradient', angle: 160, stops: [{ color: '#38bdf8', at: 0 }, { color: '#0b0e14', at: 100 }] },
+    pattern: { kind: 'dots', size: 32, color: '#ffffff', opacity: 0.08 },
+    effect: { kind: 'vignette', strength: 0.5, color: '#38bdf8' },
+    floats: [],
+  });
+  const startWpEdit = (c) => setWpDraft(JSON.parse(JSON.stringify(c))); // deep copy — edits stay draft-local
+  const patchWp = (patch) => setWpDraft({ ...wpDraft, ...patch });
+  const patchBase = (patch) => setWpDraft({ ...wpDraft, base: { ...wpDraft.base, ...patch } });
+  const patchPattern = (patch) => setWpDraft({ ...wpDraft, pattern: { ...wpDraft.pattern, ...patch } });
+  const patchEffect = (patch) => setWpDraft({ ...wpDraft, effect: { ...wpDraft.effect, ...patch } });
+  const saveWp = () => {
+    const name = wpDraft.name.trim().slice(0, 40) || 'Untitled wallpaper';
+    const id = wpDraft.id || newCompositeId(name, os.composites.map((x) => x.id));
+    os.wpSave({ ...wpDraft, id, name });
+    setWpDraft(null);
+  };
+  const addStop = () => {
+    const stops = wpDraft.base.stops;
+    const last = stops[stops.length - 1];
+    const prev = stops[stops.length - 2] || last;
+    patchBase({
+      stops: [...stops, {
+        color: mix(prev.color, last.color, 0.5),
+        at: Math.min(100, Math.round((prev.at + last.at) / 2 + (last.at >= 100 ? -5 : 0))),
+      }],
+    });
+  };
+  const setStop = (i, key, value) => {
+    patchBase({ stops: wpDraft.base.stops.map((s, j) => (j === i ? { ...s, [key]: value } : s)) });
+  };
+  const addFloat = (image) => {
+    if (wpDraft.floats.length >= MAX_FLOATS) return;
+    patchWp({
+      floats: [...wpDraft.floats, {
+        id: `fl-${Date.now().toString(36)}`, image, x: 72, y: 30, scale: 1, opacity: 1, anim: 'float', speed: 1,
+      }],
+    });
+    setFloatUrl('');
+  };
+  const addFloatUrl = () => {
+    const url = floatUrl.trim();
+    if (/^https?:\/\//.test(url) || /^data:image\//.test(url)) addFloat(url);
+  };
+  const readImage = (file, limit, cb) => {
+    if (!file) return;
+    if (file.size > limit) {
+      alert(`Image too large (${(file.size / 1048576).toFixed(1)} MB) — keep it under ${(limit / 1048576).toFixed(2)} MB.`);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => cb(String(reader.result));
+    reader.readAsDataURL(file);
+  };
+  const patchFloat = (id, patch) => {
+    patchWp({ floats: wpDraft.floats.map((f) => (f.id === id ? { ...f, ...patch } : f)) });
+  };
+  // the active theme's derived background — base kind "theme colors" rides it
+  const activeTheme = resolveTheme(t.preset, os.userThemes);
 
   const onUpload = (e) => {
     const file = e.target.files?.[0];
@@ -698,6 +783,318 @@ export default function Appearance() {
         ) : null}
         <p className="dim">Bundled photos are CC-licensed (docs/ATTRIBUTION.md); CSS packs and FX wallpapers are drawn in code. Custom uploads stay in this browser’s local storage (≤ 2.5 MB) — nothing is sent anywhere.</p>
       </section>
+
+      <section>
+        <h3>Wallpaper studio</h3>
+        <p className="dim" style={{ marginTop: -6 }}>
+          Compose layered wallpapers: a base (theme colors, solid color,
+          multi-stop gradient or image), a pattern overlay, an effect, and up
+          to four floating images. Composites stay fully editable.
+        </p>
+        <div className="preset-row">
+          {os.composites.map((c) => {
+            const active = t.wallpaper === c.id;
+            return (
+              <span key={c.id} className={`preset user ${active ? 'on' : ''}`}>
+                <button
+                  type="button"
+                  className="preset-hit"
+                  onClick={() => os.setTheme({ wallpaper: c.id })}
+                  title={`Apply “${c.name}”`}
+                >
+                  <span className="preset-preview">
+                    <CompositeWallpaper spec={c} themeBg={activeTheme.bg} id={null} className="preset-wp" />
+                  </span>
+                  {c.name}
+                </button>
+                <button
+                  type="button"
+                  className="preset-edit"
+                  aria-label={`Edit composite ${c.name}`}
+                  title={`Edit “${c.name}”`}
+                  onClick={() => startWpEdit(c)}
+                >✎</button>
+              </span>
+            );
+          })}
+          <button
+            type="button" className="preset new-theme"
+            onClick={startWpNew} aria-label="New composite"
+            title="Compose a layered wallpaper"
+          >
+            <span className="preset-preview new-mark" aria-hidden="true">＋</span>
+            New composite
+          </button>
+        </div>
+      </section>
+
+      {wpDraft && (
+        <section className="theme-builder" role="group" aria-label="Wallpaper studio">
+          <h3>{wpDraft.id ? 'Edit composite' : 'New composite'}</h3>
+          <div className="th-grid">
+            <div className="th-fields">
+              <div className="row">
+                <label className="dim" htmlFor="wp-name">Name</label>
+                <input
+                  id="wp-name" type="text" maxLength={40} value={wpDraft.name}
+                  onChange={(e) => patchWp({ name: e.target.value })}
+                  aria-label="Composite name"
+                />
+              </div>
+              <div className="row">
+                <span className="dim">Base</span>
+                <div className="seg-row" role="radiogroup" aria-label="Composite base kind">
+                  {BASE_KINDS.map((k) => (
+                    <button
+                      key={k} type="button" role="radio" aria-checked={wpDraft.base.kind === k}
+                      className={`chip ${wpDraft.base.kind === k ? 'on' : ''}`}
+                      onClick={() => patchBase({ kind: k })}
+                    >{BASE_LABELS[k]}</button>
+                  ))}
+                </div>
+              </div>
+              {wpDraft.base.kind === 'color' && (
+                <div className="row">
+                  <label className="dim" htmlFor="wp-base-color">Color</label>
+                  <input
+                    id="wp-base-color" type="color" value={wpDraft.base.color || '#10141c'}
+                    onChange={(e) => patchBase({ color: e.target.value })}
+                    aria-label="Base color"
+                  />
+                  <span className="dim th-hex">{wpDraft.base.color || '#10141c'}</span>
+                </div>
+              )}
+              {wpDraft.base.kind === 'gradient' && (
+                <div className="wpb-stops">
+                  <span className="dim">Gradient stops</span>
+                  {wpDraft.base.stops.map((s, i) => (
+                    <div className="row" key={i}>
+                      <input
+                        type="color" value={s.color}
+                        onChange={(e) => setStop(i, 'color', e.target.value)}
+                        aria-label={`Stop ${i + 1} color`}
+                      />
+                      <input
+                        type="range" min="0" max="100" step="1" value={s.at}
+                        onChange={(e) => setStop(i, 'at', Number(e.target.value))}
+                        aria-label={`Stop ${i + 1} position`}
+                      />
+                      <span className="dim th-hex" style={{ minWidth: 34, textAlign: 'right' }}>{Math.round(s.at)}%</span>
+                      {wpDraft.base.stops.length > 2 && (
+                        <button
+                          type="button" className="btn slim"
+                          aria-label={`Remove stop ${i + 1}`}
+                          onClick={() => patchBase({ stops: wpDraft.base.stops.filter((_, j) => j !== i) })}
+                        >✕</button>
+                      )}
+                    </div>
+                  ))}
+                  <div className="row">
+                    {wpDraft.base.stops.length < 6 && (
+                      <button type="button" className="btn slim" onClick={addStop}>Add stop</button>
+                    )}
+                  </div>
+                  <div className="row">
+                    <label className="dim" htmlFor="wp-angle">Angle</label>
+                    <input
+                      id="wp-angle" type="range" min="0" max="360" step="5" value={wpDraft.base.angle}
+                      onChange={(e) => patchBase({ angle: Number(e.target.value) })}
+                      aria-label="Gradient angle"
+                    />
+                    <span className="dim" style={{ minWidth: 38, textAlign: 'right' }}>{Math.round(wpDraft.base.angle)}°</span>
+                  </div>
+                </div>
+              )}
+              {wpDraft.base.kind === 'image' && (
+                <div className="row">
+                  <input
+                    type="url" placeholder="Base image URL"
+                    value={/^https?:\/\//.test(wpDraft.base.image || '') ? wpDraft.base.image : ''}
+                    onChange={(e) => patchBase({ image: e.target.value })}
+                    aria-label="Base image URL"
+                  />
+                  <button type="button" className="btn" onClick={() => wpFileRef.current?.click()}>Upload…</button>
+                  <input
+                    ref={wpFileRef} type="file" accept="image/*" hidden
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      e.target.value = '';
+                      readImage(f, MAX_BASE_FILE, (url) => patchBase({ image: url }));
+                    }}
+                  />
+                </div>
+              )}
+              <div className="row">
+                <span className="dim">Pattern</span>
+                <div className="seg-row" role="radiogroup" aria-label="Composite pattern">
+                  {PATTERN_KINDS.map((k) => (
+                    <button
+                      key={k} type="button" role="radio" aria-checked={wpDraft.pattern.kind === k}
+                      className={`chip ${wpDraft.pattern.kind === k ? 'on' : ''}`}
+                      onClick={() => patchPattern({ kind: k })}
+                    >{PATTERN_LABELS[k]}</button>
+                  ))}
+                </div>
+              </div>
+              {wpDraft.pattern.kind !== 'none' && (
+                <>
+                  <div className="row">
+                    <label className="dim" htmlFor="wp-psize">Pattern size</label>
+                    <input
+                      id="wp-psize" type="range" min="8" max="160" step="2" value={wpDraft.pattern.size}
+                      onChange={(e) => patchPattern({ size: Number(e.target.value) })}
+                      aria-label="Pattern size"
+                    />
+                    <span className="dim" style={{ minWidth: 44, textAlign: 'right' }}>{Math.round(wpDraft.pattern.size)}px</span>
+                  </div>
+                  <div className="row">
+                    <label className="dim" htmlFor="wp-pcolor">Pattern color</label>
+                    <input
+                      id="wp-pcolor" type="color" value={wpDraft.pattern.color}
+                      onChange={(e) => patchPattern({ color: e.target.value })}
+                      aria-label="Pattern color"
+                    />
+                    <label className="dim" htmlFor="wp-popacity">strength</label>
+                    <input
+                      id="wp-popacity" type="range" min="0.02" max="0.5" step="0.01" value={wpDraft.pattern.opacity}
+                      onChange={(e) => patchPattern({ opacity: Number(e.target.value) })}
+                      aria-label="Pattern strength"
+                    />
+                  </div>
+                </>
+              )}
+              <div className="row">
+                <span className="dim">Effect</span>
+                <div className="seg-row" role="radiogroup" aria-label="Composite effect">
+                  {EFFECT_KINDS.map((k) => (
+                    <button
+                      key={k} type="button" role="radio" aria-checked={wpDraft.effect.kind === k}
+                      className={`chip ${wpDraft.effect.kind === k ? 'on' : ''}`}
+                      onClick={() => patchEffect({ kind: k })}
+                    >{EFFECT_LABELS[k]}</button>
+                  ))}
+                </div>
+              </div>
+              {wpDraft.effect.kind !== 'none' && (
+                <div className="row">
+                  <label className="dim" htmlFor="wp-estrength">Effect strength</label>
+                  <input
+                    id="wp-estrength" type="range" min="0.05" max="1" step="0.05" value={wpDraft.effect.strength}
+                    onChange={(e) => patchEffect({ strength: Number(e.target.value) })}
+                    aria-label="Effect strength"
+                  />
+                  <span className="dim" style={{ minWidth: 38, textAlign: 'right' }}>{Math.round(wpDraft.effect.strength * 100)}%</span>
+                  {wpDraft.effect.kind === 'glow' && (
+                    <>
+                      <label className="dim" htmlFor="wp-ecolor">color</label>
+                      <input
+                        id="wp-ecolor" type="color" value={wpDraft.effect.color}
+                        onChange={(e) => patchEffect({ color: e.target.value })}
+                        aria-label="Glow color"
+                      />
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+            <div className="th-side">
+              <div className="wpb-frame">
+                <CompositeWallpaper
+                  spec={{ ...wpDraft, id: 'wp-preview', name: wpDraft.name.trim() || 'Untitled wallpaper' }}
+                  themeBg={activeTheme.bg}
+                  id={null}
+                  className="wpb-preview"
+                />
+              </div>
+              <div className="row th-actions">
+                <button type="button" className="btn" onClick={saveWp}>
+                  {wpDraft.id ? 'Save composite' : 'Create composite'}
+                </button>
+                <button type="button" className="btn slim" onClick={() => setWpDraft(null)}>Cancel</button>
+                {wpDraft.id && (
+                  <button
+                    type="button" className="btn slim danger"
+                    onClick={() => { os.wpDelete(wpDraft.id); setWpDraft(null); }}
+                  >Delete</button>
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="wpb-floats">
+            <div className="row">
+              <span className="dim">Floating images ({wpDraft.floats.length}/{MAX_FLOATS})</span>
+              <input
+                type="url" placeholder="Image URL…" aria-label="Floating image URL"
+                value={floatUrl} onChange={(e) => setFloatUrl(e.target.value)}
+              />
+              <button type="button" className="btn slim" onClick={addFloatUrl}>Add URL</button>
+              <button type="button" className="btn slim" onClick={() => floatFileRef.current?.click()}>Upload…</button>
+              <input
+                ref={floatFileRef} type="file" accept="image/*" hidden
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  e.target.value = '';
+                  readImage(f, MAX_FLOAT_FILE, addFloat);
+                }}
+              />
+            </div>
+            {wpDraft.floats.map((f, i) => (
+              <div className="wpb-float" key={f.id}>
+                <img src={f.image} alt="" className="wpb-thumb" />
+                <div className="wpb-float-grid">
+                  <label className="dim" htmlFor={`wp-fx-${i}`}>X</label>
+                  <input
+                    id={`wp-fx-${i}`} type="range" min="0" max="100" step="1" value={f.x}
+                    onChange={(e) => patchFloat(f.id, { x: Number(e.target.value) })}
+                    aria-label={`Float ${i + 1} horizontal position`}
+                  />
+                  <label className="dim" htmlFor={`wp-fy-${i}`}>Y</label>
+                  <input
+                    id={`wp-fy-${i}`} type="range" min="0" max="100" step="1" value={f.y}
+                    onChange={(e) => patchFloat(f.id, { y: Number(e.target.value) })}
+                    aria-label={`Float ${i + 1} vertical position`}
+                  />
+                  <label className="dim" htmlFor={`wp-fs-${i}`}>Scale</label>
+                  <input
+                    id={`wp-fs-${i}`} type="range" min="0.05" max="3" step="0.05" value={f.scale}
+                    onChange={(e) => patchFloat(f.id, { scale: Number(e.target.value) })}
+                    aria-label={`Float ${i + 1} scale`}
+                  />
+                  <label className="dim" htmlFor={`wp-fo-${i}`}>Opacity</label>
+                  <input
+                    id={`wp-fo-${i}`} type="range" min="0.05" max="1" step="0.05" value={f.opacity}
+                    onChange={(e) => patchFloat(f.id, { opacity: Number(e.target.value) })}
+                    aria-label={`Float ${i + 1} opacity`}
+                  />
+                  <div className="seg-row" role="radiogroup" aria-label={`Float ${i + 1} animation`}>
+                    {FLOAT_ANIMS.map((a) => (
+                      <button
+                        key={a} type="button" role="radio" aria-checked={f.anim === a}
+                        className={`chip ${f.anim === a ? 'on' : ''}`}
+                        onClick={() => patchFloat(f.id, { anim: a })}
+                      >{ANIM_LABELS[a]}</button>
+                    ))}
+                  </div>
+                  <label className="dim" htmlFor={`wp-fv-${i}`}>Speed</label>
+                  <input
+                    id={`wp-fv-${i}`} type="range" min="0.25" max="3" step="0.25" value={f.speed}
+                    onChange={(e) => patchFloat(f.id, { speed: Number(e.target.value) })}
+                    aria-label={`Float ${i + 1} animation speed`}
+                  />
+                </div>
+                <button
+                  type="button" className="btn slim danger"
+                  aria-label={`Remove floating image ${i + 1}`}
+                  onClick={() => patchWp({ floats: wpDraft.floats.filter((x) => x.id !== f.id) })}
+                >✕</button>
+              </div>
+            ))}
+            {!wpDraft.floats.length && (
+              <p className="dim">No floating images yet — add one from a URL or an upload.</p>
+            )}
+          </div>
+        </section>
+      )}
     </>
   );
 }

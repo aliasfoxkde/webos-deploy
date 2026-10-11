@@ -79,6 +79,7 @@ export const wallpaperLayer = (theme) => {
   const wp = theme.wallpaper;
   if (!wp) return null;
   if (isFx(wp)) return null; // canvas FX renders via <FxWallpaper/>, no CSS layer
+  if (wp.startsWith('wp-')) return null; // composited: <CompositeWallpaper/> renders it
   const dim = Math.max(0, Math.min(0.75, 0.55 * (1 - theme.dim) + 0.15));
   const shade = `linear-gradient(rgba(0,0,0,${dim.toFixed(2)}), rgba(0,0,0,${dim.toFixed(2)}))`;
   if (isImage(wp)) {

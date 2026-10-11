@@ -5,6 +5,9 @@ import { personaOf } from './personas.js';
 import {
   resolveTheme, normalizeUserTheme, upsertTheme, removeTheme, luminance,
 } from './themes.js';
+import {
+  normalizeComposite, upsertComposite, removeComposite,
+} from './wpcompose.js';
 
 /* ---------- persistence helpers ---------- */
 function load(key, fallback) {
@@ -112,6 +115,7 @@ const initial = () => ({
   installed: loadInstalled(),
   userApps: load('userapps', []), // custom apps added via right-click → Add app…
   userThemes: load('userthemes', []).map(normalizeUserTheme).filter(Boolean),
+  composites: load('composites', []).map(normalizeComposite).filter(Boolean),
   persona: personaOf(load('persona', 'win')).id, // OS skin (see os/personas.js)
   theme: { ...DEFAULT_THEME, ...load('theme', {}) },
   ui: { ...DEFAULT_UI, ...load('ui', {}) },
@@ -358,6 +362,27 @@ function reducer(state, action) {
       if (theme !== state.theme) save('theme', theme);
       return { ...state, userThemes, theme };
     }
+    /* Composite wallpapers (Settings → Appearance → Wallpaper studio):
+       same discipline as user themes — normalize or drop, save activates,
+       deleting the active one falls back to the theme default. */
+    case 'wpSave': {
+      const rec = normalizeComposite(action.spec);
+      if (!rec) return state;
+      const composites = upsertComposite(state.composites, rec);
+      save('composites', composites);
+      const theme = { ...state.theme, wallpaper: rec.id };
+      save('theme', theme);
+      return { ...state, composites, theme };
+    }
+    case 'wpDelete': {
+      const composites = removeComposite(state.composites, action.id);
+      save('composites', composites);
+      const theme = state.theme.wallpaper === action.id
+        ? { ...state.theme, wallpaper: '' }
+        : state.theme;
+      if (theme !== state.theme) save('theme', theme);
+      return { ...state, composites, theme };
+    }
     case 'addEvent': {
       const events = { ...state.events, [action.date]: [...(state.events[action.date] || []), action.text] };
       save('events', events);
@@ -471,6 +496,8 @@ export function OSProvider({ children }) {
     setTheme: (patch) => dispatch({ type: 'setTheme', patch }),
     themeSave: (theme) => dispatch({ type: 'themeSave', theme }),
     themeDelete: (id) => dispatch({ type: 'themeDelete', id }),
+    wpSave: (spec) => dispatch({ type: 'wpSave', spec }),
+    wpDelete: (id) => dispatch({ type: 'wpDelete', id }),
     setPersona: (id) => dispatch({ type: 'setPersona', id }),
     setUi: (patch) => dispatch({ type: 'setUi', patch }),
     addEvent: (date, text) => dispatch({ type: 'addEvent', date, text }),
