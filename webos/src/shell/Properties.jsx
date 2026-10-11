@@ -3,9 +3,9 @@ import { useOS } from '../os/state.jsx';
 import { STORE_APPS } from '../os/registry.js';
 
 export function Stars({ rating, size = 14 }) {
-  const full = Math.round(rating);
+  const full = Math.round(rating || 0);
   return (
-    <span className="stars" style={{ fontSize: size }} aria-label={`${rating} out of 5 stars`}>
+    <span className="stars" style={{ fontSize: size }} aria-label={`${rating ?? 0} out of 5 stars`}>
       {[1, 2, 3, 4, 5].map((i) => (
         <span key={i} className={i <= full ? 'on' : ''} aria-hidden="true">★</span>
       ))}
@@ -15,6 +15,11 @@ export function Stars({ rating, size = 14 }) {
 
 /* App property sheet — opened from any icon / taskbar / titlebar context menu.
    Shows the full registry row plus what the user can do with it. */
+/* Rows may carry relative URLs (bridge-demo.html) — resolve for display. */
+const sourceHost = (url) => {
+  try { return new URL(url, location.href).host; } catch { return url; }
+};
+
 export default function Properties({ appId, onClose }) {
   const os = useOS();
   const app = os.findApp(appId);
@@ -64,10 +69,10 @@ export default function Properties({ appId, onClose }) {
           <dt>Windows</dt><dd>{app.singleInstance ? 'Single instance' : 'Multiple'}</dd>
           <dt>Rating</dt>
           <dd>
-            <Stars rating={app.rating || 0} />
-            <span className="dim"> {app.rating?.toFixed(1) || '–'} · {app.reviews || 0} reviews</span>
+            <Stars rating={app.rating} />
+            <span className="dim"> {app.rating == null ? '–' : app.rating.toFixed(1)} · {app.reviews || 0} reviews</span>
           </dd>
-          {app.url ? (<><dt>Source</dt><dd><a href={app.url} target="_blank" rel="noopener noreferrer">{new URL(app.url).host} ↗</a></dd></>) : null}
+          {app.url ? (<><dt>Source</dt><dd><a href={app.url} target="_blank" rel="noopener noreferrer">{sourceHost(app.url)} ↗</a></dd></>) : null}
         </dl>
 
         <p className="props-desc">{app.description || app.tagline}</p>

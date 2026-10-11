@@ -194,10 +194,10 @@ export function SaverPanel() {
   const os = useOS();
   const s = os.saver;
   const kinds = [
-    ['off', 'Off'], ['starfield', 'Starfield'], ['aurora', 'Aurora'], ['tide', 'Tide'],
-    ['mesh', 'Mesh'], ['rain', 'Code rain'], ['photos', 'Photo shuffle'], ['clock', 'Clock'],
+    ['off', 'Off'], ['starfield', 'Starfield'], ['aurora', 'Aurora'], ['waves', 'Tide'],
+    ['mesh', 'Mesh'], ['matrix', 'Code rain'], ['photos', 'Photo shuffle'], ['clock', 'Clock'],
   ];
-  const isFx = ['starfield', 'aurora', 'tide', 'mesh', 'rain'].includes(s.kind);
+  const isFx = ['starfield', 'aurora', 'waves', 'mesh', 'matrix', 'tide', 'rain'].includes(s.kind);
   return (
     <>
       <section>

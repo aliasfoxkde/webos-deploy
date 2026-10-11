@@ -5,8 +5,19 @@ import { Stars } from './Properties.jsx';
 
 const CATS = ['All', ...new Set(STORE_APPS.map((a) => a.category))].sort((a, b) => (a === 'All' ? -1 : b === 'All' ? 1 : a.localeCompare(b)));
 
-/* Featured banner pick — the highest-rated listing, stable by name on ties. */
-const FEATURED = [...STORE_APPS].sort((a, b) => (b.rating - a.rating) || a.name.localeCompare(b.name))[0];
+/* Featured banner pick — the highest-rated listing, stable by name on ties.
+   Unrated rows (null rating, e.g. developer fixtures) never feature. */
+const FEATURED = [...STORE_APPS]
+  .filter((a) => a.rating != null)
+  .sort((a, b) => (b.rating - a.rating) || a.name.localeCompare(b.name))[0];
+
+/* Ratings render as "–" when a listing has none (bridge-demo ships null). */
+const rate = (app) => (app.rating == null ? '–' : app.rating.toFixed(1));
+
+/* Store rows may carry relative URLs (bridge-demo.html) — resolve for display. */
+const sourceHost = (url) => {
+  try { return new URL(url, location.href).host; } catch { return url; }
+};
 
 /* Per-persona store voice: button and banner wording follows each platform's
    store convention (MS Store "Get", Mac App Store "GET", terminals speak in
@@ -55,7 +66,7 @@ function StoreDetail({ app, onBack }) {
           <span className="dim">{app.developer} · v{app.version}</span>
           <div className="sd-rating">
             <Stars rating={app.rating} size={16} />
-            <span>{app.rating.toFixed(1)}</span>
+            <span>{rate(app)}</span>
             <span className="dim">({app.reviews} reviews)</span>
           </div>
         </div>
@@ -70,7 +81,7 @@ function StoreDetail({ app, onBack }) {
         <dt>Version</dt><dd>{app.version}</dd>
         <dt>Developer</dt><dd>{app.developer}</dd>
         <dt>Runs</dt><dd>{app.embed ? 'Inside WebOS (embedded)' : 'In its own tab (site forbids embedding)'}</dd>
-        <dt>Source</dt><dd><a href={app.url} target="_blank" rel="noopener noreferrer">{new URL(app.url).host} ↗</a></dd>
+        <dt>Source</dt><dd><a href={app.url} target="_blank" rel="noopener noreferrer">{sourceHost(app.url)} ↗</a></dd>
         <dt>Storage</dt><dd>{installed ? 'Uses this browser’s local storage only' : 'Nothing installed yet'}</dd>
       </dl>
       {installed ? (
@@ -125,7 +136,7 @@ export default function AppStore() {
             <p>{FEATURED.description}</p>
             <div className="hero-meta">
               <Stars rating={FEATURED.rating} />
-              <span>{FEATURED.rating.toFixed(1)} · {FEATURED.reviews} reviews · {FEATURED.developer}</span>
+              <span>{rate(FEATURED)} · {FEATURED.reviews} reviews · {FEATURED.developer}</span>
             </div>
           </div>
           <div className="hero-action">
@@ -142,7 +153,7 @@ export default function AppStore() {
             <div className="store-meta">
               <strong>{app.name}</strong>
               <span className="store-rating">
-                <Stars rating={app.rating} /> <span className="dim">{app.rating.toFixed(1)} · {app.reviews} reviews</span>
+                <Stars rating={app.rating} /> <span className="dim">{rate(app)} · {app.reviews} reviews</span>
               </span>
               <span className="dim">{app.tagline}</span>
               <span className="store-tags">

@@ -162,6 +162,11 @@ const KINDS = {
   },
 };
 
+// Saver prefs persisted before the effects were renamed carry 'tide'/'rain';
+// they render the effect they always meant (fx:waves / fx:matrix).
+KINDS.tide = KINDS.waves;
+KINDS.rain = KINDS.matrix;
+
 export default function FxWallpaper({ kind, id = 'fx-wallpaper', speed = 1 }) {
   const ref = useRef(null);
   const fx = KINDS[kind] || KINDS.starfield;

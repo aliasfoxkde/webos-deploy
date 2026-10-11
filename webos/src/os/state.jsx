@@ -103,7 +103,8 @@ const DEFAULT_TASKBAR = { position: 'bottom', align: 'left', iconSize: 'md', aut
 const DEFAULT_WIDGETS = { enabled: ['weather', 'clock', 'battery', 'events', 'notes', 'storage', 'chat'] };
 const DEFAULT_DESKTOP = { iconSize: 'md', gap: 'normal', sort: 'custom' };
 const DEFAULT_VOLUME = { level: 0.7, muted: false };
-// Screen saver: kind off|starfield|aurora|tide|mesh|rain|photos|clock,
+// Screen saver: kind off|starfield|aurora|waves|mesh|matrix|photos|clock
+// ('tide'/'rain' are pre-rename aliases),
 // idle minutes until it starts, FX speed multiplier, photo seconds per slide.
 const DEFAULT_SAVER = { kind: 'off', timeoutMin: 10, speed: 1, photoSecs: 8 };
 

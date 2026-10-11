@@ -127,7 +127,11 @@ export default function Window({ win }) {
         />
       ))}
       {hint && hint !== 'top' && createPortal(
-        <div id="snap-preview" style={{ ...zoneRect(hint) }} aria-hidden="true" />,
+        <div
+          id="snap-preview"
+          style={(({ x, y, w, h }) => ({ left: x, top: y, width: w, height: h }))(zoneRect(hint))}
+          aria-hidden="true"
+        />,
         document.body
       )}
     </section>

@@ -73,7 +73,7 @@ function BatteryWidget() {
   useEffect(() => {
     let b = null;
     const sync = () => b && setBat({ level: b.level, charging: b.charging });
-    navigator.getBattery?.().then((found) => {
+    navigator.getBattery?.()?.then((found) => {
       b = found;
       sync();
       b.addEventListener('levelchange', sync);
@@ -138,7 +138,7 @@ function NotesWidget() {
 function StorageWidget() {
   const [est, setEst] = useState(null);
   useEffect(() => {
-    navigator.storage?.estimate?.().then(setEst).catch(() => {});
+    navigator.storage?.estimate?.()?.then(setEst).catch(() => {});
   }, []);
   const mb = (n) => (n == null ? '—' : `${(n / 1048576).toFixed(1)} MB`);
   const pct = est?.quota ? Math.min(100, (est.usage / est.quota) * 100) : 0;
