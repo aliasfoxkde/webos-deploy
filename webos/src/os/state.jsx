@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useMemo, useReducer } from 'react';
-import { allApps, findApp, DEFAULT_APPS, APP_INDEX, STORE_APPS } from './registry.js';
+import { allApps, findApp, DEFAULT_APPS, APP_INDEX, STORE_APPS, VIRTUAL_APPS } from './registry.js';
 import { zoneRect } from './snap.js';
 import { personaOf } from './personas.js';
 
@@ -170,10 +170,13 @@ const patched = (state, key, patch) => {
 function reducer(state, action) {
   switch (action.type) {
     case 'launch': {
-      const def = APP_INDEX.find((a) => a.id === action.appId);
+      // Virtual windows (store, settings) have no registry sheet but launch
+      // through the same path — they are single-instance by definition.
+      const def = APP_INDEX.find((a) => a.id === action.appId)
+        || (VIRTUAL_APPS.includes(action.appId) ? { singleInstance: true } : undefined);
       const recents = [action.appId, ...state.recents.filter((r) => r !== action.appId)].slice(0, 8);
       save('recents', recents);
-      // Single-instance apps (mail, weather, chat backends, …) focus the
+      // Single-instance apps (mail, weather, the store, settings, …) focus the
       // running window instead of opening a second one. Applies on mobile too.
       if (def?.singleInstance) {
         const exist = state.windows.find((w) => w.appId === action.appId);
@@ -182,7 +185,12 @@ function reducer(state, action) {
             ...state,
             focused: exist.id,
             zTop: state.zTop + 1,
-            windows: state.windows.map((w) => (w.id === exist.id ? { ...w, z: state.zTop + 1, min: false } : w)),
+            // A relaunch carrying args hands them to the running instance so
+            // deep-links still land (Settings → a section); a bare relaunch
+            // leaves the instance's existing args alone.
+            windows: state.windows.map((w) => (w.id === exist.id
+              ? { ...w, z: state.zTop + 1, min: false, ...(action.args ? { args: action.args } : {}) }
+              : w)),
           };
         }
       }

@@ -20,8 +20,9 @@ webos/src/
 │                             properties dialog, widget sidebar, mobile drawer, deep links
 ├── styles.css                shell chrome only (desktop, windows, taskbar, popups)
 ├── os/                       OS core — no UI
-│   ├── registry.js           app data: external defaults, store apps, plugin manifests;
-│   │                         every row carries description/developer/category/rating
+│   ├── registry.js           app data: external defaults, store apps, plugin manifests,
+│   │                         VIRTUAL_APPS (store/settings singletons); every row carries
+│   │                         description/developer/category/rating
 │   ├── state.jsx             reducer + persistence (webos.* keys), theme engine
 │   │                         (THEME_PRESETS carry text/dim/chrome/paper/line/danger/
 │   │                         focus, enforced by tests/contrast-audit.test.js),
@@ -340,7 +341,11 @@ apps without a manifest fall back to the 1120×700 default.
 - Icons: hand-written SVGs in `webos/public/icons/`, rasterized via
   `packaging/icons-render.sh` (headless Chromium; ImageMagick cannot stroke SVG).
 - App Store additions: append a row to `STORE_APPS` in `os/registry.js`
-  (verify embeddability first: `curl -sI <url> | grep -i 'x-frame\|content-security'`).
+  (verify embeddability first: `curl -sI <url> | grep -i 'x-frame\|content-security'`),
+  plus a hand-drawn glyph at `public/icons/<id>.svg` — a registry test asserts
+  every icon path resolves on disk, so the row and the file land together.
+  Fourth wave (3.8.0): Piskel, BeepBox, CyberChef, Graphviz Online; SculptGL
+  now serves from `sculpt.cyopsys.com` (SAMEORIGIN → opens in its own tab).
 
 ## Adding the next app — checklist
 

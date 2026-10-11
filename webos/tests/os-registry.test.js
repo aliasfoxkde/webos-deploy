@@ -3,10 +3,16 @@
 // catalogs, and the derived exports (APP_INDEX, CATEGORIES, PLUGIN_IDS,
 // allApps/findApp) behave.
 import { describe, it, expect } from 'vitest';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import {
-  DEFAULT_APPS, STORE_APPS, APP_INDEX, CATEGORIES, PLUGIN_IDS,
+  DEFAULT_APPS, STORE_APPS, APP_INDEX, CATEGORIES, PLUGIN_IDS, VIRTUAL_APPS,
   allApps, findApp,
 } from '../src/os/registry.js';
+
+// vitest root is webos/, so public/ sits beside the cwd (import.meta.url is
+// an http: URL under happy-dom and cannot be turned into a path).
+const PUB = join(process.cwd(), 'public');
 
 const SHEET_FIELDS = ['id', 'name', 'tagline', 'version', 'url', 'icon', 'accent',
   'developer', 'category', 'rating', 'reviews', 'description'];
@@ -64,6 +70,18 @@ describe('registry data integrity', () => {
     for (const a of DEFAULT_APPS.filter((x) => x.embed)) {
       expect(a.url.startsWith('https://') || a.url === 'bridge-demo.html', a.id).toBe(true);
     }
+  });
+
+  it('every icon path resolves to a shipped file under public/', () => {
+    // a typo'd icon path would ship a broken <img> in the start menu, store,
+    // and taskbar with nothing else catching it
+    for (const a of APP_INDEX) {
+      expect(existsSync(join(PUB, a.icon)), `${a.id} → ${a.icon}`).toBe(true);
+    }
+  });
+
+  it('virtual windows are exactly the store and settings singletons', () => {
+    expect([...VIRTUAL_APPS].sort()).toEqual(['settings', 'store']);
   });
 });
 

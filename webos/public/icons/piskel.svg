@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs><linearGradient id="g-piskel" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#131a26"/><stop offset="1" stop-color="#0a0f18"/>
+  </linearGradient></defs>
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="url(#g-piskel)" stroke="#f472b6" stroke-width="2.5"/>
+  <rect x="14" y="14" width="12" height="12" fill="#f472b6"/>
+  <rect x="26" y="14" width="12" height="12" fill="#f472b6" opacity="0.45"/>
+  <rect x="38" y="14" width="12" height="12" fill="none" stroke="#f472b6" stroke-width="2.4"/>
+  <rect x="14" y="26" width="12" height="12" fill="#f472b6" opacity="0.45"/>
+  <rect x="26" y="26" width="12" height="12" fill="none" stroke="#f472b6" stroke-width="2.4"/>
+  <rect x="38" y="26" width="12" height="12" fill="#f472b6"/>
+  <rect x="14" y="38" width="12" height="12" fill="none" stroke="#f472b6" stroke-width="2.4"/>
+  <rect x="26" y="38" width="12" height="12" fill="#f472b6"/>
+  <rect x="38" y="38" width="12" height="12" fill="#f472b6" opacity="0.45"/>
+</svg>

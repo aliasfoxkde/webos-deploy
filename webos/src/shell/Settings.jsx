@@ -20,9 +20,18 @@ export const SECTIONS = [
 
 /* Settings is a full control center: left rail of sections, scrollable panel.
    It renders inside a VirtualWindow — movable and resizable like any window.
-   Launch args deep-link a section: os.launch('settings', { initial: 'about' }). */
+   Launch args deep-link a section: os.launch('settings', { initial: 'about' }).
+   Settings is single-instance, so a later deep-link relaunch arrives as new
+   args on the SAME window — the guarded adjust-during-render below retargets
+   the running one (React's "adjust state when a prop changes" pattern; an
+   effect would cascade renders for no benefit). */
 export default function Settings({ args = {} }) {
   const [sec, setSec] = useState(SECTIONS.some((s) => s.id === args.initial) ? args.initial : 'appearance');
+  const [lastInitial, setLastInitial] = useState(args.initial);
+  if (lastInitial !== args.initial) {
+    setLastInitial(args.initial);
+    if (SECTIONS.some((s) => s.id === args.initial)) setSec(args.initial);
+  }
   const Active = SECTIONS.find((s) => s.id === sec)?.body || Appearance;
   return (
     <div className="settings has-rail">

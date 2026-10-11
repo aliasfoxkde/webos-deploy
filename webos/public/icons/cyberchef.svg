@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs><linearGradient id="g-cyberchef" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#131a26"/><stop offset="1" stop-color="#0a0f18"/>
+  </linearGradient></defs>
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="url(#g-cyberchef)" stroke="#34d399" stroke-width="2.5"/>
+  <rect x="11" y="15" width="9" height="9" rx="2" fill="none" stroke="#34d399" stroke-width="2.4"/>
+  <rect x="11" y="28" width="9" height="9" rx="2" fill="none" stroke="#34d399" stroke-width="2.4"/>
+  <rect x="11" y="41" width="9" height="9" rx="2" fill="none" stroke="#34d399" stroke-width="2.4"/>
+  <path d="M23 19.5h7M23 32.5h4M23 45.5h7" stroke="#34d399" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M27 29l6 3.5-6 3.5z" fill="#34d399"/>
+  <rect x="37" y="22" width="17" height="20" rx="4" fill="#34d399" opacity="0.45" stroke="#34d399" stroke-width="2.4"/>
+  <path d="M41 29h9M41 35h6" stroke="#34d399" stroke-width="2.4" stroke-linecap="round"/>
+</svg>

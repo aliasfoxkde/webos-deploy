@@ -127,6 +127,24 @@ describe('window lifecycle', () => {
     expect(cur.windows[0].min).toBe(false);
   });
 
+  it('virtual windows (store, settings) are single-instance and a relaunch hands over args', () => {
+    mount();
+    act6((o) => o.launch('settings', { initial: 'sound' }));
+    act6((o) => o.launch('store'));
+    act6((o) => o.launch('settings', { initial: 'about' }));
+    expect(cur.windows.map((w) => w.appId).sort()).toEqual(['settings', 'store']);
+    const win = cur.windows.find((w) => w.appId === 'settings');
+    expect(win.args).toEqual({ initial: 'about' }); // deep-link landed on the running window
+    expect(cur.focused).toBe(win.id);
+    // a bare relaunch focuses without clobbering the deep-link
+    act6((o) => o.launch('settings'));
+    expect(cur.windows.length).toBe(2);
+    expect(cur.windows.find((w) => w.appId === 'settings').args).toEqual({ initial: 'about' });
+    // …and the store folds into its own single instance too
+    act6((o) => o.launch('store'));
+    expect(cur.windows.filter((w) => w.appId === 'store').length).toBe(1);
+  });
+
   it('close removes the window; focus of an unknown id is a no-op', () => {
     mount();
     act6((o) => o.launch('terminal'));

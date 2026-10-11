@@ -151,7 +151,7 @@ export const STORE_APPS = [
   },
   {
     id: 'sculptgl', name: 'SculptGL', tagline: '3D sculpting', version: '1.0',
-    url: 'https://sculptgl-255.pages.dev/', icon: 'icons/sculptgl.svg', accent: '#f472b6', embed: false,
+    url: 'https://sculpt.cyopsys.com/', icon: 'icons/sculptgl.svg', accent: '#f472b6', embed: false,
     developer: 'Stephane Ginier (mirror)', category: 'Creative', rating: 4.3, reviews: 71,
     description: 'Sculpt organic meshes with brushes, symmetry, and multiresolution detail, then export OBJ. The classic WebGL sculpting app.',
   },
@@ -251,6 +251,33 @@ export const STORE_APPS = [
     developer: 'Ivan Kutskir', category: 'Photo', rating: 4.7, reviews: 421,
     description: 'A full photo editor that opens PSD, XCF, Sketch and RAW files in the browser — layers, masks, filters, and PSD-compatible export. Free with ads.',
   },
+  // -- fourth wave (3.8.0): same frame-embeddability probe as above. Piskel
+  //    (Apache-2.0), BeepBox, CyberChef (Apache-2.0, GCHQ), Graphviz Online
+  //    (MIT). All client-side and keyless.
+  {
+    id: 'piskel', name: 'Piskel', tagline: 'Pixel art studio', version: '1.0',
+    url: 'https://juliandescottes.github.io/piskel/', icon: 'icons/piskel.svg', accent: '#f472b6', embed: true,
+    developer: 'Julian Descottes (Apache-2.0)', category: 'Creative', rating: 4.5, reviews: 142,
+    description: 'A sprite and pixel-art editor with animation frames, onion skinning, live preview, and PNG or sprite-sheet export. The classic pixel tool, right in the browser.',
+  },
+  {
+    id: 'beepbox', name: 'BeepBox', tagline: 'Chiptune sequencer', version: '1.0',
+    url: 'https://www.beepbox.co/', icon: 'icons/beepbox.svg', accent: '#38bdf8', embed: true,
+    developer: 'John Nesky', category: 'Creative', rating: 4.6, reviews: 167,
+    description: 'Compose chiptune melodies and drum loops on a piano-roll grid — pick instruments per channel, shape the song, and share your track as a URL. Everything renders locally.',
+  },
+  {
+    id: 'cyberchef', name: 'CyberChef', tagline: 'Data recipe kitchen', version: '1.0',
+    url: 'https://gchq.github.io/CyberChef/', icon: 'icons/cyberchef.svg', accent: '#34d399', embed: true,
+    developer: 'GCHQ (Apache-2.0)', category: 'Development', rating: 4.8, reviews: 233,
+    description: 'The Cyber Swiss Army Knife: drag operations — encoders, hashes, ciphers, parsers — into a recipe and watch your data transform live. Runs entirely client-side.',
+  },
+  {
+    id: 'graphviz', name: 'Graphviz Online', tagline: 'DOT graph renderer', version: '1.0',
+    url: 'https://dreampuf.github.io/GraphvizOnline/', icon: 'icons/graphviz.svg', accent: '#818cf8', embed: true,
+    developer: 'Dreampuf (MIT)', category: 'Development', rating: 4.3, reviews: 76,
+    description: 'Write DOT and watch the graph render live beside the source — flowcharts, dependency trees, state machines — with SVG and PNG export.',
+  },
   {
     id: 'bridge-demo', name: 'Bridge Demo', tagline: 'File-storage fixture', version: '1.0',
     url: 'bridge-demo.html', icon: 'icons/custom.svg', accent: '#38bdf8', embed: true,
@@ -277,3 +304,9 @@ export const APP_INDEX = [...DEFAULT_APPS, ...STORE_APPS];
 // Plugin apps render inside the OS window regardless of `embed` (which only
 // governs external iframe targets); they never open in a new tab.
 export const PLUGIN_IDS = new Set(PLUGIN_APPS.map((a) => a.id));
+
+// Virtual (in-window) apps — App.jsx renders these from its own VIRTUAL map,
+// so they have no registry sheet. They are single-instance: a relaunch
+// focuses the running window, and a relaunch carrying args hands those args
+// to the running instance (Settings deep-links a section this way).
+export const VIRTUAL_APPS = Object.freeze(['store', 'settings']);
