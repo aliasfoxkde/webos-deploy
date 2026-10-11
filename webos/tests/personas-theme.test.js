@@ -59,9 +59,18 @@ describe('persona registry', () => {
 describe('theme presets', () => {
   it('every preset has a complete field set', () => {
     for (const [key, t] of Object.entries(THEME_PRESETS)) {
-      for (const field of ['label', 'text', 'dim', 'chrome', 'line', 'bg']) {
+      for (const field of ['label', 'text', 'dim', 'chrome', 'line', 'bg', 'paper']) {
         expect(t[field], `${key}.${field}`).toBeTruthy();
       }
+    }
+  });
+
+  // --paper is the opaque document fill (.win-body) — app text sits directly
+  // on it, so it must clear AAA on its own (no flattening needed: it's opaque)
+  it('text clears AAA (≥7:1) on the paper fill', () => {
+    for (const [key, t] of Object.entries(THEME_PRESETS)) {
+      expect(contrast(t.text, t.paper), `${key} text on paper`).toBeGreaterThanOrEqual(7);
+      expect(contrast(t.dim, t.paper), `${key} dim on paper`).toBeGreaterThanOrEqual(7);
     }
   });
 

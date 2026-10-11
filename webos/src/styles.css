@@ -7,7 +7,10 @@
   --text-dim: #9aa4b5;
   --accent: #38bdf8;
   --radius: 12px;
-  --panel: rgba(10, 13, 20, 0.55);
+  /* --paper: opaque document fill written per theme preset by state.jsx;
+     --panel derives from --chrome so overlays track the theme's polarity */
+  --paper: #10141c;
+  --panel: color-mix(in srgb, var(--chrome) 70%, transparent);
   font-size: 16px;
 }
 * { box-sizing: border-box; }
@@ -143,13 +146,13 @@ input:focus { outline: 1px solid var(--accent); }
 @keyframes win-in { from { opacity: 0; transform: scale(0.96); } }
 .win.focused { border-color: rgba(255, 255, 255, 0.18); }
 .win.maximized { border-radius: 0; }
-.win-body { position: relative; flex: 1; background: #10141c; overflow: hidden; }
+.win-body { position: relative; flex: 1; background: var(--paper); overflow: hidden; }
 .frame-wrap, .frame-wrap iframe { position: absolute; inset: 0; width: 100%; height: 100%; }
 .frame-wrap iframe { border: 0; }
 .win-loading {
   position: absolute; inset: 0; display: flex; flex-direction: column; gap: 14px;
   align-items: center; justify-content: center; color: var(--text-dim); font-size: 0.85rem;
-  background: #10141c; z-index: 2;
+  background: var(--paper); z-index: 2;
 }
 .win-loading .spin {
   width: 30px; height: 30px; border-radius: 50%;
@@ -480,7 +483,7 @@ body[data-persona="bsd"] .store-actions .btn.danger, body[data-persona="tui"] .s
 .preset.on { border-color: var(--accent); color: var(--text); }
 .preset-preview {
   width: 110px; height: 62px; border-radius: 8px; display: block; position: relative; overflow: hidden;
-  background: #10141c; border: 1px solid var(--chrome-line);
+  background: var(--paper); border: 1px solid var(--chrome-line);
 }
 .preset-preview i {
   position: absolute; left: 8px; bottom: 8px; width: 22px; height: 22px; border-radius: 6px;
@@ -886,12 +889,57 @@ body[data-persona="mac"] .win.focused .titlebar {
   box-shadow: inset 0 1px 0 color-mix(in srgb, var(--glass-rim-hi) 65%, transparent);
 }
 
+/* -- LG2: window chrome (LIQUID-GLASS.md §3) --
+   The focused window catches light on its top edge like every other glass
+   slab. The rim lives on a ::after ring so it never fights the
+   Settings → shadow knobs (box-shadow stays theirs) and never intercepts
+   pointers. Content stays opaque — glass is for chrome, not documents. */
+body[data-persona="win"] .win.focused::after,
+body[data-persona="mac"] .win.focused::after {
+  content: ''; position: absolute; inset: 0; border-radius: inherit;
+  pointer-events: none;
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--glass-rim-hi) 65%, transparent),
+    inset 1px 0 0 color-mix(in srgb, var(--glass-rim-hi) 30%, transparent),
+    inset -1px 0 0 color-mix(in srgb, var(--glass-rim-lo) 55%, transparent);
+}
+body[data-persona="win"] .win.maximized.focused::after,
+body[data-persona="mac"] .win.maximized.focused::after { content: none; }
+
+/* snap preview joins the material: the accent tint stays (it's the signal),
+   but the pane lifts saturation and catches the same top rim. Needs the ID
+   in the selector — the base rule is (1,0,0). */
+body[data-persona="win"] #snap-preview,
+body[data-persona="mac"] #snap-preview {
+  backdrop-filter: saturate(var(--glass-sat, 1)); -webkit-backdrop-filter: saturate(var(--glass-sat, 1));
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--glass-rim-hi) 80%, transparent),
+    inset 0 -1px 0 color-mix(in srgb, var(--glass-rim-lo) 60%, transparent),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+
+/* widgets sidebar — the clear variant (§3/§4): the wallpaper shows through
+   the rail, and each widget card carries its own scrim so text contrast
+   holds over whatever is behind it (double-stacked chrome ≈ 0.99 alpha). */
+body[data-persona="win"] #sidebar,
+body[data-persona="mac"] #sidebar {
+  background: color-mix(in srgb, var(--chrome) 45%, transparent);
+}
+body[data-persona="win"] #sidebar .widget,
+body[data-persona="mac"] #sidebar .widget {
+  background:
+    linear-gradient(var(--chrome), var(--chrome)),
+    linear-gradient(var(--chrome), var(--chrome)),
+    rgba(255, 255, 255, 0.04);
+}
+
 /* Reduce Transparency users get the same surfaces without the material:
    triple-stacking the theme's own translucent chrome drives composite alpha
    to ~0.99 (polarity-correct for every preset) and the frost switches off. */
 @media (prefers-reduced-transparency: reduce) {
   body[data-persona] #taskbar, body[data-persona] #start-menu,
-  body[data-persona] .ctx-menu, body[data-persona] .gp, body[data-persona] .tb-pop {
+  body[data-persona] .ctx-menu, body[data-persona] .gp, body[data-persona] .tb-pop,
+  body[data-persona] #sidebar {
     background:
       linear-gradient(var(--chrome), var(--chrome)),
       linear-gradient(var(--chrome), var(--chrome)),
