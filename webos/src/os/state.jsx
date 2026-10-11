@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useMemo, useReducer } from 'react';
-import { allApps, findApp, DEFAULT_APPS, APP_INDEX } from './registry.js';
+import { allApps, findApp, DEFAULT_APPS, APP_INDEX, STORE_APPS } from './registry.js';
 import { zoneRect } from './snap.js';
 import { personaOf } from './personas.js';
 
@@ -27,15 +27,21 @@ export const factoryReset = () => {
 
 /* One-time migration (2026-10-09): the old build preinstalled every store app.
    Anyone carrying that stale `installed` list starts clean — only defaults are
-   on the desktop now, and store apps are installed deliberately. */
+   on the desktop now, and store apps are installed deliberately. The legacy
+   wave-1 catalog is the fingerprint: a list containing ALL of it is the old
+   build's default. Any other list is a live one — sanitize unknown ids but
+   keep the rest, so third-wave installs (2048, Excalidraw, …) survive
+   reloads instead of being wiped on every boot. */
+const LEGACY_WAVE1 = [
+  'globe', 'storyweaver', 'devopsquest', 'openzenith', 'sculptgl', 'svgedit',
+  'ide', 'opencad', 'sqlite', 'python', 'pyconsole', 'planly',
+];
 function loadInstalled() {
   const raw = load('installed', null);
-  if (raw === null) return [];
-  const known = new Set([
-    'globe', 'storyweaver', 'devopsquest', 'openzenith', 'sculptgl', 'svgedit',
-    'ide', 'opencad', 'sqlite', 'python', 'pyconsole', 'planly',
-  ]);
-  return Array.isArray(raw) ? raw.filter((id) => known.has(id)) : [];
+  if (raw === null || !Array.isArray(raw)) return [];
+  if (LEGACY_WAVE1.every((id) => raw.includes(id))) return [];
+  const known = new Set([...LEGACY_WAVE1, ...STORE_APPS.map((a) => a.id)]);
+  return raw.filter((id) => known.has(id));
 }
 
 /* ---------- theme presets ---------- */
@@ -229,9 +235,10 @@ function reducer(state, action) {
       };
     }
     case 'toggleMax':
-      // Maximizing abandons a tile (snap/pre) — restore after maximize goes
-      // back to the floating rect, not the tile.
-      return { ...state, windows: state.windows.map((w) => (w.id === action.id ? { ...w, max: !w.max, snap: null, pre: null } : w)) };
+      // Maximizing abandons a tile (snap cleared) but KEEPS `pre`: restore
+      // after maximize — and a tear-off drag of the un-maximized window —
+      // goes back to the floating rect, not the tile.
+      return { ...state, windows: state.windows.map((w) => (w.id === action.id ? { ...w, max: !w.max, snap: null } : w)) };
     case 'setRect':
       // Any manual move clears the snapped-tile flag (pre is kept so a later
       // restore can still put the window back).
@@ -444,7 +451,7 @@ export function OSProvider({ children }) {
     findApp: (id) => findApp(apps, id),
     launch: (appId, args) => dispatch({ type: 'launch', appId, args }),
     close: (id) => dispatch({ type: 'close', id }),
-    focus: (id) => dispatch({ type: 'focus', id }),
+    focus: (id, unminimize) => dispatch({ type: 'focus', id, unminimize }),
     minimize: (id, unmin) => dispatch({ type: 'minimize', id, unmin }),
     toggleMax: (id) => dispatch({ type: 'toggleMax', id }),
     setRect: (id, rect) => dispatch({ type: 'setRect', id, rect }),

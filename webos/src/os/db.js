@@ -33,7 +33,11 @@ const tx = async (store, mode, fn) => {
   return new Promise((resolve, reject) => {
     const t = db.transaction(store, mode);
     const out = fn(t.objectStore(store));
-    t.oncomplete = () => resolve(out?.result !== undefined ? out.result : out);
+    // fn returns an IDBRequest (wait for it, resolve its result) or
+    // undefined (write with no interesting result). Resolving req.result —
+    // even when it's undefined — is the point: a missing kvGet key must
+    // read as undefined, not as a truthy request object.
+    t.oncomplete = () => resolve(out?.result);
     t.onerror = () => reject(t.error || new Error('transaction failed'));
     t.onabort = () => reject(t.error || new Error('transaction aborted'));
   });
@@ -57,10 +61,13 @@ export const fileDel = (path) => tx('files', 'readwrite', (s) => s.delete(path))
 export const fileList = () => tx('files', 'readonly', (s) => s.getAll());
 export const fileClear = () => tx('files', 'readwrite', (s) => s.clear());
 
-// Delete a path and everything under it (folder delete).
+// Delete a path and everything under it (folder delete). A trailing slash
+// on the prefix is normalized away so '/docs/' and '/docs' behave the same —
+// otherwise the folder marker record would survive a '/docs/' call.
 export const fileDelTree = async (prefix) => {
+  const root = prefix.endsWith('/') ? prefix.slice(0, -1) : prefix;
   const all = await fileList();
-  const doomed = all.filter((f) => f.path === prefix || f.path.startsWith(prefix.endsWith('/') ? prefix : `${prefix}/`));
+  const doomed = all.filter((f) => f.path === root || f.path.startsWith(`${root}/`));
   for (const f of doomed) await fileDel(f.path);
   return doomed.length;
 };
