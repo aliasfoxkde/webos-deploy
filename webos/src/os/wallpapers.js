@@ -5,6 +5,7 @@
 export const WALLPAPERS = [
   // -- Interactive (canvas FX in shell/FxWallpaper.jsx; pointer parallax,
   //    paused when the tab is hidden, static frame under reduced motion) --
+  { id: 'fx:water', label: 'Water FX', cat: 'Interactive', fx: true, water: true, css: 'linear-gradient(35deg, #0b1026, #2c4a7c)' },
   { id: 'fx:aurora', label: 'Aurora FX', cat: 'Interactive', fx: true, css: 'radial-gradient(900px 600px at 20% 20%, rgba(52,211,153,0.35), transparent 60%), radial-gradient(1000px 700px at 80% 30%, rgba(56,189,248,0.30), transparent 60%), linear-gradient(160deg, #07101c, #04070d 75%)' },
   { id: 'fx:starfield', label: 'Starfield FX', cat: 'Interactive', fx: true, css: 'radial-gradient(1px 1px at 25% 30%, #ffffff, transparent), radial-gradient(1px 1px at 70% 60%, #bcd8ff, transparent), linear-gradient(160deg, #05070d, #070a12 75%)' },
   { id: 'fx:waves', label: 'Tide FX', cat: 'Interactive', fx: true, css: 'linear-gradient(180deg, #04121c 0%, #062033 70%, #04283a 100%)' },

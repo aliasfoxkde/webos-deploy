@@ -56,6 +56,10 @@ webos/src/
 │   ├── winDrag.js            window move/resize pointer-drag helpers
 │   ├── Screensaver.jsx       idle screen saver (clock/photos/wireframe modes)
 │   ├── FxWallpaper.jsx       canvas FX wallpaper layer (shares #wallpaper slot)
+│   ├── WaterWallpaper.jsx    WebGL2 water wallpaper component (falls back to
+│   │                         FxWallpaper waves when GL2/float targets miss)
+│   ├── watergl.js            raw-WebGL2 wave-equation engine (clean-room port
+│   │                         of webbg-demo; two RGBA16F ping-pong targets)
 │   ├── Welcome.jsx           first-run overlay (webos.welcomed gate)
 │   ├── AddApp.jsx            add-custom-app dialog (URL → desktop icon)
 │   └── Calendar.jsx          clock popup with per-day events
@@ -472,6 +476,26 @@ the `#wallpaper` div unmounts instead of carrying a stale photo background
 over the canvas. The Appearance grid generalised to three kinds: `css`
 (CSS art), `img` (bundled photos), `fx` (interactive; swatch shows a static
 representative gradient).
+
+**Water wallpaper (`fx:water`).** A sixth, GPU-interactive FX: a wave-
+equation sim on two RGBA16F ping-pong targets — `shell/watergl.js`, a
+clean-room raw-WebGL2 port of the org's `webbg-demo` (same math, Three.js
+replaced by one fullscreen triangle per pass). The pointer brushes pressure
+into the sim (ripples follow the cursor), clicks drop gaussian impulses,
+`water.rain` schedules ambient drops; the output pass refracts a gradient
+background through the sim's pressure gradients with specular, chromatic
+aberration, grade and grain. The param tree (`os/waterfx.js`: bg / water /
+optics / grade / overlay groups, five presets) is validated on merge —
+unknown keys and wrong types from persisted state are dropped, so a stale
+blob can never poison the uniforms. Resolution: `theme.water` holds a user
+patch, `theme.waterPreset` a preset name; `resolveParams` layers
+DEFAULTS < patch < preset. The component bridges window-level pointer
+input (the wallpaper sits behind every window), scales the sim at
+`water.simScale` of the viewport, and falls back to the 2D Tide FX when
+WebGL2 or float render targets are missing (probed once, at first render).
+Reduced motion draws one calm static frame (`motion="gentle"` — the screen
+saver passes 0.35× speed instead of freezing). Driver hook:
+`?water-debug` exposes `window.__water` with live sim counters.
 
 **App Store wave 3.** Eight third-wave store entries: 2048 (the original
 Gabriele Cirulli MIT build), Hextris, Untrusted, HexGL, Excalidraw, tldraw,

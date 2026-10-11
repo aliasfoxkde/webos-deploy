@@ -387,6 +387,15 @@ describe('Screensaver', () => {
     }
   });
 
+  it('the water kind draws the sim wallpaper (2D fallback here), gently armed', () => {
+    const c = mount(<Screensaver />);
+    activate('water');
+    expect(c.container.querySelector('#screensaver canvas#saver-fx')).toBeTruthy();
+    expect(rafCalls.length).toBeGreaterThan(0); // fallback Tide FX loop armed
+    act(() => { rafCb()(16); });
+    expect(ctx2d.calls.some(([n]) => n === 'fillRect')).toBe(true);
+  });
+
   it('photo shuffle renders the bundled photos and advances on its timer', () => {
     vi.useFakeTimers();
     try {

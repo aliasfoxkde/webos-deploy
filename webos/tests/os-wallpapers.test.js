@@ -97,3 +97,13 @@ describe('wallpaperLayer', () => {
     expect(layer.filter).toBe('none');
   });
 });
+
+describe('water wallpaper entry', () => {
+  it('fx:water is the interactive WebGL entry with a CSS fallback swatch', () => {
+    const w = WALLPAPERS.find((x) => x.id === 'fx:water');
+    expect(w, 'fx:water shipped').toBeTruthy();
+    expect(w.fx).toBe(true);
+    expect(w.water).toBe(true);
+    expect(w.css).toContain('linear-gradient');
+  });
+});

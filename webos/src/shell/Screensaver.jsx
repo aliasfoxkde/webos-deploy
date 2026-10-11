@@ -1,12 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useOS } from '../os/state.jsx';
 import FxWallpaper from './FxWallpaper.jsx';
+import WaterWallpaper from './WaterWallpaper.jsx';
+import { resolveParams } from '../os/waterfx.js';
 import { WALLPAPERS } from '../os/wallpapers.js';
 
-/* Screen saver. Kinds: the five FX canvas wallpapers, a photo slideshow over
-   the bundled CC photos, and a big clock. Idle timeout from os.saver; any
-   input dismisses. `webos:saver-preview` activates immediately (Settings →
-   Preview now, driver). */
+/* Screen saver. Kinds: the FX canvas wallpapers (incl. the WebGL water sim),
+   a photo slideshow over the bundled CC photos, and a big clock. Idle
+   timeout from os.saver; any input dismisses. `webos:saver-preview`
+   activates immediately (Settings → Preview now, driver). */
 
 const ACTIVITIES = ['pointermove', 'pointerdown', 'keydown', 'wheel'];
 const PHOTOS = WALLPAPERS.filter((w) => w.img);
@@ -72,6 +74,9 @@ export default function Screensaver() {
     <div id="screensaver" role="timer" aria-label="Screen saver active — press any key or move the mouse to dismiss">
       {/* gentle: reduced motion slows the saver to 0.35× instead of freezing it */}
       {isFx && <FxWallpaper kind={saver.kind} id="saver-fx" speed={saver.speed || 1} motion="gentle" />}
+      {saver.kind === 'water' && (
+        <WaterWallpaper id="saver-fx" speed={0.35 * (saver.speed || 1)} motion="gentle" params={resolveParams(os.theme?.water)} />
+      )}
       {saver.kind === 'photos' && <PhotoShowcase secs={saver.photoSecs || 8} />}
       {saver.kind === 'clock' && <BigClock />}
       <span className="saver-hint">Move the mouse or press a key</span>

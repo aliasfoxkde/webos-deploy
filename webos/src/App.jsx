@@ -17,7 +17,9 @@ import { startMoveDrag } from './shell/winDrag.js';
 import { zoneRect } from './os/snap.js';
 import { PLUGIN_IDS } from './os/registry.js';
 import { wallpaperLayer, isFx } from './os/wallpapers.js';
+import { resolveParams } from './os/waterfx.js';
 import FxWallpaper from './shell/FxWallpaper.jsx';
+import WaterWallpaper from './shell/WaterWallpaper.jsx';
 import LensFilters from './os/LensFilters.jsx';
 
 /* Virtual apps that render in-window instead of an iframe. */
@@ -491,12 +493,14 @@ export default function App() {
 
   // Wallpaper renders in its own fixed layer (behind everything, slightly
   // oversized) so custom images can take blur/brightness/saturation filters.
-  // `fx:*` wallpapers render the interactive canvas instead.
+  // `fx:*` wallpapers render the interactive canvas instead — `fx:water` the
+  // WebGL ripple sim, the rest the 2D canvas FX.
   const wp = wallpaperLayer(os.theme);
   const fxKind = isFx(os.theme.wallpaper) ? os.theme.wallpaper.slice(3) : null;
   return (
     <>
-      {fxKind && <FxWallpaper kind={fxKind} />}
+      {fxKind === 'water' && <WaterWallpaper params={resolveParams(os.theme.water, os.theme.waterPreset)} />}
+      {fxKind && fxKind !== 'water' && <FxWallpaper kind={fxKind} />}
       {wp && <div id="wallpaper" aria-hidden="true" style={wp} />}
       <LensFilters />
       <main id="desktop" data-cm="desktop">
