@@ -434,15 +434,18 @@ export default function Terminal() {
           o.setTheme({ accent: c }); out(`accent: ${c}`);
           return;
         }
-        case 'wallpaper':
-          o.setTheme({ wallpaper: arg });
-          out(arg ? 'wallpaper set' : 'wallpaper cleared');
+        case 'wallpaper': {
+          // `wallpaper ""` is documented as the clear form — strip shell quotes
+          const url = arg.replace(/^"(.*)"$/, '$1').replace(/^'(.*)'$/, '$1');
+          o.setTheme({ wallpaper: url });
+          out(url ? 'wallpaper set' : 'wallpaper cleared');
           return;
+        }
         case 'volume': {
           if (!arg.trim()) { out('usage: volume <0-100>'); return; }
           const v = num(arg, -1, 0, 100);
           if (v < 0) { out('usage: volume <0-100>'); return; }
-          o.setVolume({ master: v, mute: false }); out(`volume: ${v}`);
+          o.setVolume({ level: v / 100, muted: false }); out(`volume: ${v}`);
           return;
         }
         case 'fullscreen': document.dispatchEvent(new CustomEvent('webos:fullscreen')); out('toggled fullscreen'); return;

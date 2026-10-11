@@ -139,10 +139,12 @@ export class MemFS {
   rename(from, to) {
     const a = normalize(from);
     const b = normalize(to);
-    const entry = this.entries.get(a);
+    // get() (not entries.get()) so a dir that exists only implicitly — as the
+    // parent prefix of stored files, never mkdirp'd — renames like any other.
+    const entry = this.get(a);
     if (!entry) throw errno.ENOENT;
     if (b.startsWith(`${a}/`)) throw errno.EINVAL; // no move into own subtree
-    const target = this.entries.get(b);
+    const target = this.get(b);
     if (target?.dir && this.children(b).length) throw errno.ENOTEMPTY;
     if (target && target.dir !== entry.dir) throw errno.EISDIR;
     const moved = new Map();

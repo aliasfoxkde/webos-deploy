@@ -110,7 +110,11 @@ export function parseMarkdown(src) {
       const flat = [];
       while (i < lines.length) {
         const m = LIST_ITEM.exec(lines[i]);
-        if (m) { flat.push({ indent: m[1].length, text: m[3] }); i += 1; continue; }
+        if (m) {
+          // a marker-type change (bullet ↔ ordered) starts a new list
+          if (flat.length && /^\d/.test(m[2]) !== ordered) break;
+          flat.push({ indent: m[1].length, text: m[3] }); i += 1; continue;
+        }
         // continuation: an indented non-list line appends to the previous item
         if (/^\s{2,}\S/.test(lines[i]) && flat.length) { flat[flat.length - 1].text += ` ${lines[i].trim()}`; i += 1; continue; }
         break;
