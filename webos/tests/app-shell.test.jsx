@@ -52,6 +52,14 @@ describe('App — first run and deep links', () => {
     expect(osNow().windows.map((w) => w.appId)).toEqual(['calc']);
   });
 
+  it('extra deep-link params become launch args (?open=photos&path=…)', () => {
+    localStorage.removeItem('webos.welcomed');
+    history.replaceState(null, '', '/?open=photos&path=/Pictures/cat.png');
+    mount();
+    expect(osNow().windows.map((w) => w.appId)).toEqual(['photos']);
+    expect(osNow().windows[0].args).toEqual({ path: '/Pictures/cat.png' });
+  });
+
   it('the webos:welcome event reopens the overlay (Settings → About)', () => {
     mount();
     expect(screen.queryByRole('dialog', { name: 'Welcome to WebOS' })).toBeNull();

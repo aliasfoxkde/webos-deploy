@@ -383,10 +383,15 @@ export default function App() {
     return () => window.removeEventListener('keydown', h);
   }, [os]);
 
-  // Deep link: ?open=<app-id>
+  // Deep link: ?open=<app-id> — any further params become launch args
+  // (?open=photos&path=/Pictures/x.png hands Photos the file directly).
   useEffect(() => {
-    const want = new URLSearchParams(location.search).get('open');
-    if (want && os.findApp(want)) os.launch(want);
+    const params = new URLSearchParams(location.search);
+    const want = params.get('open');
+    if (!want || !os.findApp(want)) return;
+    const args = {};
+    params.forEach((v, k) => { if (k !== 'open') args[k] = v; });
+    os.launch(want, args);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [os.apps.length]);
 
