@@ -954,6 +954,22 @@ body[data-tb="top"] .tb-pop { animation: drop-in 0.16s cubic-bezier(0.2, 0.9, 0.
   #start-menu, .tb-pop, .ctx-menu, .win, .gp, #sidebar { animation: none; }
 }
 
+/* -- LG4: Chromium refraction (LIQUID-GLASS.md §5) --
+   body[data-lens="on"] engages only after the lens module measured its
+   surfaces and the engine reported SVG-in-backdrop-filter support
+   (Chromium); other engines keep the plain frost. -webkit- deliberately
+   omits the url() — Safari would reject the whole value. This block sits
+   BEFORE the reduced-transparency block below on purpose: under that
+   media query the tie on specificity resolves to backdrop-filter: none. */
+body[data-lens="on"] #taskbar {
+  backdrop-filter: url(#lens-tb) blur(var(--chrome-blur, 16px)) saturate(var(--glass-sat, 1));
+  -webkit-backdrop-filter: blur(var(--chrome-blur, 16px)) saturate(var(--glass-sat, 1));
+}
+body[data-lens="on"] #start-menu {
+  backdrop-filter: url(#lens-menu) blur(var(--chrome-blur, 16px)) saturate(var(--glass-sat, 1));
+  -webkit-backdrop-filter: blur(var(--chrome-blur, 16px)) saturate(var(--glass-sat, 1));
+}
+
 /* Reduce Transparency users get the same surfaces without the material:
    triple-stacking the theme's own translucent chrome drives composite alpha
    to ~0.99 (polarity-correct for every preset) and the frost switches off. */

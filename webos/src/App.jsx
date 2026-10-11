@@ -18,6 +18,7 @@ import { zoneRect } from './os/snap.js';
 import { PLUGIN_IDS } from './os/registry.js';
 import { wallpaperLayer, isFx } from './os/wallpapers.js';
 import FxWallpaper from './shell/FxWallpaper.jsx';
+import LensFilters from './os/LensFilters.jsx';
 
 /* Virtual apps that render in-window instead of an iframe. */
 const VIRTUAL = {
@@ -478,6 +479,7 @@ export default function App() {
     <>
       {fxKind && <FxWallpaper kind={fxKind} />}
       {wp && <div id="wallpaper" aria-hidden="true" style={wp} />}
+      <LensFilters />
       <main id="desktop" data-cm="desktop">
         <section id="icon-grid" aria-label="Applications">
           {entries.map((e) => (e.kind === 'group' ? (
