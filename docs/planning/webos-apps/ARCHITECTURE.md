@@ -55,6 +55,8 @@ webos/src/
 │   │                         regression in tests/shell-context-menu.test.jsx
 │   ├── winDrag.js            window move/resize pointer-drag helpers
 │   ├── Screensaver.jsx       idle screen saver (clock/photos/wireframe modes)
+│   ├── SaverPreview.jsx      Settings mini-preview of the selected saver kind
+│   │                         (reuses the fullscreen saver's implementations)
 │   ├── FxWallpaper.jsx       canvas FX wallpaper layer (shares #wallpaper slot)
 │   ├── WaterWallpaper.jsx    WebGL2 water wallpaper component (falls back to
 │   │                         FxWallpaper waves when GL2/float targets miss)

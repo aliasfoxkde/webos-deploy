@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useOS, WIDGET_IDS, factoryReset } from '../../os/state.jsx';
 import { VERSION } from '../../version.js';
+import SaverPreview from '../SaverPreview.jsx';
 
 /* --- Desktop: icon size + arrangement --- */
 export function DesktopPanel() {
@@ -214,6 +215,7 @@ export function SaverPanel() {
           ))}
         </div>
         <p className="dim">Starts after the idle timeout and covers the desktop. Any mouse move or key press dismisses it.</p>
+        <SaverPreview />
       </section>
       <section>
         <h3>Timeout</h3>

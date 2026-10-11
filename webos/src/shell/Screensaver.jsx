@@ -8,7 +8,9 @@ import { WALLPAPERS } from '../os/wallpapers.js';
 /* Screen saver. Kinds: the FX canvas wallpapers (incl. the WebGL water sim),
    a photo slideshow over the bundled CC photos, and a big clock. Idle
    timeout from os.saver; any input dismisses. `webos:saver-preview`
-   activates immediately (Settings → Preview now, driver). */
+   activates immediately (Settings → Preview now, driver). PhotoShowcase and
+   BigClock are exported for the Settings mini-preview (SaverPreview.jsx),
+   which renders the same implementations at box scale. */
 
 const ACTIVITIES = ['pointermove', 'pointerdown', 'keydown', 'wheel'];
 const PHOTOS = WALLPAPERS.filter((w) => w.img);
@@ -90,7 +92,7 @@ export default function Screensaver() {
 /* Bundled CC photos. The layer remounts per photo (key=i) and its CSS
    animation fades it in over the black background — fade-through-black, no
    blank frame, no stacked-layer bookkeeping. */
-function PhotoShowcase({ secs }) {
+export function PhotoShowcase({ secs }) {
   const [i, setI] = useState(0);
   useEffect(() => {
     const t = setInterval(() => setI((v) => (v + 1) % PHOTOS.length), Math.max(3, secs) * 1000);
@@ -100,7 +102,7 @@ function PhotoShowcase({ secs }) {
   return <div className="saver-photo" key={i} style={{ backgroundImage: `url(${photo.img})` }} />;
 }
 
-function BigClock() {
+export function BigClock() {
   const os = useOS();
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {

@@ -1223,6 +1223,21 @@ body[data-persona="mac"] #start-menu { bottom: 74px; }
 }
 .saver-date { font-size: clamp(16px, 2.4vw, 28px); color: rgba(255, 255, 255, 0.5); }
 
+/* ---- Settings mini-preview for the screen saver (SaverPreview.jsx) ---- */
+.saver-preview {
+  position: relative; height: 170px; border-radius: 10px; overflow: hidden;
+  background: #05070d; margin: 8px 0 2px;
+}
+.saver-preview canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.saver-preview .saver-photo { animation: saver-fade 1.2s ease both; }
+.saver-preview .saver-clock { gap: 4px; }
+.saver-preview .saver-time { font-size: 44px; }
+.saver-preview .saver-date { font-size: 12px; }
+.saver-preview-off {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  color: rgba(255, 255, 255, 0.45); font-size: 0.85rem;
+}
+
 /* ---------- Browser (Chromium-style) ---------- */
 .bw { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--panel); }
 
