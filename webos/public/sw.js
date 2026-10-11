@@ -1,6 +1,6 @@
 /* ArtCraft WebOS service worker: app-shell cache-first, everything else
    network-first. Version bump invalidates the previous shell. */
-const VERSION = 'webos-v3.12.0';
+const VERSION = 'webos-v3.13.0';
 const SHELL = [
   './',
   './index.html',
