@@ -580,7 +580,7 @@ body[data-tb="top"] #sidebar { top: 52px; bottom: 0; }
 .widget-batt { height: 10px; border-radius: 6px; background: rgba(255, 255, 255, 0.1); overflow: hidden; }
 .widget-batt-fill { display: block; height: 100%; background: var(--accent); border-radius: inherit; transition: width 0.3s ease; }
 .widget-batt-fill.chg { background: #4ade80; }
-.widget-weather { display: flex; align-items: center; gap: 10px; color: var(--accent); }
+.widget-weather { display: flex; align-items: center; gap: 10px; color: var(--accent); padding: 0; border: 0; background: none; font: inherit; text-align: left; cursor: pointer; }
 .widget-temp { font-size: 1.65rem; color: var(--text); font-weight: 300; }
 .widget-ev { padding: 5px 9px; border-radius: 7px; background: rgba(255, 255, 255, 0.05); }
 .widget-notes {

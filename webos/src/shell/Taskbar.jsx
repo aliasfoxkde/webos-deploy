@@ -76,7 +76,7 @@ function NetBody() {
   );
 }
 
-export default function Taskbar({ openStart, startOpen, openSettings, openStore, toggleWidgets, widgetsOpen }) {
+export default function Taskbar({ openStart, startOpen, openSettings, toggleWidgets, widgetsOpen }) {
   const os = useOS();
   const [now, setNow] = useState(() => new Date());
   const [panel, setPanel] = useState(null); // 'cal' | 'vol' | 'net' | null
@@ -91,7 +91,7 @@ export default function Taskbar({ openStart, startOpen, openSettings, openStore,
   }, []);
 
   // Close any open panel on ANY click outside the tray root (document-level,
-  // capture phase) — windows, desktop, start menu, everything.
+  // capture phase) — windows, desktop, start menu, everything — or on Escape.
   useEffect(() => {
     if (!panel) return;
     const h = (e) => {
@@ -100,8 +100,13 @@ export default function Taskbar({ openStart, startOpen, openSettings, openStore,
       if (portal?.contains(e.target)) return;
       setPanel(null);
     };
+    const k = (e) => { if (e.key === 'Escape') setPanel(null); };
     document.addEventListener('pointerdown', h, true);
-    return () => document.removeEventListener('pointerdown', h, true);
+    document.addEventListener('keydown', k);
+    return () => {
+      document.removeEventListener('pointerdown', h, true);
+      document.removeEventListener('keydown', k);
+    };
   }, [panel]);
 
   const toggleFullscreen = () => {
@@ -273,10 +278,10 @@ export default function Taskbar({ openStart, startOpen, openSettings, openStore,
         panel ? (
           <div id="tb-portal">
             {panel === 'cal' && (
-              <div className="cal-pop tb-pop" onClick={(e) => e.stopPropagation()}><Calendar /></div>
+              <div className="cal-pop tb-pop"><Calendar /></div>
             )}
             {panel === 'vol' && (
-              <div className="vol-pop tb-pop" onClick={(e) => e.stopPropagation()}>
+              <div className="vol-pop tb-pop">
                 <div className="tb-pop-row">
                   <span className="dim">Output volume</span>
                   <strong>{Math.round(level * 100)}%</strong>
@@ -296,7 +301,7 @@ export default function Taskbar({ openStart, startOpen, openSettings, openStore,
               </div>
             )}
             {panel === 'net' && (
-              <div className="net-pop tb-pop" onClick={(e) => e.stopPropagation()}>
+              <div className="net-pop tb-pop">
                 <div className="tb-pop-title">Connection</div>
                 <NetBody />
               </div>

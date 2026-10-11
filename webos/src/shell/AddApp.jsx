@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useOS } from '../os/state.jsx';
 
 // Uploaded icons are data URLs in localStorage — small cap, icons are tiny.
@@ -18,7 +18,18 @@ export default function AddApp({ app, onClose }) {
   const [f, setF] = useState(() => (editing ? { ...blank, ...app } : blank));
   const [err, setErr] = useState('');
   const fileRef = useRef(null);
+  const nameRef = useRef(null);
   const set = (patch) => setF((v) => ({ ...v, ...patch }));
+
+  // focus the name box once the dialog is up — autoFocus would grab focus
+  // before the window settles and yank it from keyboard users mid-tab
+  useEffect(() => { nameRef.current?.focus(); }, []);
+  // Escape closes from anywhere in the dialog (document-level listener)
+  useEffect(() => {
+    const k = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', k);
+    return () => document.removeEventListener('keydown', k);
+  }, [onClose]);
 
   const onUpload = (e) => {
     const file = e.target.files?.[0];
@@ -63,8 +74,17 @@ export default function AddApp({ app, onClose }) {
   };
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="props addapp" role="dialog" aria-label={editing ? 'Edit app' : 'Add app'} onClick={(e) => e.stopPropagation()}>
+    // pointer-only dismiss affordance (target check keeps dialog clicks from
+    // closing); keyboard closes via Escape on the dialog
+    <div
+      className="modal-backdrop"
+      onPointerDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        className="props addapp"
+        role="dialog"
+        aria-label={editing ? 'Edit app' : 'Add app'}
+      >
         <header className="props-head">
           {f.icon
             ? <img src={f.icon} alt="" onError={(e) => { e.currentTarget.src = 'icons/custom.svg'; }} />
@@ -78,7 +98,7 @@ export default function AddApp({ app, onClose }) {
 
         <div className="addapp-form">
           <label>Name
-            <input value={f.name} onChange={(e) => set({ name: e.target.value })} placeholder="My app" autoFocus />
+            <input ref={nameRef} value={f.name} onChange={(e) => set({ name: e.target.value })} placeholder="My app" />
           </label>
           <label>Link
             <input value={f.url} onChange={(e) => set({ url: e.target.value })} placeholder="https://example.com" inputMode="url" />

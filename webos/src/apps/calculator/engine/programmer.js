@@ -9,12 +9,6 @@ export function evalProgrammer(src, base, bits) {
   let p = 0;
   const peek = () => tokens[p];
   const next = () => tokens[p++];
-  const mask = (1n << BigInt(bits)) - 1n;
-
-  const expect = (t, what) => {
-    const tok = next();
-    if (tok !== t) throw new CalcError(`Expected ${what}`);
-  };
 
   function parseExpr() { return parseOr(); }
 

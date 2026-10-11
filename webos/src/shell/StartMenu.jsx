@@ -20,8 +20,9 @@ export default function StartMenu({ open, onClose, openStore, openSettings, onPo
   const inputRef = useRef(null);
   useEffect(() => {
     if (open) {
-      setQ('');
-      const t = setTimeout(() => inputRef.current?.focus(), 30);
+      // reset + focus asynchronously — setState inside the effect body would
+      // cascade renders on open
+      const t = setTimeout(() => { setQ(''); inputRef.current?.focus(); }, 30);
       return () => clearTimeout(t);
     }
     return undefined;
@@ -49,11 +50,10 @@ export default function StartMenu({ open, onClose, openStore, openSettings, onPo
     ? SECTIONS.filter((s) => s.label.toLowerCase().includes(query)).slice(0, 4)
     : [];
   const pinned = DEFAULT_PINNED.map((id) => os.apps.find((a) => a.id === id)).filter(Boolean);
-  const recentApps = os.recents.map((id) => os.apps.find((a) => a.id === id)).filter(Boolean).slice(0, 6);
-  const recommend = recentApps.filter((a) => !query).slice(0, 6);
+  const recommend = query ? [] : os.recents.map((id) => os.apps.find((a) => a.id === id)).filter(Boolean).slice(0, 6);
 
   return (
-    <div id="start-menu" onClick={(e) => e.stopPropagation()}>
+    <div id="start-menu">
       <div className="sm-search-row">
         <span className="sm-search-icon" aria-hidden="true">⌕</span>
         <input

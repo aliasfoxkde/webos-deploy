@@ -34,7 +34,9 @@ export default function Calendar() {
   const dayEvents = os.events[selected] || [];
 
   return (
-    <div className="calendar" onClick={(e) => e.stopPropagation()}>
+    // clicks stay open via the taskbar's #tb-portal containment check — no
+    // stopPropagation needed
+    <div className="calendar">
       <header className="cal-head">
         <button className="tb-btn" onClick={() => move(-1)} aria-label="previous month">‹</button>
         <strong>{MONTHS[view.m]} {view.y}</strong>

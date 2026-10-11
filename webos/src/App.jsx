@@ -21,7 +21,7 @@ import FxWallpaper from './shell/FxWallpaper.jsx';
 
 /* Virtual apps that render in-window instead of an iframe. */
 const VIRTUAL = {
-  store: { name: 'App Store', render: (win) => <AppStore /> },
+  store: { name: 'App Store', render: () => <AppStore /> },
   settings: { name: 'Settings', render: (win) => <Settings args={win.args} /> },
 };
 
@@ -77,13 +77,23 @@ function GroupPopup({ groupId, onClose }) {
   const os = useOS();
   const group = os.groups.find((g) => g.id === groupId);
   const [name, setName] = useState(group?.name || '');
-  useEffect(() => { setName(group?.name || ''); }, [group?.name]);
+  // Escape closes from anywhere (document-level, so focus inside inputs counts)
+  useEffect(() => {
+    const k = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', k);
+    return () => document.removeEventListener('keydown', k);
+  }, [onClose]);
   if (!group) return null;
   const members = group.appIds.map((id) => os.findApp(id)).filter(Boolean);
   return (
     <>
-      <div className="gp-backdrop" onClick={onClose} />
-      <section className="gp" role="dialog" aria-label={group.name}>
+      {/* pointer-only dismiss affordance; keyboard closes via Escape below */}
+      <div className="gp-backdrop" onPointerDown={onClose} />
+      <div
+        className="gp"
+        role="dialog"
+        aria-label={group.name}
+      >
         <header className="gp-head">
           <input
             className="gp-name"
@@ -111,7 +121,7 @@ function GroupPopup({ groupId, onClose }) {
           <button className="gp-del" onClick={() => { os.removeGroup(group.id); onClose(); }}>Remove group</button>
           <span className="hint">icons return to the desktop</span>
         </footer>
-      </section>
+      </div>
     </>
   );
 }
@@ -168,6 +178,11 @@ export default function App() {
     known.forEach((e) => put(e));
     return out;
   }, [desktopApps, os.groups, os.order, memberOf]);
+
+  const togglePin = useCallback((appId) => {
+    const cur = os.taskbar.pinned || [];
+    os.setTaskbar({ pinned: cur.includes(appId) ? cur.filter((id) => id !== appId) : [...cur, appId] });
+  }, [os]);
 
   // Context menu items per target kind.
   const buildItems = useCallback((kind, arg) => {
@@ -283,21 +298,27 @@ export default function App() {
       default:
         return null;
     }
-  }, [os]);
+  }, [os, togglePin]);
   const { menu } = useContextMenu(buildItems);
 
-  const togglePin = (appId) => {
-    const cur = os.taskbar.pinned || [];
-    os.setTaskbar({ pinned: cur.includes(appId) ? cur.filter((id) => id !== appId) : [...cur, appId] });
-  };
-
-  // Close start menu on any outside click; expose os for VirtualWindow buttons.
+  // Close the start menu on any click outside it (or the Start button), or on
+  // Escape — capture phase, mirroring the tray panels' containment check.
   useEffect(() => {
-    const h = () => setStartOpen(false);
-    window.addEventListener('click', h);
-    window.__os = os;
-    return () => { window.removeEventListener('click', h); };
-  }, [os]);
+    const h = (e) => {
+      if (e.target.closest?.('#start-menu, #start-btn')) return;
+      setStartOpen(false);
+    };
+    const k = (e) => { if (e.key === 'Escape') setStartOpen(false); };
+    document.addEventListener('pointerdown', h, true);
+    document.addEventListener('keydown', k);
+    return () => {
+      document.removeEventListener('pointerdown', h, true);
+      document.removeEventListener('keydown', k);
+    };
+  }, []);
+
+  // Debug/extension hook: the live OS api on window.
+  useEffect(() => { window.__os = os; }, [os]);
 
   // F11 native fullscreen passthrough.
   useEffect(() => {

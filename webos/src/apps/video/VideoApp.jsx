@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 /* Video player window: youtube.com itself forbids framing, so we build
    /embed/ URLs from a pasted link or ID, plus a few presets. */
@@ -20,6 +20,11 @@ const PRESETS = [
 export default function VideoApp() {
   const [src, setSrc] = useState(null);
   const [val, setVal] = useState('');
+  const inputRef = useRef(null);
+  // focus the URL box when the home view appears (autoplay=1 embeds replace it)
+  useEffect(() => {
+    if (!src) inputRef.current?.focus();
+  }, [src]);
 
   return (
     <div className="video-app">
@@ -39,7 +44,7 @@ export default function VideoApp() {
             onSubmit={(e) => { e.preventDefault(); const u = toEmbedUrl(val); if (u) setSrc(u); }}
             className="video-form"
           >
-            <input value={val} onChange={(e) => setVal(e.target.value)} placeholder="https://www.youtube.com/watch?v=…" autoFocus />
+            <input ref={inputRef} value={val} onChange={(e) => setVal(e.target.value)} placeholder="https://www.youtube.com/watch?v=…" />
             <button className="btn accent" type="submit">Play</button>
           </form>
           <div className="video-presets">

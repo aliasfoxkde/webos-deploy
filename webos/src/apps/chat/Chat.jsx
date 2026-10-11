@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { adapterById, ADAPTERS } from './adapters.js';
+import { adapterById } from './adapters.js';
 import { loadHistory, saveHistory, clearHistory, onHistory } from './store.js';
 import './chat.css';
 

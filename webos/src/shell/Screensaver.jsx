@@ -15,7 +15,9 @@ export default function Screensaver() {
   const os = useOS();
   const saver = os.saver;
   const [active, setActive] = useState(false);
-  const last = useRef(Date.now());
+  const last = useRef(0);
+  // seed the idle clock after mount — Date.now() is impure and can't run in render
+  useEffect(() => { last.current = Date.now(); }, []);
 
   // Idle tracking: bump on any input. While ACTIVE, the first input dismisses
   // (and its own bump keeps the timeout from instantly re-firing).

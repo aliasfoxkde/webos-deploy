@@ -562,7 +562,7 @@ const vw = (await evaluate(`window.innerWidth`)).result.value;
 const vh = (await evaluate(`window.innerHeight`)).result.value;
 const tbRect = await evaluate(`(() => { const w = window.__os.windows.at(-1); return { id: w.id, w: w.rect.w, h: w.rect.h }; })()`);
 const TID = tbRect.result.value.id;
-const dragGesture = (tx, ty, capture) => `
+const dragGesture = (tx, ty) => `
 (() => {
   window.__dragResult = null;
   const t = document.querySelector('.win:last-child .titlebar');
@@ -893,7 +893,7 @@ await evaluate(`window.__os?.launch('calc')`);
 await sleep(700);
 await evaluate(`window.__os?.focus(window.__os.windows.find(w => w.appId === 'settings')?.id)`);
 await sleep(150);
-const hoverAt = await evaluate(`(() => {
+await evaluate(`(() => {
   const calc = [...document.querySelectorAll('.win')].find(w => w.getAttribute('aria-label') === 'Calculator');
   if (!calc) return null;
   // settings (focused, on top) fully covers calc — park calc in the clear first
@@ -990,8 +990,7 @@ const smView = await evaluate(`(() => ({
 }))()`);
 console.log('start menu browse view (want search true, pinned 8, cats, user, pwr 2):', JSON.stringify(smView.result?.value));
 await shot('37-start-menu');
-// recommended should list chat (just launched)
-const recHasChat = await evaluate(`[...document.querySelectorAll('#start-menu .sm-rowset')[0]?.querySelectorAll('.sm-app img') || []].length`);
+// recommended row (should list chat, just launched) — count logged above
 // search: type "photo" → Enter launches first hit (PhotoCraft)
 await evaluate(`(() => {
   const inp = document.querySelector('#start-menu .sm-search');
@@ -1164,7 +1163,6 @@ await sleep(400);
 await evaluate(`[...document.querySelectorAll('.win')].forEach(w => window.__os.close(Number(w.dataset.id)))`);
 
 // 34. persona look & feel + chrome knobs + About → Reset look & layout
-const radiusFor = () => evaluate(`getComputedStyle(document.querySelector('.desk-icon')).borderRadius`);
 const personas = ['win', 'mac', 'linux', 'bsd', 'android', 'tui'];
 for (const id of personas) {
   await evaluate(`window.__os.setPersona('${id}')`);

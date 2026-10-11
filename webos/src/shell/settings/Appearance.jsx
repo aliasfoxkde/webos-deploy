@@ -73,7 +73,7 @@ export default function Appearance() {
           <span className="dim" style={{ minWidth: 38, textAlign: 'right' }}>{Math.round((os.ui.transparency ?? 1) * 100)}%</span>
         </div>
         <div className="row">
-          <label className="dim">Corner radius</label>
+          <span className="dim">Corner radius</span>
           <div className="seg-row" role="radiogroup" aria-label="Corner radius">
             {[['', 'Persona default'], ['8px', 'Small'], ['12px', 'Medium'], ['18px', 'Large']].map(([v, label]) => (
               <button
@@ -98,7 +98,7 @@ export default function Appearance() {
           the left, GNOME centers the title, tiling WMs drop the shadow…).
         </p>
         <div className="row">
-          <label className="dim">Window buttons</label>
+          <span className="dim">Window buttons</span>
           <div className="seg-row" role="radiogroup" aria-label="Window button side">
             {[['', 'Persona default'], ['left', 'Left'], ['right', 'Right']].map(([v, label]) => (
               <button
@@ -111,7 +111,7 @@ export default function Appearance() {
           </div>
         </div>
         <div className="row">
-          <label className="dim">Title alignment</label>
+          <span className="dim">Title alignment</span>
           <div className="seg-row" role="radiogroup" aria-label="Title alignment">
             {[['', 'Persona default'], ['left', 'Left'], ['center', 'Center']].map(([v, label]) => (
               <button
@@ -124,7 +124,7 @@ export default function Appearance() {
           </div>
         </div>
         <div className="row">
-          <label className="dim">Interface font</label>
+          <span className="dim">Interface font</span>
           <div className="seg-row" role="radiogroup" aria-label="Interface font">
             {[['', 'Persona default'], ['rounded', 'Rounded'], ['mono', 'Mono'], ['serif', 'Serif']].map(([v, label]) => (
               <button
@@ -137,7 +137,7 @@ export default function Appearance() {
           </div>
         </div>
         <div className="row">
-          <label className="dim">Window shadow</label>
+          <span className="dim">Window shadow</span>
           <div className="seg-row" role="radiogroup" aria-label="Window shadow">
             {[['', 'Persona default'], ['off', 'Off'], ['soft', 'Soft'], ['deep', 'Deep']].map(([v, label]) => (
               <button
@@ -240,7 +240,7 @@ export default function Appearance() {
         {isCustom ? (
           <div className="wx-adj">
             <div className="row">
-              <label className="dim">Placement</label>
+              <span className="dim">Placement</span>
               <div className="seg-row">
                 {Object.entries(FITS).map(([id, f]) => (
                   <button
@@ -256,7 +256,7 @@ export default function Appearance() {
             </div>
             {t.fit !== 'tile' && (
               <div className="row">
-                <label className="dim">Focus</label>
+                <span className="dim">Focus</span>
                 <div className="pos-grid" role="group" aria-label="Image focus point">
                   {POSITIONS.map((p) => (
                     <button
@@ -271,32 +271,36 @@ export default function Appearance() {
               </div>
             )}
             <div className="row">
-              <label className="dim">Dim overlay</label>
+              <label className="dim" htmlFor="wp-dim">Dim overlay</label>
               <input
+                id="wp-dim"
                 type="range" min="0" max="1" step="0.05"
                 value={1 - t.dim}
                 onChange={(e) => os.setTheme({ dim: 1 - Number(e.target.value) })}
               />
             </div>
             <div className="row">
-              <label className="dim">Brightness</label>
+              <label className="dim" htmlFor="wp-bright">Brightness</label>
               <input
+                id="wp-bright"
                 type="range" min="0.3" max="1.4" step="0.05"
                 value={t.bright ?? 1}
                 onChange={(e) => os.setTheme({ bright: Number(e.target.value) })}
               />
             </div>
             <div className="row">
-              <label className="dim">Blur</label>
+              <label className="dim" htmlFor="wp-blur">Blur</label>
               <input
+                id="wp-blur"
                 type="range" min="0" max="20" step="1"
                 value={t.blur ?? 0}
                 onChange={(e) => os.setTheme({ blur: Number(e.target.value) })}
               />
             </div>
             <div className="row">
-              <label className="dim">Saturation</label>
+              <label className="dim" htmlFor="wp-sat">Saturation</label>
               <input
+                id="wp-sat"
                 type="range" min="0" max="2" step="0.1"
                 value={t.sat ?? 1}
                 onChange={(e) => os.setTheme({ sat: Number(e.target.value) })}

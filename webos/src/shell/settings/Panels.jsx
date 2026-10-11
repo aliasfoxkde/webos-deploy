@@ -77,7 +77,7 @@ export function TaskbarPanel() {
         </div>
         <h3>Alignment &amp; size</h3>
         <div className="row">
-          <label className="dim">Align apps</label>
+          <span className="dim">Align apps</span>
           <div className="seg-row" role="radiogroup" aria-label="Taskbar alignment">
             {[['left', 'Left'], ['center', 'Center']].map(([id, label]) => (
               <button
@@ -90,7 +90,7 @@ export function TaskbarPanel() {
           </div>
         </div>
         <div className="row">
-          <label className="dim">Icon size</label>
+          <span className="dim">Icon size</span>
           <div className="seg-row" role="radiogroup" aria-label="Taskbar icon size">
             {[['sm', 'Small'], ['md', 'Medium'], ['lg', 'Large']].map(([id, label]) => (
               <button
@@ -322,7 +322,16 @@ export function NetworkPanel() {
 export function StoragePanel() {
   const os = useOS();
   const [est, setEst] = useState(null);
-  const [keys, setKeys] = useState([]);
+  // localStorage is a synchronous external store — read it for the initial
+  // render (lazy initializer) instead of inside an effect
+  const [keys, setKeys] = useState(() => {
+    try {
+      return Object.keys(localStorage)
+        .filter((k) => k.startsWith('webos.'))
+        .map((k) => ({ k, bytes: (localStorage.getItem(k) || '').length * 2 }))
+        .sort((a, b) => b.bytes - a.bytes);
+    } catch { return []; }
+  });
   const scan = () => {
     try {
       setKeys(
@@ -335,9 +344,7 @@ export function StoragePanel() {
   };
   useEffect(() => {
     navigator.storage?.estimate?.().then(setEst).catch(() => {});
-    scan();
   }, []);
-  const mb = (n) => (n == null ? '—' : `${(n / 1048576).toFixed(1)} MB`);
   const kb = (n) => (n < 1024 ? `${n} B` : `${(n / 1024).toFixed(1)} KB`);
   return (
     <>

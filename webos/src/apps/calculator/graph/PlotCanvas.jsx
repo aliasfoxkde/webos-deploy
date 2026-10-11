@@ -24,7 +24,10 @@ export default function PlotCanvas({ fns, colors }) {
   const [trace, setTrace] = useState(null); // { px, py, x, ys: [{color, y}] }
   const drag = useRef(null);
   const viewRef = useRef(view);
-  viewRef.current = view;
+  // latest-view mirror for the imperative handlers below — synced in a layout
+  // effect (declared first, so it runs before the draw/handler setup) rather
+  // than during render
+  useLayoutEffect(() => { viewRef.current = view; });
 
   useLayoutEffect(() => {
     const canvas = canvasRef.current;

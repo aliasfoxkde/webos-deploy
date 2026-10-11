@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useOS } from '../os/state.jsx';
 import { STORE_APPS } from '../os/registry.js';
 
@@ -18,6 +18,12 @@ export function Stars({ rating, size = 14 }) {
 export default function Properties({ appId, onClose }) {
   const os = useOS();
   const app = os.findApp(appId);
+  // Escape closes from anywhere (document-level, so focus inside inputs counts)
+  useEffect(() => {
+    const k = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', k);
+    return () => document.removeEventListener('keydown', k);
+  }, [onClose]);
   if (!app) return null;
 
   const isPlugin = !app.url;
@@ -30,12 +36,16 @@ export default function Properties({ appId, onClose }) {
     : 'External app';
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
+    // pointer-only dismiss affordance (target check keeps dialog clicks from
+    // closing); Escape closes via the document-level listener below
+    <div
+      className="modal-backdrop"
+      onPointerDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
       <div
         className="props"
         role="dialog"
         aria-label={`${app.name} properties`}
-        onClick={(e) => e.stopPropagation()}
       >
         <header className="props-head">
           <img src={app.icon} alt="" />

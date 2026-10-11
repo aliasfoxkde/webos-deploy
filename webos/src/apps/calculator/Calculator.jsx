@@ -21,7 +21,7 @@ function Shell() {
   const calc = useCalc();
   return (
     <div className="calc">
-      <nav className="calc-tabs" role="tablist">
+      <div className="calc-tabs" role="tablist">
         {MODES.map((m) => (
           <button
             key={m.id}
@@ -34,7 +34,7 @@ function Shell() {
             {m.label}
           </button>
         ))}
-      </nav>
+      </div>
       {calc.mode === 'standard' && <Standard />}
       {calc.mode === 'scientific' && <Scientific />}
       {calc.mode === 'graph' && <Graphing />}

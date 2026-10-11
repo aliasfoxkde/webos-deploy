@@ -133,7 +133,9 @@ export default function Terminal() {
   const osRef = useRef(null); // latest OS context for the imperative shell
   const sqlRef = useRef(null);
   const os = useOS();
-  osRef.current = os;
+  // latest OS context for the imperative shell — synced in an effect (declared
+  // before the term setup, so it's populated on mount) rather than during render
+  useEffect(() => { osRef.current = os; });
 
   useEffect(() => {
     const term = new XTerm({

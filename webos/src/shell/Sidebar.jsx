@@ -35,16 +35,16 @@ function WeatherWidget() {
     <div className="widget">
       <div className="widget-title">Weather · {loc.name}</div>
       {wx && cond ? (
-        <div
+        <button
+          type="button"
           className="widget-weather"
           title={`Units: ${units} — click to switch`}
-          style={{ cursor: 'pointer' }}
           onClick={() => { const next = units === 'metric' ? 'imperial' : 'metric'; setUnits(next); saveUnits(next); }}
         >
           <WxIcon id={cond.icon} size={40} />
           <span className="widget-temp">{Math.round(fmtTemp(wx.current.temp, units))}°</span>
           <span className="dim">{cond.label}</span>
-        </div>
+        </button>
       ) : (
         <span className="dim">Loading…</span>
       )}
@@ -216,7 +216,7 @@ export default function Sidebar({ onClose }) {
   };
 
   return (
-    <aside id="sidebar" aria-label="Widgets" onClick={(e) => e.stopPropagation()}>
+    <aside id="sidebar" aria-label="Widgets">
       <header className="sb-head">
         <strong>Widgets</strong>
         <span className="flex1" />

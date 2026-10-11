@@ -35,7 +35,12 @@ export default function WeatherApp() {
     }
   }, [loc]);
 
-  useEffect(() => { refresh(loc); }, [refresh, loc]);
+  useEffect(() => {
+    // initial fetch for the saved place — deferred to a timer callback so the
+    // state updates land outside the effect body (no cascading commit renders)
+    const t = setTimeout(() => refresh(loc), 0);
+    return () => clearTimeout(t);
+  }, [refresh, loc]);
 
   const search = async (e) => {
     e.preventDefault();
