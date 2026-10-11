@@ -47,8 +47,30 @@ from the toolbar shield beat the tables):
    window shows *why*, with a real hand-off to a system tab — no fake
    loading states, no silent blank frame.
 
-Search defaults to DuckDuckGo's HTML endpoint through the proxy
-(`html.duckduckgo.com/html/?q=` — server-rendered, survives proxying).
+Search defaults to Bing (`www.bing.com/search?q=`) fetched through the
+proxy — Bing serves real SERPs to datacenter fetches, while DuckDuckGo's
+HTML endpoint bot-challenges them with a captcha (DDG hosts still route
+through the proxy if you navigate there directly).
+
+### Staying inside the proxy
+
+A proxied page whose links point at the real origin would blank itself on
+the first click (the target's framing guards are still there). So
+`_worker.js` rewrites proxied HTML the classic CGI-proxy way:
+
+- `<a href>` — absolute, protocol-relative, and site-relative targets are
+  wrapped as `/proxy?url=…`; `#fragment` and non-http schemes stay as
+  authored. The author's quote character is preserved.
+- `<form action>` — rewritten to `/proxy/form?url=…`. GET form fields arrive
+  as sibling query params and the worker re-folds them into the target URL
+  (so searching again from inside a proxied Bing works); POST bodies are
+  forwarded with their content type.
+- `<base href>` (the post-redirect URL) is injected as the first element of
+  `<head>`, which is what makes relative subresources (CSS, images, scripts)
+  load from the real site — framing headers never apply to subresources.
+- What is NOT rewritten: API/XHR URLs inside page JavaScript, and
+  service workers. Sites whose client is inseparable from their origin API
+  remain `external`.
 
 ## Chromium parity surface
 

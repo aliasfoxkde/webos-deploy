@@ -64,12 +64,15 @@ describe('classify', () => {
     expect(classify('https://x.com/home').mode).toBe('external');
   });
 
-  it('known frame-friendly hosts go direct; DDG search goes through the proxy', () => {
+  it('known frame-friendly hosts go direct; search engines go through the proxy', () => {
     expect(classify('https://excalidraw.com/').mode).toBe('direct');
     expect(classify('https://en.wikipedia.org/wiki/Frame').mode).toBe('direct');
     const s = classify(SEARCH_URL + 'cats');
     expect(s.mode).toBe('proxy');
     expect(s.src).toBe(proxyWrap(SEARCH_URL + 'cats'));
+    // every search host routes through the proxy, whichever way you get there
+    expect(classify('https://www.bing.com/search?q=cats').mode).toBe('proxy');
+    expect(classify('https://html.duckduckgo.com/html/?q=cats').mode).toBe('proxy');
   });
 
   it('a per-host user override beats the tables; unknown hosts try direct first', () => {

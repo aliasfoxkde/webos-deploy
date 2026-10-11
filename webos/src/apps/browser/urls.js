@@ -16,8 +16,14 @@
 //              CORS-gated to the site's own origin, OAuth does framebusting).
 //              We say so and hand off to a real browser tab.
 
-export const SEARCH_URL = 'https://html.duckduckgo.com/html/?q=';
+export const SEARCH_URL = 'https://www.bing.com/search?q=';
 export const PROXY_PATH = '/proxy';
+
+/* Search engines are fetched server-side (they all send framing guards, and
+   the proxied page keeps working: links and the search form are rewritten to
+   stay inside the proxy by _worker.js). Bing is the default — DDG's html
+   endpoint bot-challenges datacenter egress IPs with a captcha. */
+const SEARCH_HOSTS = new Set(['www.bing.com', 'bing.com', 'html.duckduckgo.com', 'lite.duckduckgo.com']);
 
 /* Sites that are known frame-friendly — plain iframe, no negotiation. */
 const DIRECT_HOSTS = new Set([
@@ -104,7 +110,7 @@ export function classify(url, override) {
   if (override === 'direct') return { mode: 'direct', src: url, url };
   if (EXTERNAL_HOSTS.has(host)) return { mode: 'external', url, reason: EXTERNAL_HOSTS.get(host) };
   if (DIRECT_HOSTS.has(host)) return { mode: 'direct', src: url, url };
-  if (host === 'html.duckduckgo.com') return { mode: 'proxy', src: proxyWrap(url), url };
+  if (SEARCH_HOSTS.has(host)) return { mode: 'proxy', src: proxyWrap(url), url };
   // unknown site: try it natively first — flip to proxy from the toolbar
   // if the frame stays blank (the site sent a framing guard).
   return { mode: 'direct', src: url, url };
