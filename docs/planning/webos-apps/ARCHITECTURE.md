@@ -151,7 +151,14 @@ synthetic `pointerover` doesn't drive it, so the driver uses CDP
 default too. Everything persists under `webos.ui` / `webos.taskbar` /
 `webos.desktop`.
 
-### Liquid Glass design language (win/mac)
+### Browser plugin
+
+`webos/src/apps/browser/` replaces the retired Firefox-in-WASM registry entry.
+Pure logic (`urls.js` classification/embed rewrites, `tabs.js` reducer) is
+separated from `BrowserApp.jsx` for unit tests. Framing politics and the
+`/proxy` Pages Function: see BROWSER.md in this directory.
+
+## Liquid Glass design language (win/mac)
 
 The win and mac personas layer a four-phase glass treatment (plan:
 `LIQUID-GLASS.md`), all of it CSS/attribute-driven so the `:where()`

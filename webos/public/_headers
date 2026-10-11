@@ -1,5 +1,6 @@
-# Cloudflare Pages header rules. The site is 100% static (no _worker.js):
-# requests hit the Pages asset store directly — no Workers compute, no CPU.
+# Cloudflare Pages header rules. The site is static except for one endpoint:
+# _worker.js serves /proxy (the Browser's framing-header stripper) per
+# _routes.json — every other request hits the Pages asset store directly.
 # Hashed vite assets are immutable; the shell must revalidate so updates ship.
 /*
   X-Content-Type-Options: nosniff

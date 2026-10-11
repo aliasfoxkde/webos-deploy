@@ -8,6 +8,7 @@
 import { lazy } from 'react';
 
 export const APP_COMPONENTS = {
+  browser: lazy(() => import('./browser/BrowserApp.jsx')),
   terminal: lazy(() => import('./terminal/Terminal.jsx')),
   video: lazy(() => import('./video/VideoApp.jsx')),
   calc: lazy(() => import('./calculator/Calculator.jsx')),

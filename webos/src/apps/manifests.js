@@ -1,6 +1,7 @@
 // Plugin manifests (data only, no React) — imported by the OS registry.
 // Adding a bundled app: create apps/<name>/ with a manifest.js (+ component),
 // then list it here and in apps/components.js.
+import browser from './browser/manifest.js';
 import terminal from './terminal/manifest.js';
 import video from './video/manifest.js';
 import calc from './calculator/manifest.js';
@@ -12,4 +13,4 @@ import photos from './photos/manifest.js';
 import notepad from './notepad/manifest.js';
 import taskmgr from './taskmgr/manifest.js';
 
-export const PLUGIN_APPS = [terminal, video, calc, editor, weather, files, chat, photos, notepad, taskmgr];
+export const PLUGIN_APPS = [browser, terminal, video, calc, editor, weather, files, chat, photos, notepad, taskmgr];

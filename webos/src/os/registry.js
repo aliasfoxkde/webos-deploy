@@ -84,24 +84,22 @@ export const DEFAULT_APPS = [
     developer: 'SnaePlayer', category: 'Media', rating: 4.0, reviews: 38,
     description: 'Streaming music library and player. This one opens in its own tab — the site forbids embedding, so the OS gives it an honest launch panel.',
   },
-  {
-    id: 'browser', name: 'Browser', tagline: 'Firefox in WebAssembly', version: '0.0.1',
-    url: 'https://browserinbrowser.pages.dev/', icon: 'icons/browser.svg', accent: '#9580ff', embed: false,
-    developer: 'WebOS Labs', category: 'Tools', rating: 3.9, reviews: 61,
-    description: 'A full Firefox build compiled to WebAssembly, running inside a page. Experimental and heavy — launches in a tab with a memory heads-up.',
-  },
+  // 'browser' is a bundled plugin now (src/apps/browser/) — a real tabbed
+  // browser with an embed/proxy rendering stack. The old entry pointed at a
+  // Firefox-in-WASM experiment (browserinbrowser.pages.dev); it is retired.
   // Native editors (Lapce/Zed) cannot be compiled for the web today — the
   // bundled Editor plugin is the OS IDE. Fork release notes document this:
   // github.com/aliasfoxkde/lapce-ide/releases/tag/v0.4.6-webos
 
   // -- web essentials, on the desktop out of the box --
   // All four services send X-Frame-Options/CSP frame-ancestors, so they ship
-  // embed: false — the OS gives each an honest launch panel / new-tab open.
+  // embed: false — the OS gives each an honest launch panel with a hand-off
+  // to the Browser plugin (which plays YouTube/Spotify via official embeds).
   {
-    id: 'youtube', name: 'YouTube', tagline: 'Video streaming', version: '1.0',
+    id: 'youtube', name: 'YouTube', tagline: 'Video streaming', version: '1.1',
     url: 'https://www.youtube.com/', icon: 'icons/youtube.svg', accent: '#f87171', embed: false,
     developer: 'Google', category: 'Media', rating: 4.5, reviews: 812,
-    description: 'Watch, search, and subscribe. Opens in its own tab — YouTube forbids embedding inside other sites.',
+    description: 'Watch, search, and subscribe. Launch hands off to the WebOS Browser, which plays videos through YouTube’s official embed player.',
   },
   {
     id: 'discord', name: 'Discord', tagline: 'Chat & communities', version: '1.0', singleInstance: true,

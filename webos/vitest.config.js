@@ -15,15 +15,15 @@ export default defineConfig({
       exclude: ['src/main.jsx', 'src/version.js'],
       reporter: ['text', 'lcov'],
       reportsDirectory: 'coverage',
-      // Ratchet: floors sit just under the measured baseline (30.4/27.0/
-      // 23.8/31.3 after B2's calculator suites: engine, programmer, state,
-      // plot canvas). Raise as tests land; a regression in any metric fails
-      // `npm run coverage`.
+      // Ratchet: floors sit just under the measured baseline (33.1/30.5/
+      // 26.3/34.1 after the Browser suites: urls, tabs reducer, app shell).
+      // Raise as tests land; a regression in any metric fails `npm run
+      // coverage`.
       thresholds: {
-        statements: 29.9,
-        branches: 26.5,
-        functions: 23.3,
-        lines: 30.8,
+        statements: 32.5,
+        branches: 29.9,
+        functions: 25.8,
+        lines: 33.5,
       },
     },
   },

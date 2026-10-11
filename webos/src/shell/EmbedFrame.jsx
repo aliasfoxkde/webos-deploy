@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { fileGet, filePut, fileDel, fileList } from '../os/db.js';
 import { appOrigin, handleBridge } from '../os/bridge.js';
+import { useOS } from '../os/state.jsx';
 
 /* Renders an app in an iframe, or an honest launch panel when the site
    forbids embedding (X-Frame-Options / CSP frame-ancestors).
@@ -12,6 +13,7 @@ import { appOrigin, handleBridge } from '../os/bridge.js';
 export default function EmbedFrame({ app, onLoaded }) {
   const [failed, setFailed] = useState(false);
   const frame = useRef(null);
+  const os = useOS();
 
   const embed = Boolean(app.embed && app.url);
   useEffect(() => {
@@ -31,7 +33,10 @@ export default function EmbedFrame({ app, onLoaded }) {
         <img src={app.icon} alt="" width="72" height="72" />
         <h3>{app.name}</h3>
         <p>This app sends <code>X-Frame-Options</code>, so it can&rsquo;t run inside a WebOS window.</p>
-        <button className="btn accent" onClick={() => window.open(app.url, '_blank', 'noopener')}>
+        <button className="btn accent" onClick={() => os.launch('browser', { url: app.url })}>
+          Open in the WebOS Browser
+        </button>
+        <button className="btn" onClick={() => window.open(app.url, '_blank', 'noopener')}>
           Open {app.name} in a new tab ↗
         </button>
       </div>

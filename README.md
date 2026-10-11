@@ -51,6 +51,16 @@ are served from the R2 bucket `craftweb` through a per-app `_worker.js` — the
 only place Workers compute is involved, and only as a pass-through. See
 `packaging/HOSTING.md`.
 
+## The Browser
+
+WebOS ships a real browser, not a shortcut: `webos/src/apps/browser/` is a
+Chromium-style plugin window (tabs, per-tab history, address bar, Ctrl+T/W/L/R)
+with a four-mode rendering stack — official embeds (YouTube/Spotify), direct
+frames, a same-origin proxy (Cloudflare Pages Function stripping framing
+headers server-side), and an honest "can't run in any frame" hand-off for
+sites like Discord whose APIs are CORS-locked to their own origin. Details and
+limits: `docs/planning/webos-apps/BROWSER.md`.
+
 ## Shell design
 
 The WebOS shell (`webos/`) is plain Vite + React — no Rust. Its win/mac
