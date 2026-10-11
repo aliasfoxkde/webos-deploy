@@ -51,6 +51,32 @@ are served from the R2 bucket `craftweb` through a per-app `_worker.js` — the
 only place Workers compute is involved, and only as a pass-through. See
 `packaging/HOSTING.md`.
 
+## Quality gates (webos/)
+
+```bash
+cd webos
+npm run test            # vitest suite (600+ tests, happy-dom + RTL)
+npm run coverage        # suite + v8 coverage, enforced ratchet floors
+npm run lint            # eslint, --max-warnings 0 in CI
+npm run build           # production bundle → dist/
+npm run ci              # lint → coverage → build, all three
+```
+
+- **Coverage ratchet** — `webos/vitest.config.js` carries floors just under
+  the measured baseline; any coverage regression fails `npm run coverage`.
+  Raise the floors as tests land, never lower them.
+- **WCAG contrast auditor** — `webos/tests/contrast-audit.test.js` enforces
+  token-level ratios per theme preset (danger ink ≥7:1 on paper, focused
+  window ring ≥3:1, accent ink ≥7:1 on every accent swatch) and fails if app
+  CSS hardcodes a preset palette color. Persona/preset text AAA lives in
+  `webos/tests/personas-theme.test.js`; shared WCAG math in
+  `webos/tests/theme-math.js`.
+- **CI** — `.github/workflows/ci.yml` (GitHub, push/PR/manual dispatch) and
+  `.gitforce.yml` (local GitForge mirror) both run install → lint → contrast
+  audit → coverage → build. Version bumps touch three files:
+  `webos/package.json`, `webos/src/version.js`, `webos/public/sw.js` (cache
+  key).
+
 ## The Browser
 
 WebOS ships a real browser, not a shortcut: `webos/src/apps/browser/` is a

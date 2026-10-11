@@ -22,9 +22,17 @@ webos/src/
 ├── os/                       OS core — no UI
 │   ├── registry.js           app data: external defaults, store apps, plugin manifests;
 │   │                         every row carries description/developer/category/rating
-│   ├── state.jsx             reducer + persistence (webos.* keys), theme engine,
+│   ├── state.jsx             reducer + persistence (webos.* keys), theme engine
+│   │                         (THEME_PRESETS carry text/dim/chrome/paper/line/danger/
+│   │                         focus, enforced by tests/contrast-audit.test.js),
 │   │                         taskbar/desktop/widgets/volume/uiMode state, mobile detect
-│   └── wallpapers.js         CSS-only wallpaper pack + upload/URL dimming math
+│   ├── personas.js           persona registry (id → preset + accent + taskbar side)
+│   ├── db.js                 IndexedDB virtual disk (fileGet/filePut/fileList/…)
+│   ├── snap.js               Meta+arrow tiling rectangles (zoneRect)
+│   ├── wallpapers.js         CSS-only wallpaper pack + upload/URL dimming math
+│   ├── bridge.js             dev-driver bridge (evalAsync envelope, screenshots)
+│   ├── lens.js LensFilters.jsx  FX wallpaper filter pipeline (blur/brightness/…)
+│   └── format.js             bytes/duration/number formatting helpers
 ├── shell/                    window-system UI
 │   ├── Window.jsx            window chrome; 8-direction resize; plugin vs EmbedFrame
 │   ├── EmbedFrame.jsx        iframe hosting + honest "open in new tab" panel
@@ -37,18 +45,38 @@ webos/src/
 │   ├── Sidebar.jsx           widget sidebar (weather/clock/battery/events/notes/storage,
 │   │                         enable + reorder persisted)
 │   ├── MobileDrawer.jsx      Android-style full-screen app grid for mobile mode
-│   ├── ContextMenu.jsx       global right-click system (data-cm="kind:arg")
+│   ├── ContextMenu.jsx       global right-click system (data-cm="kind:arg");
+│   │                         useContextMenu reads the item builder at dispatch time
+│   │                         (ref mirrored in a layout effect) — see the stale-builder
+│   │                         regression in tests/shell-context-menu.test.jsx
+│   ├── winDrag.js            window move/resize pointer-drag helpers
+│   ├── Screensaver.jsx       idle screen saver (clock/photos/wireframe modes)
+│   ├── FxWallpaper.jsx       canvas FX wallpaper layer (shares #wallpaper slot)
+│   ├── Welcome.jsx           first-run overlay (webos.welcomed gate)
+│   ├── AddApp.jsx            add-custom-app dialog (URL → desktop icon)
 │   └── Calendar.jsx          clock popup with per-day events
 └── apps/                     first-party plugins — one directory per app
     ├── manifests.js          data-only barrel (imported by os/registry.js)
     ├── components.js         component barrel (imported by shell/Window.jsx)
+    ├── browser/   Chromium-style tabs + history + address bar (tabs.js urls.js
+    │              BrowserApp.jsx);
+    │              four-mode render stack — embed / direct frame / same-origin
+    │              Pages-Function proxy / honest hand-off (see BROWSER.md)
     ├── terminal/  { manifest.js, Terminal.jsx }
     ├── video/     { manifest.js, VideoApp.jsx }
+    ├── files/     virtual-disk file manager (list/upload/rename/delete, device view
+    │              via File System Access, preview dispatch)
+    ├── notepad/   notes store (notes.js) + autosaving editor, markdown preview
+    ├── photos/    image viewer + transforms (rotate/flip/crop) over the Files disk
+    ├── taskmgr/   task/performance manager (sysmon.js pure metrics)
+    ├── chat/      AI chat adapter seam (provider-configurable)
     ├── editor/    CodeMirror 6 code editor
     │   ├── manifest.js
     │   ├── Editor.jsx      toolbar, buffer tabs, status bar, file IO
     │   ├── buffers.js      pure buffer reducer + localStorage persistence
     │   ├── language.js     ext→language map, theme + highlight style
+    │   ├── markdown.js MarkdownView.jsx  pure markdown→tree + sanitized renderer
+    │   │                                 (editor preview + notepad)
     │   └── editor.css      scoped styles
     ├── weather/   Open-Meteo client (keyless)
     │   ├── manifest.js api.js (geocode + forecast + WMO map) WeatherApp.jsx
@@ -59,7 +87,8 @@ webos/src/
         ├── Calculator.jsx    mode tabs + provider
         ├── calcState.jsx     shared state: entry, history, memory, angle, precision
         ├── Display.jsx Keypad.jsx BasicKeys.jsx
-        ├── calculator.css    scoped styles
+        ├── calculator.css    scoped styles (all colors via shell tokens — the
+        │                     preset-aware audit fails on palette hexes here)
         ├── engine/           pure expression engine (no React)
         │   ├── errors.js lexer.js parser.js functions.js evaluate.js format.js
         │   ├── programmer.js BigInt bitwise evaluator
@@ -296,6 +325,14 @@ apps without a manifest fall back to the 1120×700 default.
 
 ## DevOps
 
+- Quality gates (in `webos/`): `npm run lint` (zero warnings) →
+  `npm run coverage` (vitest + enforced ratchet floors in
+  `webos/vitest.config.js`, includes the WCAG contrast auditor) →
+  `npm run build`. `npm run ci` chains all three; CI runs them on GitHub
+  (`.github/workflows/ci.yml`, push/PR/manual) and locally via GitForge
+  (`.gitforce.yml`, single-ordered-job mirror).
+- Tests: `npm run test` (600+ suites/specs, happy-dom + Testing Library);
+  single file: `npx vitest run tests/<name>.test.jsx`.
 - Build: `npm run build` in `webos/` → `dist/` (static, base `./`).
 - Deploy: `npx wrangler pages deploy dist --project-name artcraft-webos --branch main`
   (see `packaging/HOSTING.md` and the root `README.md` for the full procedure and live URLs).

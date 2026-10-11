@@ -4,10 +4,11 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
 
 jobs:
   webos:
-    name: webos — lint, test, coverage gate, build
+    name: webos — lint, test, coverage gate, contrast audit, build
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -17,21 +18,33 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
           cache-dependency-path: webos/package-lock.json
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Lint
+      - name: Lint (zero warnings)
         run: npm run lint
+
+      # Standalone so the WCAG gate is legible in the job summary; the same
+      # suites also run inside the coverage step.
+      - name: WCAG contrast audit (personas + tokens)
+        run: npx vitest run tests/contrast-audit.test.js tests/personas-theme.test.js
 
       - name: Tests + coverage ratchet
         run: npm run coverage
 
       - name: Build
         run: npm run build
+
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: webos-dist
+          path: webos/dist/
+          retention-days: 7
 
       - name: Upload dist artifact
         uses: actions/upload-artifact@v4

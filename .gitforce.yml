@@ -1,0 +1,37 @@
+# GitForge CI pipeline (https://github.com/aliasfoxkde/GitForge) — local
+# mirror of .github/workflows/ci.yml.
+#
+# ONE job, ordered steps: GitForge's deployed trigger path queues only the
+# first job with empty `needs` and never schedules dependents, so a
+# needs-based lane split silently degrades to "first job only". Steps are
+# ordered so a failure fails the job immediately.
+#
+# The coverage step enforces the ratchet in webos/vitest.config.js and runs
+# the whole suite — including the WCAG contrast auditor
+# (tests/contrast-audit.test.js) and the persona/theme gate
+# (tests/personas-theme.test.js).
+#
+# node:24 — matches the version the suite is validated against locally
+# (v24.x); happy-dom 20 + vitest 5 are happy there.
+name: webos-deploy-ci
+version: "1"
+trigger_on: [push]
+environment:
+  CI: "true"
+jobs:
+  - name: gates
+    image: node:24-trixie-slim
+    needs: []
+    timeout: "30m"
+    retry: 0
+    steps:
+      - name: install
+        run: cd webos && npm ci
+      - name: lint
+        run: cd webos && npm run lint
+      - name: wcag contrast audit
+        run: cd webos && npx vitest run tests/contrast-audit.test.js tests/personas-theme.test.js
+      - name: tests + coverage ratchet
+        run: cd webos && npm run coverage
+      - name: build
+        run: cd webos && npm run build
