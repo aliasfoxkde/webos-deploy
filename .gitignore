@@ -22,3 +22,6 @@ node_modules/
 /webos/dist/
 .wrangler/
 *.log
+
+# test coverage output
+webos/coverage/
