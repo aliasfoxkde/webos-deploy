@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { useOS } from '../../os/state.jsx';
+import { THEME_PRESETS } from '../../os/themes.js';
 import { kvGet, kvSet, fileList } from '../../os/db.js';
 import { join } from './wasi.js';
 import { HOME, tilde, expandTilde } from './paths.js';
@@ -59,13 +60,15 @@ const NAMED = {
 };
 
 const PERSONA_IDS = ['win', 'mac', 'linux', 'bsd', 'android', 'tui'];
-const THEME_PRESETS = ['midnight', 'ocean', 'forest', 'sunset', 'light'];
+/* Built-in preset ids + the user's own themes (Settings → Appearance). */
+const PRESET_IDS = Object.keys(THEME_PRESETS);
+const themeIds = (o) => [...PRESET_IDS, ...(o.userThemes || []).map((x) => x.id)];
 
 /* Settings paths for get/set. `set` returns the applied (coerced) value so
    the shell can echo truth without racing React's next render. */
 const SETTINGS_PATHS = {
   'persona': { get: (o) => o.persona, set: (o, v) => { const x = String(v); o.setPersona(x); return x; } },
-  'theme.preset': { get: (o) => o.theme.preset, set: (o, v) => { const x = String(v); o.setTheme({ preset: x, wallpaper: '' }); return x; } },
+  'theme.preset': { get: (o) => o.theme.preset, set: (o, v) => { const x = String(v); const ids = themeIds(o); if (!ids.includes(x)) throw new Error(`themes: ${ids.join(' ')}`); o.setTheme({ preset: x, wallpaper: '' }); return x; } },
   'theme.accent': { get: (o) => o.theme.accent, set: (o, v) => { const x = String(v); o.setTheme({ accent: x }); return x; } },
   'theme.wallpaper': { get: (o) => o.theme.wallpaper, set: (o, v) => { const x = String(v); o.setTheme({ wallpaper: x }); return x; } },
   'ui.scale': { get: (o) => o.ui.scale, set: (o, v) => { const x = num(v, 1, 0.85, 1.25); o.setUi({ scale: x }); return x; } },
@@ -187,7 +190,7 @@ export default function Terminal() {
         if (head === 'open' || head === 'launch' || head === 'close' || head === 'install' || head === 'uninstall') pool = o.apps.map((a) => a.id);
         else if (head === 'set' || head === 'get') pool = Object.keys(SETTINGS_PATHS);
         else if (head === 'persona') pool = PERSONA_IDS;
-        else if (head === 'theme') pool = THEME_PRESETS;
+        else if (head === 'theme') pool = themeIds(o);
         else if (head === 'settings') pool = ['appearance', 'desktop', 'taskbar', 'widgets', 'sound', 'network', 'apps', 'storage', 'about'];
         else pool = [];
       }
@@ -424,10 +427,13 @@ export default function Terminal() {
           o.setPersona(arg); out(`persona: ${arg}`);
           return;
         case 'personas': out(PERSONA_IDS.join(' ')); return;
-        case 'theme':
-          if (!THEME_PRESETS.includes(arg)) { out(`${C.err}themes: ${THEME_PRESETS.join(' ')}${C.reset}`); return; }
+        case 'theme': {
+          const ids = themeIds(o);
+          if (!arg) { out(`theme: ${o.theme.preset} ${C.dim}(one of ${ids.join(' ')})${C.reset}`); return; }
+          if (!ids.includes(arg)) { out(`${C.err}themes: ${ids.join(' ')}${C.reset}`); return; }
           o.setTheme({ preset: arg, wallpaper: '' }); out(`theme: ${arg}`);
           return;
+        }
         case 'accent': {
           const c = NAMED[arg] || (/^#[0-9a-fA-F]{3,8}$/.test(arg) ? arg : null);
           if (!c) { out(`${C.err}usage: accent <name|#hex>  (${Object.keys(NAMED).join(' ')})${C.reset}`); return; }

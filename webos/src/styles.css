@@ -512,6 +512,55 @@ body[data-persona="bsd"] .store-actions .btn.danger, body[data-persona="tui"] .s
 .settings .row input[type="url"] { flex: 1; }
 .settings .row input[type="range"] { flex: 1; }
 
+/* ---- user themes + theme builder + pack library (3.13) ---- */
+/* A user-theme card is a span wrapper (button-in-button is invalid HTML):
+   the hit area applies the theme, the corner chip opens the editor. */
+.preset.user { position: relative; padding: 0; }
+.preset .preset-hit {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  background: none; border: none; padding: 8px; font: inherit; color: inherit; cursor: pointer;
+}
+.preset .preset-edit {
+  position: absolute; top: 4px; right: 4px; width: 22px; height: 22px;
+  border-radius: 6px; border: 1px solid var(--chrome-line); background: var(--chrome);
+  color: var(--text-dim); font-size: 0.65rem; cursor: pointer; line-height: 1;
+}
+.preset .preset-edit:hover { color: var(--text); border-color: var(--accent); }
+.preset.new-theme { justify-content: center; border-style: dashed; }
+.preset .new-mark {
+  display: grid; place-items: center; font-size: 1.3rem; color: var(--text-dim);
+}
+.theme-builder { border: 1px solid var(--chrome-line); border-radius: 12px; padding: 12px 14px; }
+.th-grid { display: flex; gap: 18px; flex-wrap: wrap; }
+.th-fields { flex: 1 1 260px; min-width: 240px; }
+.th-side { flex: 1 1 240px; min-width: 220px; display: flex; flex-direction: column; gap: 10px; }
+.th-preview { border-radius: 10px; padding: 18px 14px; border: 1px solid var(--chrome-line); }
+.th-win {
+  border: 1px solid; border-radius: 10px; padding: 10px 12px;
+  display: flex; flex-direction: column; gap: 6px; font-size: 0.78rem; backdrop-filter: blur(8px);
+}
+.th-title { display: flex; align-items: center; gap: 6px; font-weight: 600; }
+.th-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.th-hex { font-size: 0.68rem; font-family: var(--mono, monospace); }
+.th-contrast { display: flex; gap: 6px; flex-wrap: wrap; }
+.th-ratio.aaa { border-color: var(--accent); color: var(--text); }
+.th-ratio.aa { color: var(--text-dim); }
+.th-ratio.low { color: var(--danger); border-color: var(--danger); }
+.th-actions { flex-wrap: wrap; }
+.settings .row input[type="color"] { width: 34px; height: 26px; padding: 0; background: transparent; border: 1px solid var(--chrome-line); border-radius: 6px; cursor: pointer; }
+.pack-list { display: flex; flex-direction: column; gap: 8px; }
+.pack-card {
+  display: flex; align-items: center; gap: 12px;
+  border: 1px solid var(--chrome-line); border-radius: 10px; padding: 8px 10px;
+}
+.pack-preview {
+  width: 84px; height: 48px; border-radius: 7px; flex: none; position: relative; overflow: hidden;
+  border: 1px solid var(--chrome-line);
+}
+.pack-preview i { position: absolute; left: 6px; bottom: 6px; width: 16px; height: 16px; border-radius: 5px; }
+.pack-info { flex: 1; display: flex; flex-direction: column; gap: 2px; font-size: 0.78rem; min-width: 0; }
+.pack-info .dim { font-size: 0.7rem; }
+
 @media (max-width: 700px) {
   .desk-icon { width: 78px; }
   #icon-grid { top: 10px; left: 10px; gap: 2px; }

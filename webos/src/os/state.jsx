@@ -2,6 +2,9 @@ import React, { createContext, useContext, useEffect, useMemo, useReducer } from
 import { allApps, findApp, DEFAULT_APPS, APP_INDEX, STORE_APPS, VIRTUAL_APPS } from './registry.js';
 import { zoneRect } from './snap.js';
 import { personaOf } from './personas.js';
+import {
+  resolveTheme, normalizeUserTheme, upsertTheme, removeTheme, luminance,
+} from './themes.js';
 
 /* ---------- persistence helpers ---------- */
 function load(key, fallback) {
@@ -44,55 +47,10 @@ function loadInstalled() {
   return raw.filter((id) => known.has(id));
 }
 
-/* ---------- theme presets ---------- */
-export const ACCENTS = ['#38bdf8', '#22d3ee', '#34d399', '#a3e635', '#fbbf24', '#fb923c', '#f87171', '#f472b6', '#e879f9', '#a78bfa', '#818cf8', '#60a5fa'];
-
-export const THEME_PRESETS = {
-  midnight: {
-    paper: '#10141c',
-    label: 'Midnight', text: '#e8ecf4', dim: '#9fa9ba', chrome: 'rgba(16,20,30,0.82)', line: 'rgba(255,255,255,0.09)',
-    danger: '#fca5a5', focus: 'rgba(232,236,244,0.45)',
-    bg: 'radial-gradient(1100px 700px at 78% 18%, rgba(56,189,248,0.14), transparent 60%), radial-gradient(900px 640px at 12% 82%, rgba(167,139,250,0.12), transparent 60%), radial-gradient(700px 500px at 45% 45%, rgba(52,211,153,0.05), transparent 60%), linear-gradient(160deg, #0d1220, #07090d 70%)',
-  },
-  ocean: {
-    paper: '#0b1a26',
-    label: 'Ocean', text: '#e4f2fa', dim: '#90b1c5', chrome: 'rgba(10,26,40,0.82)', line: 'rgba(255,255,255,0.10)',
-    danger: '#fca5a5', focus: 'rgba(228,242,250,0.45)',
-    bg: 'radial-gradient(1000px 700px at 20% 15%, rgba(34,211,238,0.16), transparent 60%), radial-gradient(900px 700px at 85% 85%, rgba(59,130,246,0.18), transparent 60%), linear-gradient(165deg, #06202e, #030b13 75%)',
-  },
-  forest: {
-    paper: '#0c1810',
-    label: 'Forest', text: '#eaf5ea', dim: '#9db8a0', chrome: 'rgba(14,28,20,0.84)', line: 'rgba(255,255,255,0.09)',
-    danger: '#fca5a5', focus: 'rgba(234,245,234,0.45)',
-    bg: 'radial-gradient(1000px 700px at 75% 20%, rgba(52,211,153,0.13), transparent 60%), radial-gradient(900px 650px at 15% 85%, rgba(163,230,53,0.08), transparent 60%), linear-gradient(160deg, #0a1a12, #050b07 75%)',
-  },
-  sunset: {
-    paper: '#170e0b',
-    label: 'Sunset', text: '#fdf0e7', dim: '#c9a68f', chrome: 'rgba(32,18,14,0.84)', line: 'rgba(255,255,255,0.10)',
-    danger: '#fca5a5', focus: 'rgba(253,240,231,0.45)',
-    bg: 'radial-gradient(1100px 700px at 80% 80%, rgba(251,146,60,0.20), transparent 60%), radial-gradient(900px 600px at 15% 15%, rgba(244,114,182,0.14), transparent 55%), linear-gradient(160deg, #1d0f0a, #0b0505 75%)',
-  },
-  light: {
-    paper: '#f7f9fc',
-    label: 'Daylight', text: '#1a2230', dim: '#314156', chrome: 'rgba(250,251,253,0.86)', line: 'rgba(15,25,40,0.12)',
-    danger: '#991b1b', focus: 'rgba(26,34,48,0.8)',
-    bg: 'radial-gradient(1100px 700px at 78% 18%, rgba(96,165,250,0.18), transparent 60%), radial-gradient(900px 640px at 12% 82%, rgba(167,139,250,0.14), transparent 60%), linear-gradient(160deg, #eef2f8, #dde4ee 75%)',
-  },
-  /* Tokyo Night family — text/dim verified ≥ 7:1 (AAA) on their dark bases;
-     the accent-tinted `line` is decorative chrome (≥ 3:1 not required). */
-  omarchy: {
-    paper: '#16161e',
-    label: 'Omarchy', text: '#c0caf5', dim: '#a9b1d6', chrome: 'rgba(26,27,38,0.92)', line: 'rgba(122,162,247,0.16)',
-    danger: '#fca5a5', focus: 'rgba(192,202,245,0.5)',
-    bg: 'radial-gradient(1100px 700px at 80% 12%, rgba(122,162,247,0.12), transparent 60%), radial-gradient(900px 640px at 10% 85%, rgba(187,154,247,0.10), transparent 60%), linear-gradient(160deg, #1a1b26, #101017 75%)',
-  },
-  cobalt: {
-    paper: '#0c1120',
-    label: 'Cobalt', text: '#d6e2ff', dim: '#93a8ce', chrome: 'rgba(10,14,28,0.90)', line: 'rgba(167,139,250,0.16)',
-    danger: '#fca5a5', focus: 'rgba(214,226,255,0.5)',
-    bg: 'radial-gradient(1000px 700px at 75% 20%, rgba(167,139,250,0.14), transparent 60%), radial-gradient(900px 650px at 15% 80%, rgba(96,165,250,0.10), transparent 60%), linear-gradient(160deg, #0e1428, #070a14 75%)',
-  },
-};
+/* ---------- theme presets ----------
+   The registry itself (plus color math, user themes and the pack library)
+   lives in os/themes.js — re-exported here for every existing importer. */
+export { ACCENTS, THEME_PRESETS } from './themes.js';
 
 const DEFAULT_THEME = {
   preset: 'midnight', accent: '#38bdf8', wallpaper: '', dim: 1,
@@ -153,6 +111,7 @@ const withAlpha = (color, f) => {
 const initial = () => ({
   installed: loadInstalled(),
   userApps: load('userapps', []), // custom apps added via right-click → Add app…
+  userThemes: load('userthemes', []).map(normalizeUserTheme).filter(Boolean),
   persona: personaOf(load('persona', 'win')).id, // OS skin (see os/personas.js)
   theme: { ...DEFAULT_THEME, ...load('theme', {}) },
   ui: { ...DEFAULT_UI, ...load('ui', {}) },
@@ -378,6 +337,27 @@ function reducer(state, action) {
       save('theme', theme);
       return { ...state, theme };
     }
+    /* User themes (Settings → Appearance): a bad record never enters the
+       list; saving one also activates it. Deleting the active theme falls
+       back to Midnight so the desktop never renders from a missing id. */
+    case 'themeSave': {
+      const rec = normalizeUserTheme(action.theme);
+      if (!rec) return state;
+      const userThemes = upsertTheme(state.userThemes, rec);
+      save('userthemes', userThemes);
+      const theme = { ...state.theme, preset: rec.id };
+      save('theme', theme);
+      return { ...state, userThemes, theme };
+    }
+    case 'themeDelete': {
+      const userThemes = removeTheme(state.userThemes, action.id);
+      save('userthemes', userThemes);
+      const theme = state.theme.preset === action.id
+        ? { ...state.theme, preset: 'midnight' }
+        : state.theme;
+      if (theme !== state.theme) save('theme', theme);
+      return { ...state, userThemes, theme };
+    }
     case 'addEvent': {
       const events = { ...state.events, [action.date]: [...(state.events[action.date] || []), action.text] };
       save('events', events);
@@ -489,6 +469,8 @@ export function OSProvider({ children }) {
     install: (appId) => dispatch({ type: 'install', appId }),
     uninstall: (appId) => dispatch({ type: 'uninstall', appId }),
     setTheme: (patch) => dispatch({ type: 'setTheme', patch }),
+    themeSave: (theme) => dispatch({ type: 'themeSave', theme }),
+    themeDelete: (id) => dispatch({ type: 'themeDelete', id }),
     setPersona: (id) => dispatch({ type: 'setPersona', id }),
     setUi: (patch) => dispatch({ type: 'setUi', patch }),
     addEvent: (date, text) => dispatch({ type: 'addEvent', date, text }),
@@ -528,7 +510,9 @@ export function OSProvider({ children }) {
 
   /* -- theme + wallpaper to CSS -- */
   useEffect(() => {
-    const p = THEME_PRESETS[state.theme.preset] || THEME_PRESETS.midnight;
+    // user themes resolve from their draft fields; presets pass through;
+    // unknown ids fall back to Midnight (never render from a missing theme)
+    const p = resolveTheme(state.theme.preset, state.userThemes);
     const root = document.documentElement.style;
     root.setProperty('--text', p.text);
     root.setProperty('--text-dim', p.dim);
@@ -542,8 +526,11 @@ export function OSProvider({ children }) {
     // in the #wallpaper layer (see App.jsx) so filters (blur/brightness/
     // saturation) can be applied to it — backgrounds can't take CSS filters.
     document.body.style.background = p.bg;
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', state.theme.preset === 'light' ? '#eef2f8' : '#0b0e14');
-  }, [state.theme, state.ui.transparency]);
+    // browser UI follows the paper, whichever theme (or custom theme) chose it
+    document.querySelector('meta[name="theme-color"]')?.setAttribute(
+      'content', luminance(p.paper) > 0.35 ? '#eef2f8' : '#0b0e14',
+    );
+  }, [state.theme, state.ui.transparency, state.userThemes]);
 
   /* -- granular interface: scale, animations, radius/blur overrides -- */
   useEffect(() => {

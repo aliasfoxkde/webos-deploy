@@ -1,5 +1,9 @@
 import React, { useRef } from 'react';
 import { useOS, ACCENTS, THEME_PRESETS } from '../../os/state.jsx';
+import {
+  deriveTheme, draftFromTheme, newThemeId, resolveTheme,
+  searchPacks, packToUserTheme, THEME_PACKS, contrast,
+} from '../../os/themes.js';
 import { WALLPAPERS, FITS, POSITIONS } from '../../os/wallpapers.js';
 import { PERSONAS } from '../../os/personas.js';
 import { DEFAULTS, PRESET_NAMES, mergeParams } from '../../os/waterfx.js';
@@ -16,7 +20,32 @@ export default function Appearance() {
   const t = os.theme;
   const [cat, setCat] = React.useState('All');
   const [q, setQ] = React.useState('');
+  const [draft, setDraft] = React.useState(null); // theme-builder fields when open
+  const [pack, setPack] = React.useState('all');
+  const [pq, setPq] = React.useState('');
   const fileRef = useRef(null);
+
+  /* ---- theme builder ----
+     Draft fields derive live through deriveTheme — the preview and the
+     contrast chips are the same math the desktop renders with. */
+  const derived = draft ? deriveTheme(draft) : null;
+  const startNew = () => {
+    // seed from the active look so "New theme" starts somewhere familiar
+    const base = resolveTheme(t.preset, os.userThemes);
+    setDraft({ ...draftFromTheme({ ...base, accent: t.accent }), id: null, name: 'My theme' });
+  };
+  const startEdit = (u) => setDraft({
+    id: u.id, name: u.name, paper: u.paper, text: u.text, dim: u.dim,
+    accent: u.accent, chromeA: u.chromeA, lineA: u.lineA,
+    glowA: u.glowA, glowB: u.glowB, glow: u.glow, angle: u.angle,
+  });
+  const saveDraft = () => {
+    const name = draft.name.trim().slice(0, 40) || 'Untitled theme';
+    const id = draft.id || newThemeId(name, os.userThemes.map((x) => x.id));
+    os.themeSave({ ...draft, id, name });
+    setDraft(null);
+  };
+  const ratioLabel = (ratio) => (ratio >= 7 ? 'AAA' : ratio >= 4.5 ? 'AA' : 'low');
 
   const onUpload = (e) => {
     const file = e.target.files?.[0];
@@ -182,6 +211,189 @@ export default function Appearance() {
               {p.label}
             </button>
           ))}
+          {os.userThemes.map((u) => {
+            const r = resolveTheme(u.id, os.userThemes);
+            return (
+              <span key={u.id} className={`preset user ${t.preset === u.id ? 'on' : ''}`}>
+                <button
+                  type="button"
+                  className="preset-hit"
+                  onClick={() => os.setTheme({ preset: u.id, wallpaper: '' })}
+                  title={`Apply “${u.name}”`}
+                >
+                  <span className="preset-preview" style={{ background: r.bg, color: r.text }}>
+                    <i style={{ background: u.accent }} />
+                  </span>
+                  {u.name}
+                </button>
+                <button
+                  type="button"
+                  className="preset-edit"
+                  aria-label={`Edit theme ${u.name}`}
+                  title={`Edit “${u.name}”`}
+                  onClick={() => startEdit(u)}
+                >✎</button>
+              </span>
+            );
+          })}
+          <button
+            type="button" className="preset new-theme"
+            onClick={startNew} aria-label="New theme"
+            title="Compose a new theme from the current look"
+          >
+            <span className="preset-preview new-mark" aria-hidden="true">＋</span>
+            New theme
+          </button>
+        </div>
+      </section>
+
+      {draft && derived && (
+        <section className="theme-builder" role="group" aria-label="Theme builder">
+          <h3>{draft.id ? 'Edit theme' : 'New theme'}</h3>
+          <div className="th-grid">
+            <div className="th-fields">
+              <div className="row">
+                <label className="dim" htmlFor="th-name">Name</label>
+                <input
+                  id="th-name" type="text" maxLength={40} value={draft.name}
+                  onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+                  aria-label="Theme name"
+                />
+              </div>
+              {[['paper', 'Paper'], ['text', 'Text'], ['dim', 'Dim text'], ['accent', 'Accent'], ['glowA', 'Glow A'], ['glowB', 'Glow B']].map(([key, label]) => (
+                <div className="row" key={key}>
+                  <label className="dim" htmlFor={`th-${key}`}>{label}</label>
+                  <input
+                    id={`th-${key}`} type="color" value={draft[key]}
+                    onChange={(e) => setDraft({ ...draft, [key]: e.target.value })}
+                    aria-label={`${label} color`}
+                  />
+                  <span className="dim th-hex">{draft[key]}</span>
+                </div>
+              ))}
+              <div className="row">
+                <label className="dim" htmlFor="th-chromea">Chrome opacity</label>
+                <input
+                  id="th-chromea" type="range" min="0.5" max="0.98" step="0.02" value={draft.chromeA}
+                  onChange={(e) => setDraft({ ...draft, chromeA: Number(e.target.value) })}
+                  aria-label="Chrome opacity"
+                />
+                <span className="dim" style={{ minWidth: 38, textAlign: 'right' }}>{Math.round(draft.chromeA * 100)}%</span>
+              </div>
+              <div className="row">
+                <label className="dim" htmlFor="th-linea">Line strength</label>
+                <input
+                  id="th-linea" type="range" min="0.04" max="0.3" step="0.01" value={draft.lineA}
+                  onChange={(e) => setDraft({ ...draft, lineA: Number(e.target.value) })}
+                  aria-label="Line strength"
+                />
+                <span className="dim" style={{ minWidth: 38, textAlign: 'right' }}>{Math.round(draft.lineA * 100)}%</span>
+              </div>
+              <div className="row">
+                <label className="dim" htmlFor="th-glow">Glow strength</label>
+                <input
+                  id="th-glow" type="range" min="0" max="0.35" step="0.01" value={draft.glow}
+                  onChange={(e) => setDraft({ ...draft, glow: Number(e.target.value) })}
+                  aria-label="Glow strength"
+                />
+                <span className="dim" style={{ minWidth: 38, textAlign: 'right' }}>{Math.round(draft.glow * 100)}%</span>
+              </div>
+              <div className="row">
+                <label className="dim" htmlFor="th-angle">Gradient angle</label>
+                <input
+                  id="th-angle" type="range" min="0" max="360" step="5" value={draft.angle}
+                  onChange={(e) => setDraft({ ...draft, angle: Number(e.target.value) })}
+                  aria-label="Gradient angle"
+                />
+                <span className="dim" style={{ minWidth: 38, textAlign: 'right' }}>{Math.round(draft.angle)}°</span>
+              </div>
+            </div>
+            <div className="th-side">
+              <div className="th-preview" style={{ background: derived.bg }}>
+                <div className="th-win" style={{ background: derived.chrome, borderColor: derived.line }}>
+                  <span className="th-title" style={{ color: derived.text }}>
+                    <i className="th-dot" style={{ background: derived.accent }} />
+                    {draft.name.trim() || 'Untitled theme'}
+                  </span>
+                  <span style={{ color: derived.text }}>Regular body text</span>
+                  <span style={{ color: derived.dim }}>Dimmed secondary text</span>
+                </div>
+              </div>
+              <div className="th-contrast">
+                {[['Text', contrast(derived.text, derived.paper)], ['Dim', contrast(derived.dim, derived.paper)], ['Danger', contrast(derived.danger, derived.paper)]].map(([label, ratio]) => (
+                  <span
+                    key={label}
+                    className={`chip th-ratio ${ratio >= 7 ? 'aaa' : ratio >= 4.5 ? 'aa' : 'low'}`}
+                    title={`${label} on paper — WCAG contrast`}
+                  >
+                    {label} {ratio.toFixed(1)}:1 {ratioLabel(ratio)}
+                  </span>
+                ))}
+              </div>
+              <div className="row th-actions">
+                <button type="button" className="btn" onClick={saveDraft}>{draft.id ? 'Save theme' : 'Create theme'}</button>
+                <button type="button" className="btn slim" onClick={() => setDraft(null)}>Cancel</button>
+                {draft.id && (
+                  <button
+                    type="button" className="btn slim danger"
+                    onClick={() => { os.themeDelete(draft.id); setDraft(null); }}
+                  >Delete</button>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      <section>
+        <h3>Theme packs</h3>
+        <p className="dim" style={{ marginTop: -6 }}>
+          Curated palettes. Applying one copies it into your themes — it stays
+          fully editable and survives pack changes.
+        </p>
+        <div className="row">
+          <input
+            type="search" placeholder="Search theme packs…" aria-label="Search theme packs"
+            value={pq} onChange={(e) => setPq(e.target.value)}
+          />
+        </div>
+        <div className="store-cats" style={{ marginBottom: 10 }}>
+          {['all', ...THEME_PACKS.map((p) => p.id)].map((id) => {
+            const label = id === 'all' ? 'All' : THEME_PACKS.find((p) => p.id === id).name;
+            return (
+              <button key={id} className={`chip ${pack === id ? 'on' : ''}`} onClick={() => setPack(id)}>{label}</button>
+            );
+          })}
+        </div>
+        <div className="pack-list">
+          {searchPacks(pq, pack).map((card) => {
+            const r = deriveTheme(card.f);
+            const instId = `u-${card.pack}-${card.id}`;
+            const active = t.preset === instId;
+            const installed = os.userThemes.some((x) => x.id === instId);
+            return (
+              <div className="pack-card" key={instId}>
+                <span className="pack-preview" style={{ background: r.bg }}>
+                  <i style={{ background: r.accent }} />
+                </span>
+                <span className="pack-info">
+                  <strong>{card.name}</strong>
+                  <span className="dim">{card.packName} · {card.blurb}</span>
+                </span>
+                <button
+                  type="button" className={`btn slim ${active ? '' : ''}`}
+                  onClick={() => os.themeSave(packToUserTheme(card))}
+                  aria-label={active ? `${card.name} is active` : `Apply theme ${card.name}`}
+                  title={installed ? 'Re-apply (refreshes your editable copy)' : 'Copy into your themes and apply'}
+                >
+                  {active ? 'Active ✓' : installed ? 'Re-apply' : 'Apply'}
+                </button>
+              </div>
+            );
+          })}
+          {!searchPacks(pq, pack).length && (
+            <p className="dim">No pack themes match “{pq.trim()}”.</p>
+          )}
         </div>
       </section>
 

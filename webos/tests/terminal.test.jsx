@@ -201,7 +201,7 @@ describe('wosh builtins', () => {
     await run('theme ocean');
     expect(cur.theme.preset).toBe('ocean');
     await run('theme nope');
-    expect(screen()).toContain('themes: midnight ocean forest sunset light');
+    expect(screen()).toContain('themes: midnight ocean forest sunset light omarchy cobalt');
     await run('accent emerald');
     expect(cur.theme.accent).toBe('#10b981');
     await run('accent #a1b2c3');
