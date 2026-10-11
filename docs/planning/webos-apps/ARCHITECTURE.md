@@ -493,6 +493,12 @@ DEFAULTS < patch < preset. The component bridges window-level pointer
 input (the wallpaper sits behind every window), scales the sim at
 `water.simScale` of the viewport, and falls back to the 2D Tide FX when
 WebGL2 or float render targets are missing (probed once, at first render).
+Settings → Appearance exposes the tuning surface: a search field over the
+picker, an FX animation-speed multiplier (`theme.fxSpeed`, all `fx:*`
+kinds), and — while `fx:water` is active — preset chips plus curated
+sliders/color pickers that write validated patches into `theme.water`
+(`mergeParams(DEFAULTS, {...patch, group})` — a partial stored patch
+normalizes on first edit instead of dropping edits).
 Reduced motion draws one calm static frame (`motion="gentle"` — the screen
 saver passes 0.35× speed instead of freezing). Driver hook:
 `?water-debug` exposes `window.__water` with live sim counters.

@@ -98,6 +98,8 @@ const DEFAULT_THEME = {
   preset: 'midnight', accent: '#38bdf8', wallpaper: '', dim: 1,
   // custom-image placement + adjustments (see os/wallpapers.js)
   fit: 'fill', pos: 'center center', blur: 0, bright: 1, sat: 1,
+  // FX wallpaper animation multiplier (fx:* kinds, incl. the water sim)
+  fxSpeed: 1,
 };
 
 /* Granular interface controls (Settings → Appearance / Desktop / Taskbar).

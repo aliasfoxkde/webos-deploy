@@ -265,6 +265,28 @@ describe('WaterWallpaper (WebGL2 available)', () => {
     expect(allOf(gl, 'texStorage2D').length).toBe(before + 2);
   });
 
+  it('live param updates reach the engine in place (no remount, no rebuild)', () => {
+    const c = render(<WaterWallpaper id="water-fx" params={structuredClone(DEFAULTS)} />);
+    act(() => { rafCalls[rafCalls.length - 1](16); });
+    const stored = allOf(gl, 'texStorage2D').length;
+    const canvasEl = c.container.querySelector('#water-fx');
+
+    const tuned = structuredClone(DEFAULTS);
+    tuned.optics.distortion = 0.9;
+    c.rerender(<WaterWallpaper id="water-fx" params={tuned} />);
+    act(() => { rafCalls[rafCalls.length - 1](16); });
+    const dist = [...allOf(gl, 'uniform1f')].reverse().find(([, n]) => n === 'uDistortion');
+    expect(dist[2]).toBeCloseTo(0.9);
+    expect(allOf(gl, 'texStorage2D').length).toBe(stored); // uniform-only
+
+    // a sim-scale change DOES rebuild — in place, same mounted engine
+    const rescaled = structuredClone(tuned);
+    rescaled.water.simScale = 0.25;
+    c.rerender(<WaterWallpaper id="water-fx" params={rescaled} />);
+    expect(allOf(gl, 'texStorage2D').length).toBe(stored + 2);
+    expect(c.container.querySelector('#water-fx')).toBe(canvasEl); // same mount
+  });
+
   it('re-arms on visibility change and disposes on unmount', () => {
     const c = render(<WaterWallpaper id="water-fx" />);
     const armed = rafCalls.length;

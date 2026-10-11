@@ -499,8 +499,13 @@ export default function App() {
   const fxKind = isFx(os.theme.wallpaper) ? os.theme.wallpaper.slice(3) : null;
   return (
     <>
-      {fxKind === 'water' && <WaterWallpaper params={resolveParams(os.theme.water, os.theme.waterPreset)} />}
-      {fxKind && fxKind !== 'water' && <FxWallpaper kind={fxKind} />}
+      {fxKind === 'water' && (
+        <WaterWallpaper
+          params={resolveParams(os.theme.water, os.theme.waterPreset)}
+          speed={os.theme.fxSpeed ?? 1}
+        />
+      )}
+      {fxKind && fxKind !== 'water' && <FxWallpaper kind={fxKind} speed={os.theme.fxSpeed ?? 1} />}
       {wp && <div id="wallpaper" aria-hidden="true" style={wp} />}
       <LensFilters />
       <main id="desktop" data-cm="desktop">

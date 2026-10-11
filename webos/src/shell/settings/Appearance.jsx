@@ -2,17 +2,20 @@ import React, { useRef } from 'react';
 import { useOS, ACCENTS, THEME_PRESETS } from '../../os/state.jsx';
 import { WALLPAPERS, FITS, POSITIONS } from '../../os/wallpapers.js';
 import { PERSONAS } from '../../os/personas.js';
+import { DEFAULTS, PRESET_NAMES, mergeParams } from '../../os/waterfx.js';
 
 // Uploaded wallpapers are data URLs in localStorage — cap them so the theme
 // key can never blow past quota (2.5MB compressed-ish JPEG territory).
 const MAX_UPLOAD = 2.5 * 1024 * 1024;
 
 const CATS = ['All', ...new Set(WALLPAPERS.map((w) => w.cat))];
+const presetLabel = (id) => id.replace(/\b\w/g, (ch) => ch.toUpperCase());
 
 export default function Appearance() {
   const os = useOS();
   const t = os.theme;
   const [cat, setCat] = React.useState('All');
+  const [q, setQ] = React.useState('');
   const fileRef = useRef(null);
 
   const onUpload = (e) => {
@@ -29,7 +32,20 @@ export default function Appearance() {
   };
 
   const isCustom = t.wallpaper.startsWith('http') || t.wallpaper.startsWith('data:');
-  const list = WALLPAPERS.filter((w) => cat === 'All' || w.cat === cat);
+  const isFx = t.wallpaper.startsWith('fx:');
+  const isWater = t.wallpaper === 'fx:water';
+  // every water control writes a validated patch — mergeParams against the
+  // DEFAULTS tree drops unknown keys/types, so a slider can never put
+  // garbage into the persisted theme (and a partial stored patch — older
+  // shape — normalizes to a full tree on the first edit instead of
+  // silently dropping edits to groups it doesn't carry)
+  const patchWater = (group, kv) =>
+    os.setTheme({ water: mergeParams(DEFAULTS, { ...t.water, [group]: kv }) });
+  const needle = q.trim().toLowerCase();
+  const list = WALLPAPERS.filter((w) => (cat === 'All' || w.cat === cat)
+    && (!needle
+      || w.label.toLowerCase().includes(needle)
+      || w.cat.toLowerCase().includes(needle)));
 
   return (
     <>
@@ -192,6 +208,15 @@ export default function Appearance() {
 
       <section>
         <h3>Wallpaper</h3>
+        <div className="row">
+          <input
+            type="search"
+            placeholder="Search wallpapers…"
+            aria-label="Search wallpapers"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+          />
+        </div>
         <div className="store-cats" style={{ marginBottom: 10 }}>
           {CATS.map((c) => (
             <button key={c} className={`chip ${cat === c ? 'on' : ''}`} onClick={() => setCat(c)}>{c}</button>
@@ -237,6 +262,151 @@ export default function Appearance() {
           <button className="btn" onClick={() => fileRef.current?.click()}>Upload…</button>
           <input ref={fileRef} type="file" accept="image/*" hidden onChange={onUpload} />
         </div>
+        {isFx && (
+          <div className="wx-adj">
+            <div className="row">
+              <label className="dim" htmlFor="fx-speed">Animation speed</label>
+              <input
+                id="fx-speed" type="range" min="0.25" max="3" step="0.25"
+                value={t.fxSpeed ?? 1}
+                onChange={(e) => os.setTheme({ fxSpeed: Number(e.target.value) })}
+                aria-label="Wallpaper animation speed"
+              />
+              <span className="dim" style={{ minWidth: 40, textAlign: 'right' }}>{t.fxSpeed ?? 1}×</span>
+            </div>
+          </div>
+        )}
+        {isWater && (
+          <div className="wx-adj">
+            <div className="row">
+              <span className="dim">Look</span>
+              <div className="seg-row" role="radiogroup" aria-label="Water look preset">
+                <button
+                  role="radio" aria-checked={!t.waterPreset}
+                  className={`chip ${!t.waterPreset ? 'on' : ''}`}
+                  onClick={() => os.setTheme({ waterPreset: '' })}
+                >Custom</button>
+                {PRESET_NAMES.map((id) => (
+                  <button
+                    key={id}
+                    role="radio" aria-checked={t.waterPreset === id}
+                    className={`chip ${t.waterPreset === id ? 'on' : ''}`}
+                    onClick={() => os.setTheme({ waterPreset: id })}
+                    title={`“${presetLabel(id)}” look — overrides matching custom knobs`}
+                  >{presetLabel(id)}</button>
+                ))}
+              </div>
+            </div>
+            <div className="row">
+              <span className="dim">Colors</span>
+              <input
+                type="color" value={t.water?.bg?.colorA || DEFAULTS.bg.colorA}
+                onChange={(e) => patchWater('bg', { colorA: e.target.value })}
+                aria-label="Water background color A"
+              />
+              <input
+                type="color" value={t.water?.bg?.colorB || DEFAULTS.bg.colorB}
+                onChange={(e) => patchWater('bg', { colorB: e.target.value })}
+                aria-label="Water background color B"
+              />
+            </div>
+            <div className="row">
+              <label className="dim" htmlFor="water-angle">Gradient angle</label>
+              <input
+                id="water-angle" type="range" min="0" max="360" step="5"
+                value={t.water?.bg?.angle ?? DEFAULTS.bg.angle}
+                onChange={(e) => patchWater('bg', { angle: Number(e.target.value) })}
+                aria-label="Water gradient angle"
+              />
+              <span className="dim" style={{ minWidth: 40, textAlign: 'right' }}>{t.water?.bg?.angle ?? DEFAULTS.bg.angle}°</span>
+            </div>
+            <div className="row">
+              <label className="dim" htmlFor="water-wavespeed">Wave speed</label>
+              <input
+                id="water-wavespeed" type="range" min="0.1" max="3" step="0.05"
+                value={t.water?.water?.waveSpeed ?? DEFAULTS.water.waveSpeed}
+                onChange={(e) => patchWater('water', { waveSpeed: Number(e.target.value) })}
+                aria-label="Water wave speed"
+              />
+            </div>
+            <div className="row">
+              <label className="dim" htmlFor="water-ripple">Ripple reach</label>
+              <input
+                id="water-ripple" type="range" min="0.005" max="0.12" step="0.005"
+                value={t.water?.water?.rippleRadius ?? DEFAULTS.water.rippleRadius}
+                onChange={(e) => patchWater('water', { rippleRadius: Number(e.target.value) })}
+                aria-label="Cursor ripple radius"
+              />
+              <label className="dim" htmlFor="water-ripplestr">force</label>
+              <input
+                id="water-ripplestr" type="range" min="0.05" max="2" step="0.05"
+                value={t.water?.water?.rippleStrength ?? DEFAULTS.water.rippleStrength}
+                onChange={(e) => patchWater('water', { rippleStrength: Number(e.target.value) })}
+                aria-label="Cursor ripple strength"
+              />
+            </div>
+            <div className="row">
+              <label className="dim" htmlFor="water-distort">Refraction</label>
+              <input
+                id="water-distort" type="range" min="0" max="1.5" step="0.05"
+                value={t.water?.optics?.distortion ?? DEFAULTS.optics.distortion}
+                onChange={(e) => patchWater('optics', { distortion: Number(e.target.value) })}
+                aria-label="Water refraction strength"
+              />
+              <label className="dim" htmlFor="water-turb">sway</label>
+              <input
+                id="water-turb" type="range" min="0" max="1" step="0.05"
+                value={t.water?.optics?.turbulence ?? DEFAULTS.optics.turbulence}
+                onChange={(e) => patchWater('optics', { turbulence: Number(e.target.value) })}
+                aria-label="Water ambient sway"
+              />
+            </div>
+            <label className="check-row">
+              <input
+                type="checkbox" aria-label="Ambient rain drops"
+                checked={!!t.water?.water?.rain}
+                onChange={(e) => patchWater('water', { rain: e.target.checked })}
+              />
+              Ambient rain drops
+            </label>
+            {!!t.water?.water?.rain && (
+              <div className="row">
+                <label className="dim" htmlFor="water-rainrate">Rain rate</label>
+                <input
+                  id="water-rainrate" type="range" min="0.5" max="12" step="0.5"
+                  value={t.water?.water?.rainRate ?? DEFAULTS.water.rainRate}
+                  onChange={(e) => patchWater('water', { rainRate: Number(e.target.value) })}
+                  aria-label="Rain drops per second"
+                />
+                <span className="dim" style={{ minWidth: 52, textAlign: 'right' }}>{t.water?.water?.rainRate ?? DEFAULTS.water.rainRate}/s</span>
+              </div>
+            )}
+            <div className="row">
+              <label className="dim" htmlFor="water-bright">Brightness</label>
+              <input
+                id="water-bright" type="range" min="0.5" max="1.5" step="0.05"
+                value={t.water?.grade?.brightness ?? DEFAULTS.grade.brightness}
+                onChange={(e) => patchWater('grade', { brightness: Number(e.target.value) })}
+                aria-label="Water brightness"
+              />
+              <label className="dim" htmlFor="water-vig">vignette</label>
+              <input
+                id="water-vig" type="range" min="0" max="1" step="0.05"
+                value={t.water?.overlay?.vignette ?? DEFAULTS.overlay.vignette}
+                onChange={(e) => patchWater('overlay', { vignette: Number(e.target.value) })}
+                aria-label="Water vignette"
+              />
+            </div>
+            <div className="row">
+              <button
+                className="btn slim"
+                onClick={() => os.setTheme({ water: undefined, waterPreset: '' })}
+              >
+                Reset water settings
+              </button>
+            </div>
+          </div>
+        )}
         {isCustom ? (
           <div className="wx-adj">
             <div className="row">

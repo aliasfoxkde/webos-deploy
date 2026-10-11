@@ -75,7 +75,10 @@ export default function Screensaver() {
       {/* gentle: reduced motion slows the saver to 0.35× instead of freezing it */}
       {isFx && <FxWallpaper kind={saver.kind} id="saver-fx" speed={saver.speed || 1} motion="gentle" />}
       {saver.kind === 'water' && (
-        <WaterWallpaper id="saver-fx" speed={0.35 * (saver.speed || 1)} motion="gentle" params={resolveParams(os.theme?.water)} />
+        <WaterWallpaper
+          id="saver-fx" speed={0.35 * (saver.speed || 1)} motion="gentle"
+          params={resolveParams(os.theme?.water, os.theme?.waterPreset)}
+        />
       )}
       {saver.kind === 'photos' && <PhotoShowcase secs={saver.photoSecs || 8} />}
       {saver.kind === 'clock' && <BigClock />}
