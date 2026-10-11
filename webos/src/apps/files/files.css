@@ -70,7 +70,7 @@
   width: 22px; height: 20px; line-height: 1; cursor: pointer; font-size: 0.66rem; padding: 0;
 }
 .f-actions button:hover { border-color: var(--accent); color: var(--accent); }
-.f-actions button.armed { color: #f87171; border-color: #f87171; width: auto; padding: 0 5px; }
+.f-actions button.armed { color: var(--danger); border-color: var(--danger); width: auto; padding: 0 5px; }
 .f-newdir input {
   width: 90%; border: 1px solid var(--accent); border-radius: 6px;
   background: rgba(0, 0, 0, 0.4); color: var(--text); font: inherit; font-size: 0.76rem;

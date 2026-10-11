@@ -2,7 +2,7 @@
    generic. Accent follows the window's --win-accent. */
 .calc {
   position: absolute; inset: 0; display: flex; flex-direction: column;
-  background: #10141c; overflow: hidden;
+  background: var(--paper); overflow: hidden;
 }
 .calc-tabs {
   display: flex; gap: 2px; padding: 6px 8px 0; flex-wrap: wrap;
@@ -27,7 +27,7 @@
   font-size: 0.6rem; letter-spacing: 0.08em; color: var(--text-dim);
   border: 1px solid var(--chrome-line); border-radius: 5px; padding: 1px 6px;
 }
-.calc-err { color: #f87171; font-size: 0.72rem; }
+.calc-err { color: var(--danger); font-size: 0.72rem; }
 .calc-entry {
   width: 100%; text-align: right; font-size: 1.55rem; font-weight: 500;
   background: transparent; border: 0; border-radius: 0; padding: 4px 2px 0;
@@ -43,19 +43,19 @@
 .keypad { display: grid; gap: 5px; flex: 0 0 auto; }
 .key {
   border: 1px solid var(--chrome-line); border-radius: 10px;
-  background: rgba(255, 255, 255, 0.05); color: var(--text);
+  background: color-mix(in srgb, var(--text) 5%, transparent); color: var(--text);
   min-height: 40px; font-size: 0.92rem; cursor: pointer;
   display: inline-flex; align-items: center; justify-content: center; gap: 2px;
 }
 .key small { color: var(--text-dim); font-size: 0.6rem; margin-left: 3px; }
-.key:hover { background: rgba(255, 255, 255, 0.11); }
+.key:hover { background: color-mix(in srgb, var(--text) 11%, transparent); }
 .key:active { transform: scale(0.97); }
 .key.num { font-size: 1rem; }
-.key.op { background: rgba(255, 255, 255, 0.09); }
+.key.op { background: color-mix(in srgb, var(--text) 9%, transparent); }
 .key.util { color: var(--text-dim); font-size: 0.8rem; }
-.key.util.danger { color: #f87171; }
+.key.util.danger { color: var(--danger); }
 .key.mem { min-height: 28px; font-size: 0.68rem; color: var(--text-dim); }
-.key.eq { background: var(--win-accent, var(--accent)); border-color: transparent; color: #06121c; font-weight: 700; }
+.key.eq { background: var(--win-accent, var(--accent)); border-color: transparent; color: var(--accent-ink); font-weight: 700; }
 .key.eq:hover { filter: brightness(1.12); background: var(--win-accent, var(--accent)); }
 .key.wide { grid-column: span 4; }
 .key.sci { min-height: 34px; font-size: 0.78rem; color: var(--text-dim); }
@@ -74,21 +74,21 @@
 .calc-history-list { max-height: 140px; overflow-y: auto; margin-top: 6px; display: flex; flex-direction: column; gap: 3px; }
 .calc-hist-row {
   display: flex; justify-content: space-between; gap: 10px; align-items: baseline;
-  border: 0; border-radius: 7px; background: rgba(255,255,255,0.04);
+  border: 0; border-radius: 7px; background: color-mix(in srgb, var(--text) 4%, transparent);
   padding: 5px 9px; font-size: 0.76rem; cursor: pointer; color: var(--text);
   text-align: left;
 }
-.calc-hist-row:hover { background: rgba(255,255,255,0.09); }
+.calc-hist-row:hover { background: color-mix(in srgb, var(--text) 9%, transparent); }
 .calc-hist-row strong { font-variant-numeric: tabular-nums; }
 
 /* graphing */
 .graph-mode .fn-editor { display: flex; flex-direction: column; gap: 5px; }
 .fn-row {
   display: flex; align-items: center; gap: 7px;
-  background: rgba(255,255,255,0.04); border: 1px solid var(--chrome-line);
+  background: color-mix(in srgb, var(--text) 4%, transparent); border: 1px solid var(--chrome-line);
   border-radius: 9px; padding: 3px 4px 3px 10px;
 }
-.fn-row.bad { border-color: rgba(248, 113, 113, 0.6); }
+.fn-row.bad { border-color: color-mix(in srgb, var(--danger) 60%, transparent); }
 .fn-dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 9px; }
 .fn-eq { font-size: 0.74rem; color: var(--text-dim); }
 .fn-row input {
@@ -102,7 +102,7 @@
   position: relative; flex: 1; min-height: 220px;
   border: 1px solid var(--chrome-line); border-radius: 12px;
   overflow: hidden; background:
-    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px) 0 0 / 100% 100%;
+    linear-gradient(color-mix(in srgb, var(--text) 5%, transparent) 1px, transparent 1px) 0 0 / 100% 100%;
   touch-action: none; cursor: crosshair;
 }
 .plot-canvas { position: absolute; inset: 0; display: block; }
@@ -129,7 +129,7 @@
 }
 .seg-btn + .seg-btn { border-left: 1px solid var(--chrome-line); }
 .seg-btn:hover { color: var(--text); }
-.seg-btn.on { background: var(--win-accent, var(--accent)); color: #06121c; font-weight: 600; }
+.seg-btn.on { background: var(--win-accent, var(--accent)); color: var(--accent-ink); font-weight: 600; }
 .seg-btn.mini { padding: 2px 7px; font-size: 0.6rem; }
 .prog-bases { display: flex; flex-direction: column; gap: 4px; }
 .prog-base-row { display: flex; align-items: center; gap: 8px; }
@@ -147,14 +147,14 @@
 .conv-side { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .conv-side input { font-size: 1.05rem; text-align: center; }
 .conv-side select {
-  background: rgba(255,255,255,0.06); border: 1px solid var(--chrome-line);
+  background: color-mix(in srgb, var(--text) 6%, transparent); border: 1px solid var(--chrome-line);
   border-radius: 8px; color: var(--text); padding: 6px; font: inherit; font-size: 0.78rem;
 }
-.conv-side select option { background: #10141c; }
+.conv-side select option { background: var(--paper); color: var(--text); }
 .conv-swap { align-self: center; font-size: 1rem; }
 .conv-result {
   font-size: 1.05rem; text-align: center; padding: 7px 6px;
-  background: rgba(255,255,255,0.05); border: 1px solid var(--chrome-line); border-radius: 8px;
+  background: color-mix(in srgb, var(--text) 5%, transparent); border: 1px solid var(--chrome-line); border-radius: 8px;
   font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .conv-formula { text-align: center; margin: 0; }

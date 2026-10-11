@@ -12,7 +12,7 @@
 }
 .wx-result:hover { background: rgba(255, 255, 255, 0.08); }
 .wx-result + .wx-result { border-top: 1px solid var(--chrome-line); }
-.wx-err { margin: 0; color: #f87171; font-size: 0.82rem; }
+.wx-err { margin: 0; color: var(--danger); font-size: 0.82rem; }
 .wx-empty {
   flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 8px; text-align: center; color: var(--text-dim); padding: 20px;

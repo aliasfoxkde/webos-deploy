@@ -65,7 +65,7 @@
 .tm-actions { text-align: right; }
 .tm-end {
   background: transparent;
-  border: 1px solid rgba(248, 113, 113, 0.5);
+  border: 1px solid color-mix(in srgb, var(--danger) 50%, transparent);
   color: #f8a5a5;
   border-radius: 6px;
   font: inherit;
@@ -73,7 +73,7 @@
   padding: 3px 10px;
   cursor: pointer;
 }
-.tm-end:hover:not(:disabled) { background: rgba(248, 113, 113, 0.15); }
+.tm-end:hover:not(:disabled) { background: color-mix(in srgb, var(--danger) 15%, transparent); }
 .tm-end:disabled { opacity: 0.4; cursor: default; }
 
 .tm-none { opacity: 0.6; text-align: center; padding: 18px 0; }

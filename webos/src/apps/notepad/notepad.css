@@ -101,7 +101,7 @@
   opacity: 0;
 }
 .np-item:hover .np-del, .np-del:focus-visible, .np-del.armed { opacity: 1; }
-.np-del:hover:not(.armed) { color: #f87171; }
+.np-del:hover:not(.armed) { color: var(--danger); }
 .np-del.armed { color: #fca5a5; font-weight: 700; }
 
 .np-none { padding: 18px 10px; font-size: 0.8rem; opacity: 0.6; text-align: center; }

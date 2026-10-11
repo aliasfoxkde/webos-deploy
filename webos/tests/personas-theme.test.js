@@ -5,31 +5,7 @@
 import { describe, it, expect } from 'vitest';
 import { PERSONAS, personaOf } from '../src/os/personas.js';
 import { THEME_PRESETS } from '../src/os/state.jsx';
-
-/* WCAG relative luminance + contrast ratio for #rrggbb pairs. */
-const luminance = (hex) => {
-  const c = hex.replace('#', '');
-  const [r, g, b] = [0, 2, 4]
-    .map((i) => parseInt(c.slice(i, i + 2), 16) / 255)
-    .map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-};
-const contrast = (a, b) => {
-  const [l1, l2] = [luminance(a), luminance(b)].sort((x, y) => y - x);
-  return (l1 + 0.05) / (l2 + 0.05);
-};
-
-/* Chrome is semi-transparent; flatten it over plausible dark-wallpaper
-   extremes so the ratio is checked against the darkest composite a user
-   can realistically sit the shell on. */
-const flatten = (rgba, base) => {
-  const m = rgba.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/);
-  if (!m) return rgba; // opaque — use as-is
-  const [, r, g, b, a] = m;
-  const baseC = base.replace('#', '').match(/../g).map((h) => parseInt(h, 16));
-  const mix = (s, i) => Math.round(Number(s) * Number(a) + baseC[i] * (1 - Number(a)));
-  return `#${[mix(r, 0), mix(g, 1), mix(b, 2)].map((v) => v.toString(16).padStart(2, '0')).join('')}`;
-};
+import { contrast, flatten, luminance } from './theme-math.js';
 
 describe('persona registry', () => {
   it('has unique ids and a working fallback lookup', () => {
@@ -59,7 +35,7 @@ describe('persona registry', () => {
 describe('theme presets', () => {
   it('every preset has a complete field set', () => {
     for (const [key, t] of Object.entries(THEME_PRESETS)) {
-      for (const field of ['label', 'text', 'dim', 'chrome', 'line', 'bg', 'paper']) {
+      for (const field of ['label', 'text', 'dim', 'chrome', 'line', 'bg', 'paper', 'danger', 'focus']) {
         expect(t[field], `${key}.${field}`).toBeTruthy();
       }
     }
