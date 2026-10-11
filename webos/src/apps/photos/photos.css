@@ -88,6 +88,72 @@
 
 .ph-crop-pad { position: absolute; inset: 0; cursor: crosshair; touch-action: none; }
 
+/* Inline editor for the text annotation, positioned at the click point. */
+.ph-text-input {
+  position: absolute;
+  min-width: 90px;
+  background: rgba(10, 14, 20, 0.85);
+  border: 1px solid var(--accent, #fbbf24);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-family: inherit;
+  font-weight: 600;
+}
+
+/* Markup / adjustments panels between stage and footer. */
+.ph-panel {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 6px 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.ph-tool {
+  background: transparent;
+  color: inherit;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 7px;
+  padding: 3px 9px;
+  font: inherit;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  cursor: pointer;
+}
+.ph-tool:hover:not(:disabled) { background: rgba(255, 255, 255, 0.1); }
+.ph-tool:disabled { opacity: 0.4; cursor: default; }
+.ph-tool.on { background: var(--accent, #fbbf24); border-color: transparent; color: #1a1205; font-weight: 600; }
+
+.ph-swatch {
+  width: 21px;
+  height: 21px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  padding: 0;
+  cursor: pointer;
+}
+.ph-swatch.on { border-color: var(--accent, #fbbf24); box-shadow: 0 0 0 1.5px #0a0e14 inset; }
+
+.ph-size {
+  background: transparent;
+  color: inherit;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 7px;
+  min-width: 28px;
+  padding: 3px 6px;
+  font: inherit;
+  font-size: 0.76rem;
+  cursor: pointer;
+}
+.ph-size:hover { background: rgba(255, 255, 255, 0.1); }
+.ph-size.on { background: var(--accent, #fbbf24); border-color: transparent; color: #1a1205; font-weight: 700; }
+
+.ph-slider { display: inline-flex; align-items: center; gap: 7px; font-size: 0.78rem; padding: 0 4px; }
+.ph-slider input[type='range'] { width: 110px; accent-color: var(--accent, #fbbf24); }
+.ph-slider-val { min-width: 4ch; font-variant-numeric: tabular-nums; opacity: 0.8; }
+
 .ph-empty {
   margin: auto;
   color: rgba(219, 228, 238, 0.6);
