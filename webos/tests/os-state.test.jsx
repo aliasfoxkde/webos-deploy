@@ -248,7 +248,7 @@ describe('install / uninstall / user apps', () => {
   });
 
   it('uninstall closes its windows, unpins, leaves groups and order', () => {
-    localStorage.setItem('webos.taskbar', JSON.stringify({ pinned: ['globe', 'terminal'] }));
+    localStorage.setItem('webos.taskbar', JSON.stringify({ pinned: ['globe', 'terminal'], startPins: ['globe', 'calc'] }));
     localStorage.setItem('webos.groups', JSON.stringify([{ id: 'g1', name: 'G', appIds: ['globe', 'terminal'] }]));
     localStorage.setItem('webos.desktop.order', JSON.stringify(['globe', 'terminal']));
     mount();
@@ -258,8 +258,23 @@ describe('install / uninstall / user apps', () => {
     expect(cur.installed).toEqual([]);
     expect(cur.windows).toEqual([]);
     expect(cur.taskbar.pinned).toEqual(['terminal']);
+    expect(cur.taskbar.startPins).toEqual(['calc']);
+    expect(stored('taskbar').startPins).toEqual(['calc']);
     expect(cur.groups[0].appIds).toEqual(['terminal']);
     expect(cur.order).toEqual(['terminal']);
+  });
+
+  it('startPins: seeded out of the box, user-manageable via setTaskbar, kept by resetLook', () => {
+    mount();
+    expect(cur.taskbar.startPins).toContain('photocraft');
+    act6((o) => o.setTaskbar({ startPins: ['calc'] }));
+    expect(stored('taskbar').startPins).toEqual(['calc']);
+    act6((o) => o.resetLook());
+    expect(cur.taskbar.startPins).toEqual(['calc']); // user pins survive a look reset
+    expect(cur.taskbar.align).toBe('left'); // …while layout knobs go factory
+    // the Settings panel only offers left/center/right; right must stick
+    act6((o) => o.setTaskbar({ align: 'right' }));
+    expect(cur.taskbar.align).toBe('right');
   });
 
   it('user apps add/update/remove, with the same uninstall cleanup', () => {

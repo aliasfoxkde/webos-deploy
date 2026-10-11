@@ -159,6 +159,30 @@ describe('App — context menus', () => {
     expect(osNow().windows).toHaveLength(0);
   });
 
+  it('Start tiles re-pin live: unpin removes the persisted tile, the All apps row restores it', async () => {
+    mount();
+    fireEvent.click(document.querySelector('#start-btn'));
+    await act(async () => {});
+    const tile = [...document.querySelectorAll('.sm-tile')].find((b) => b.textContent.includes('PhotoCraft'));
+    expect(tile?.getAttribute('data-cm')).toBe('smapp:photocraft');
+
+    await ctxOpen(tile);
+    fireEvent.click(ctxItem('Unpin from Start'));
+    await act(async () => {});
+    expect(osNow().taskbar.startPins).not.toContain('photocraft');
+    expect(JSON.parse(localStorage.getItem('webos.taskbar')).startPins).not.toContain('photocraft');
+    expect([...document.querySelectorAll('.sm-tile')].some((b) => b.textContent.includes('PhotoCraft'))).toBe(false);
+    expect(document.querySelector('#start-menu')).toBeTruthy(); // menu stays open for more pinning
+
+    const row = [...document.querySelectorAll('#start-menu .sm-cat .sm-app')]
+      .find((b) => b.textContent.includes('PhotoCraft'));
+    await ctxOpen(row);
+    fireEvent.click(ctxItem('Pin to Start'));
+    await act(async () => {});
+    expect(osNow().taskbar.startPins).toContain('photocraft');
+    expect([...document.querySelectorAll('.sm-tile')].some((b) => b.textContent.includes('PhotoCraft'))).toBe(true);
+  });
+
   it('the taskbar menu offers widgets and closes all windows', async () => {
     mount();
     fireEvent.click(screen.getByTitle(/^Calculator — /));

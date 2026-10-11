@@ -106,7 +106,11 @@ const DEFAULT_THEME = {
 const DEFAULT_UI = { scale: 1, anim: true, transparency: 1, radius: '', blur: '', focusHover: false, tbSide: '', titleAlign: '', font: '', shadow: '' };
 
 /* ---------- per-subsystem defaults ---------- */
-const DEFAULT_TASKBAR = { position: 'bottom', align: 'left', iconSize: 'md', autohide: false, labels: true, clock24: false, showDate: true, pinned: [] };
+// Out-of-the-box Start pins; users re-pin freely (StartMenu tiles, App.jsx
+// "Pin to Start"). Filtered to apps that actually exist at render time, so a
+// stale id (uninstalled mid-session) never renders a dead tile.
+export const DEFAULT_START_PINS = ['photocraft', 'vectorcraft', 'gridcraft', 'wordcraft', 'files', 'terminal', 'chat', 'chatgpt'];
+const DEFAULT_TASKBAR = { position: 'bottom', align: 'left', iconSize: 'md', autohide: false, labels: true, clock24: false, showDate: true, pinned: [], startPins: [...DEFAULT_START_PINS] };
 const DEFAULT_WIDGETS = { enabled: ['weather', 'clock', 'battery', 'events', 'notes', 'storage', 'chat'] };
 const DEFAULT_DESKTOP = { iconSize: 'md', gap: 'normal', sort: 'custom' };
 const DEFAULT_VOLUME = { level: 0.7, muted: false };
@@ -124,6 +128,13 @@ export const WIDGET_IDS = ['weather', 'clock', 'battery', 'events', 'notes', 'st
    group automatically; empty groups persist until removed by the user. */
 const withoutApp = (groups, appId) =>
   groups.map((g) => (g.appIds.includes(appId) ? { ...g, appIds: g.appIds.filter((x) => x !== appId) } : g));
+
+// An app leaving the system also leaves both pin surfaces (taskbar + Start).
+const dropPin = (taskbar, appId) => ({
+  ...taskbar,
+  pinned: (taskbar.pinned || []).filter((id) => id !== appId),
+  startPins: (taskbar.startPins || []).filter((id) => id !== appId),
+});
 
 /* ---------- reducer ---------- */
 // Scale a `rgba(r,g,b,a)` chrome color's alpha by the transparency strength
@@ -290,7 +301,7 @@ function reducer(state, action) {
     case 'uninstall': {
       const installed = state.installed.filter((id) => id !== action.appId);
       save('installed', installed);
-      const taskbar = { ...state.taskbar, pinned: (state.taskbar.pinned || []).filter((id) => id !== action.appId) };
+      const taskbar = dropPin(state.taskbar, action.appId);
       save('taskbar', taskbar);
       const groups = withoutApp(state.groups, action.appId);
       save('groups', groups);
@@ -318,7 +329,7 @@ function reducer(state, action) {
     case 'removeUserApp': {
       const userApps = state.userApps.filter((a) => a.id !== action.appId);
       save('userapps', userApps);
-      const taskbar = { ...state.taskbar, pinned: (state.taskbar.pinned || []).filter((id) => id !== action.appId) };
+      const taskbar = dropPin(state.taskbar, action.appId);
       save('taskbar', taskbar);
       const groups = withoutApp(state.groups, action.appId);
       save('groups', groups);
@@ -414,7 +425,7 @@ function reducer(state, action) {
     case 'resetLook': {
       const theme = { ...DEFAULT_THEME };
       const ui = { ...DEFAULT_UI };
-      const taskbar = { ...DEFAULT_TASKBAR, pinned: state.taskbar.pinned };
+      const taskbar = { ...DEFAULT_TASKBAR, pinned: state.taskbar.pinned, startPins: state.taskbar.startPins };
       const desktop = { ...DEFAULT_DESKTOP };
       const widgets = { ...DEFAULT_WIDGETS };
       const volume = { ...DEFAULT_VOLUME };

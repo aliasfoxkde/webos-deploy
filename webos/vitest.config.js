@@ -20,10 +20,10 @@ export default defineConfig({
       // Raise as tests land; a regression in any metric fails `npm run
       // coverage`.
       thresholds: {
-        statements: 77,
-        branches: 71.8,
-        functions: 69.5,
-        lines: 80,
+        statements: 77.3,
+        branches: 72,
+        functions: 69.9,
+        lines: 80.3,
       },
     },
   },

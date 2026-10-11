@@ -217,29 +217,33 @@ export default function Taskbar({ openStart, startOpen, openSettings, toggleWidg
   return (
     <>
       <footer id="taskbar" data-cm="taskbar" ref={rootRef}>
-        <button id="start-btn" className={startOpen ? 'open' : ''} onClick={openStart} title="Start">
-          <img src="icons/logo.svg" alt="" />{os.taskbar.labels && <span>Start</span>}
-        </button>
-        <div id="task-apps">
-          {tbApps.map((app) => {
-            const wins = winsByApp.get(app.id) || [];
-            const focused = wins.some((w) => os.focused === w.id && !w.min);
-            const isPinned = pinnedIds.includes(app.id);
-            return (
-              <button
-                key={`tb-${app.id}`}
-                className={`task-app ${focused ? 'focused' : ''}`}
-                data-cm={`app:${app.id}`}
-                {...(isPinned ? { 'data-pin': pinnedIds.indexOf(app.id) } : {})}
-                onClick={() => { if (!swallowed.current) clickApp(app.id); }}
-                {...(isPinned ? { onPointerDown: (e) => beginPinDrag(e, app.id) } : {})}
-                title={app.name}
-              >
-                <img src={app.icon} alt="" />{os.taskbar.labels && <span>{app.name}</span>}
-                {!!wins.length && <span className="pin-dot" />}
-              </button>
-            );
-          })}
+        {/* Start + running apps form one group whose inline alignment
+            (Settings → Taskbar) the data-tb-align CSS rules control. */}
+        <div id="tb-main">
+          <button id="start-btn" className={startOpen ? 'open' : ''} onClick={openStart} title="Start">
+            <img src="icons/logo.svg" alt="" />{os.taskbar.labels && <span>Start</span>}
+          </button>
+          <div id="task-apps">
+            {tbApps.map((app) => {
+              const wins = winsByApp.get(app.id) || [];
+              const focused = wins.some((w) => os.focused === w.id && !w.min);
+              const isPinned = pinnedIds.includes(app.id);
+              return (
+                <button
+                  key={`tb-${app.id}`}
+                  className={`task-app ${focused ? 'focused' : ''}`}
+                  data-cm={`app:${app.id}`}
+                  {...(isPinned ? { 'data-pin': pinnedIds.indexOf(app.id) } : {})}
+                  onClick={() => { if (!swallowed.current) clickApp(app.id); }}
+                  {...(isPinned ? { onPointerDown: (e) => beginPinDrag(e, app.id) } : {})}
+                  title={app.name}
+                >
+                  <img src={app.icon} alt="" />{os.taskbar.labels && <span>{app.name}</span>}
+                  {!!wins.length && <span className="pin-dot" />}
+                </button>
+              );
+            })}
+          </div>
         </div>
         <div id="tray">
           <button

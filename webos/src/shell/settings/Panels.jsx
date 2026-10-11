@@ -79,7 +79,7 @@ export function TaskbarPanel() {
         <div className="row">
           <span className="dim">Align apps</span>
           <div className="seg-row" role="radiogroup" aria-label="Taskbar alignment">
-            {[['left', 'Left'], ['center', 'Center']].map(([id, label]) => (
+            {[['left', 'Left'], ['center', 'Center'], ['right', 'Right']].map(([id, label]) => (
               <button
                 key={id}
                 role="radio" aria-checked={(tb.align || 'left') === id}

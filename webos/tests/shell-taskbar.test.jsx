@@ -2,6 +2,8 @@
 // and the global useContextMenu hook.
 import React, { useCallback } from 'react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { render, act, cleanup, fireEvent } from '@testing-library/react';
 import { OSProvider, useOS } from '../src/os/state.jsx';
 import Taskbar from '../src/shell/Taskbar.jsx';
@@ -51,6 +53,24 @@ describe('Taskbar', () => {
     expect(c.container.querySelector('[data-tray="vol"]')).toBeTruthy();
     expect(c.container.querySelector('[data-tray="net"]')).toBeTruthy();
     expect(c.container.querySelector('#clock-time').textContent).toMatch(/\d{1,2}:\d{2}/);
+  });
+
+  it('Start + apps form one #tb-main group the alignment setting can move', () => {
+    const c = setup(true);
+    const main = c.container.querySelector('#tb-main');
+    expect(main).toBeTruthy();
+    expect(main.querySelector('#start-btn')).toBeTruthy();
+    expect(main.querySelector('#task-apps')).toBeTruthy();
+  });
+
+  it('every alignment value has real CSS — no decorative settings (data-tb-align)', () => {
+    // state.jsx writes body[data-tb-align]; this guards that styles.css
+    // actually consumes it for BOTH surfaces (bar group + menu anchor).
+    const css = readFileSync(resolve(process.cwd(), 'src/styles.css'), 'utf8');
+    for (const align of ['center', 'right']) {
+      expect(css).toMatch(new RegExp(`body\\[data-tb-align="${align}"\\] #tb-main`));
+      expect(css).toMatch(new RegExp(`body\\[data-tb-align="${align}"\\] #start-menu`));
+    }
   });
 
   it('appends running-but-unpinned apps after the pins, with a running dot', () => {

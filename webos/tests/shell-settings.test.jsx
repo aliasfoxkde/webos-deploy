@@ -45,4 +45,15 @@ describe('Settings', () => {
     c.rerender(<OSProvider><Settings args={{}} /></OSProvider>);
     expect(activeRail(c)).toContain('Taskbar'); // stays where it was
   });
+
+  it('Taskbar panel: alignment offers left/center/right and the choice sticks + persists', () => {
+    const c = mountAt({ initial: 'taskbar' });
+    const group = c.container.querySelector('[role="radiogroup"][aria-label="Taskbar alignment"]');
+    const chips = [...group.querySelectorAll('[role="radio"]')];
+    expect(chips.map((b) => b.textContent)).toEqual(['Left', 'Center', 'Right']);
+    fireEvent.click(chips[2]); // Right
+    expect(JSON.parse(localStorage.getItem('webos.taskbar')).align).toBe('right');
+    expect(chips[2].getAttribute('aria-checked')).toBe('true');
+    expect(document.body.dataset.tbAlign).toBe('right'); // the CSS hook goes live
+  });
 });

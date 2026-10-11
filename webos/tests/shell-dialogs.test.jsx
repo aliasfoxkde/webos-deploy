@@ -136,6 +136,42 @@ describe('StartMenu', () => {
     expect(c2.container.textContent).toContain('Recommended');
     expect([...c2.container.querySelectorAll('.sm-app')].some((b) => b.textContent.includes('Calculator'))).toBe(true);
   });
+
+  it('pinned tiles follow the persisted startPins slice; rows expose the pin menu', () => {
+    localStorage.setItem('webos.taskbar', JSON.stringify({ startPins: ['calc'] }));
+    const c = setup();
+    let tiles = [...c.container.querySelectorAll('.sm-tile')];
+    expect(tiles.map((t) => t.textContent)).toEqual(['Calculator']);
+    expect(tiles[0].getAttribute('data-cm')).toBe('smapp:calc'); // right-click target
+    // unpin everything: the grid empties but the menu keeps working
+    act(() => cur.setTaskbar({ startPins: [] }));
+    expect(c.container.querySelectorAll('.sm-tile')).toHaveLength(0);
+    expect(c.container.textContent).toContain('All apps');
+    // a stale pin (uninstalled app) renders as nothing, never a dead tile
+    localStorage.setItem('webos.taskbar', JSON.stringify({ startPins: ['calc', 'not-an-app'] }));
+    const c2 = setup();
+    expect([...c2.container.querySelectorAll('.sm-tile')].map((t) => t.textContent)).toEqual(['Calculator']);
+  });
+
+  it('Arrow keys walk the focusable rows with wraparound; Home/End jump to the ends', () => {
+    const c = setup();
+    const rows = () => [...c.container.querySelectorAll('#start-menu button, #start-menu input')];
+    const input = c.container.querySelector('.sm-search');
+    input.focus();
+    expect(document.activeElement).toBe(input);
+    fireEvent.keyDown(input, { key: 'ArrowDown' });
+    expect(document.activeElement).toBe(rows()[1]);
+    fireEvent.keyDown(document.activeElement, { key: 'ArrowUp' });
+    expect(document.activeElement).toBe(input); // back to the search box
+    fireEvent.keyDown(input, { key: 'ArrowUp' });
+    expect(document.activeElement).toBe(rows()[rows().length - 1]); // wraps to last
+    fireEvent.keyDown(document.activeElement, { key: 'ArrowDown' });
+    expect(document.activeElement).toBe(input); // …and forward wraps to first
+    fireEvent.keyDown(input, { key: 'End' });
+    expect(document.activeElement).toBe(rows()[rows().length - 1]);
+    fireEvent.keyDown(document.activeElement, { key: 'Home' });
+    expect(document.activeElement).toBe(input);
+  });
 });
 
 describe('Welcome', () => {

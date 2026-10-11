@@ -185,6 +185,12 @@ export default function App() {
     os.setTaskbar({ pinned: cur.includes(appId) ? cur.filter((id) => id !== appId) : [...cur, appId] });
   }, [os]);
 
+  // Same for the Start menu's pinned grid (right-click any Start row/tile).
+  const toggleStartPin = useCallback((appId) => {
+    const cur = os.taskbar.startPins || [];
+    os.setTaskbar({ startPins: cur.includes(appId) ? cur.filter((id) => id !== appId) : [...cur, appId] });
+  }, [os]);
+
   // Context menu items per target kind.
   const buildItems = useCallback((kind, arg) => {
     switch (kind) {
@@ -266,6 +272,19 @@ export default function App() {
         }
         return items;
       }
+      case 'smapp': {
+        // A Start menu row/tile: open + manage both pin surfaces.
+        const app = os.findApp(arg);
+        if (!app) return [];
+        const startPinned = (os.taskbar.startPins || []).includes(app.id);
+        const taskbarPinned = (os.taskbar.pinned || []).includes(app.id);
+        return [
+          { label: `Open ${app.name}`, icon: app.icon, run: () => os.launch(app.id) },
+          '-',
+          { label: startPinned ? 'Unpin from Start' : 'Pin to Start', run: () => toggleStartPin(app.id) },
+          { label: taskbarPinned ? 'Unpin from taskbar' : 'Pin to taskbar', run: () => togglePin(app.id) },
+        ];
+      }
       case 'titlebar': {
         const w = os.windows.find((x) => x.id === Number(arg));
         const app = w && os.findApp(w.appId);
@@ -299,7 +318,7 @@ export default function App() {
       default:
         return null;
     }
-  }, [os, togglePin]);
+  }, [os, togglePin, toggleStartPin]);
   const { menu } = useContextMenu(buildItems);
 
   // Close the start menu on any click outside it (or the Start button), or on

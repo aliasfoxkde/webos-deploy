@@ -5,19 +5,18 @@ import { SECTIONS } from './Settings.jsx';
 
 /* Start menu, search-first (PROGRAM-3 §4):
    search box → apps + settings sections + "Ask AI" row; below it the pinned
-   grid, a Recommended row (launch recents), all apps grouped by category,
-   and a footer with the user chip + power menu. Persona variants are CSS
-   only (body[data-persona] rules in styles.css). */
+   grid (user-managed via right-click → Pin/Unpin), a Recommended row (launch
+   recents), all apps grouped by category, and a footer with the user chip +
+   power menu. Persona variants are CSS only (body[data-persona] rules in
+   styles.css). Arrow keys walk the menu's focusable rows. */
 
 const CATEGORY_ORDER = ['Design', 'Photo', 'Productivity', 'Media', 'Social', 'Games', 'Creative', 'Development', 'Tools', 'Utilities', 'System'];
-
-// Out-of-the-box pinned tiles; filtered to apps that actually exist.
-const DEFAULT_PINNED = ['photocraft', 'vectorcraft', 'gridcraft', 'wordcraft', 'files', 'terminal', 'chat', 'chatgpt'];
 
 export default function StartMenu({ open, onClose, openStore, openSettings, onPower }) {
   const os = useOS();
   const [q, setQ] = useState('');
   const inputRef = useRef(null);
+  const rootRef = useRef(null);
   useEffect(() => {
     if (open) {
       // reset + focus asynchronously — setState inside the effect body would
@@ -27,6 +26,20 @@ export default function StartMenu({ open, onClose, openStore, openSettings, onPo
     }
     return undefined;
   }, [open]);
+
+  /* ArrowUp/ArrowDown walk every focusable row (search box included), with
+     wraparound; Home/End jump to the ends. The search input is just the first
+     stop, so one handler on the root covers the whole menu. */
+  const onKeyDown = (e) => {
+    if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)) return;
+    const items = [...(rootRef.current?.querySelectorAll('button, input') ?? [])];
+    if (!items.length) return;
+    e.preventDefault();
+    const i = items.indexOf(document.activeElement);
+    if (e.key === 'Home') items[0]?.focus();
+    else if (e.key === 'End') items[items.length - 1]?.focus();
+    else items[i === -1 ? 0 : (i + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length]?.focus();
+  };
 
   const groups = useMemo(() => {
     const byCat = new Map();
@@ -49,11 +62,13 @@ export default function StartMenu({ open, onClose, openStore, openSettings, onPo
   const secHits = query
     ? SECTIONS.filter((s) => s.label.toLowerCase().includes(query)).slice(0, 4)
     : [];
-  const pinned = DEFAULT_PINNED.map((id) => os.apps.find((a) => a.id === id)).filter(Boolean);
+  const pins = os.taskbar.startPins || [];
+  const pinned = pins.map((id) => os.apps.find((a) => a.id === id)).filter(Boolean);
   const recommend = query ? [] : os.recents.map((id) => os.apps.find((a) => a.id === id)).filter(Boolean).slice(0, 6);
 
   return (
-    <div id="start-menu">
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- focus-delegation point only: it walks focus among the native buttons below
+    <div id="start-menu" role="dialog" aria-label="Start menu" ref={rootRef} onKeyDown={onKeyDown}>
       <div className="sm-search-row">
         <span className="sm-search-icon" aria-hidden="true">⌕</span>
         <input
@@ -78,7 +93,7 @@ export default function StartMenu({ open, onClose, openStore, openSettings, onPo
           <button className="sm-link sm-ai" onClick={() => launch('chat')}>✦ Ask AI<span className="sub">assistant · no model configured yet</span></button>
           {appHits.length > 0 && <div className="sm-section">Apps</div>}
           {appHits.map((app) => (
-            <button key={app.id} className="sm-app" onClick={() => launch(app.id)}>
+            <button key={app.id} className="sm-app" data-cm={`smapp:${app.id}`} onClick={() => launch(app.id)}>
               <img src={app.icon} alt="" />
               <span>{app.name}<span className="sub">{app.tagline}</span></span>
             </button>
@@ -102,7 +117,7 @@ export default function StartMenu({ open, onClose, openStore, openSettings, onPo
           <div className="sm-section">Pinned</div>
           <div className="sm-grid">
             {pinned.map((app) => (
-              <button key={app.id} className="sm-tile" onClick={() => launch(app.id)} title={`${app.name} — ${app.tagline}`}>
+              <button key={app.id} className="sm-tile" data-cm={`smapp:${app.id}`} onClick={() => launch(app.id)} title={`${app.name} — ${app.tagline}`}>
                 <img src={app.icon} alt="" />
                 <span>{app.name}</span>
               </button>
@@ -125,7 +140,7 @@ export default function StartMenu({ open, onClose, openStore, openSettings, onPo
               <div className="sm-cat-name">{cat}</div>
               <div className="sm-rowset">
                 {apps.map((app) => (
-                  <button key={app.id} className="sm-app" onClick={() => launch(app.id)} title={`${app.name} — ${app.tagline}`}>
+                  <button key={app.id} className="sm-app" data-cm={`smapp:${app.id}`} onClick={() => launch(app.id)} title={`${app.name} — ${app.tagline}`}>
                     <img src={app.icon} alt="" />
                     <span>{app.name}</span>
                   </button>

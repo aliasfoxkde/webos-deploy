@@ -224,14 +224,26 @@ body[data-tb-autohide][data-tb="top"] #taskbar { transform: translateY(calc(-100
 body[data-tb-autohide] #taskbar:hover,
 body[data-tb-autohide] #taskbar:focus-within { transform: none; }
 
+/* Start + running apps are one group; the data-tb-align rules below choose
+   where it sits between the screen edge and the tray. */
+#tb-main {
+  flex: 1 1 0; min-width: 0; display: flex; align-items: center; gap: 8px;
+}
 #start-btn {
   flex: 0 0 auto; /* task items must never crowd the Start button */
-  display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 14px;
-  border: 1px solid var(--chrome-line); border-radius: 9px; background: rgba(255,255,255,0.05);
-  font-size: 0.82rem; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 10px;
+  border: 0; border-radius: 9px; background: transparent;
+  color: var(--text); font-size: 0.82rem; font-weight: 600; cursor: pointer;
 }
-#start-btn:hover, #start-btn.open { background: rgba(255, 255, 255, 0.12); }
+#start-btn img { width: 20px; height: 20px; }
+#start-btn:hover, #start-btn.open { background: rgba(255, 255, 255, 0.09); }
 #task-apps { flex: 1 1 0; min-width: 0; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: thin; }
+/* Centered/right-aligned bars: the app strip hugs its content so the group
+   actually moves; left (default) keeps it filling the bar. */
+body[data-tb-align="center"] #tb-main { justify-content: center; }
+body[data-tb-align="center"] #task-apps,
+body[data-tb-align="right"] #task-apps { flex: 0 1 auto; }
+body[data-tb-align="right"] #tb-main { justify-content: flex-end; }
 .task-app {
   display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 12px; max-width: 190px;
   border: 1px solid var(--chrome-line); border-radius: 9px; background: rgba(255,255,255,0.04);
@@ -330,6 +342,8 @@ body[data-tb="top"] .tb-pop { top: 60px; }
   border: 0; background: transparent; cursor: pointer; text-align: left;
 }
 #start-menu .sm-links a:hover, .sm-link:hover { background: rgba(255, 255, 255, 0.08); color: var(--text); }
+/* Keyboard walking (Arrow keys) needs a visible stop on every row. */
+#start-menu :is(button, input):focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 
 /* ---- context menu ---- */
 .ctx-menu {
@@ -509,6 +523,10 @@ body[data-persona="bsd"] .store-actions .btn.danger, body[data-persona="tui"] .s
 
 /* Start menu anchors to whichever edge the taskbar lives on. */
 body[data-tb="top"] #start-menu { bottom: auto; top: 60px; }
+/* Horizontal anchoring follows the taskbar alignment. `translate` (not
+   transform) so it composes with the rise/drop-in keyframe transforms. */
+body[data-tb-align="center"] #start-menu { left: 50%; translate: -50% 0; }
+body[data-tb-align="right"] #start-menu { left: auto; right: 10px; }
 
 /* ---- generic helpers ---- */
 .flex1 { flex: 1; }
@@ -1113,8 +1131,10 @@ body[data-tb-ico="lg"] .task-app img { width: 22px; height: 22px; }
 #start-menu .sm-ai:hover { background: color-mix(in srgb, var(--accent) 14%, transparent); }
 #start-menu .sm-link .sub { display: block; font-size: 0.62rem; color: var(--text-dim); }
 
-/* ---- start menu 2.8: search-first, pinned grid, categories, power ---- */
-#start-menu { width: 580px; left: 50%; transform: translateX(-50%); padding: 0; overflow: hidden; display: flex; flex-direction: column; }
+/* ---- start menu 2.8: search-first, pinned grid, categories, power ----
+   Width + chrome only — horizontal anchoring belongs to the data-tb-align
+   rules (base left / center translate / right), not hard-coded here. */
+#start-menu { width: 580px; padding: 0; overflow: hidden; display: flex; flex-direction: column; }
 #start-menu .sm-search-row { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-bottom: 1px solid var(--chrome-line); }
 .sm-search-icon { color: var(--text-dim); font-size: 1rem; }
 .sm-search {

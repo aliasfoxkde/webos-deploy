@@ -109,9 +109,14 @@ dim, image fit/pos/blur/brightness/saturation — images render in the
 (iconSize, sort) · `groups` (desktop icon groups: `{ id: 'grp-…', name,
 appIds }` — grouped icons leave the grid and live inside their folder tile;
 `desktop.order` stores group ids too, uninstalling an app unfiles it) ·
-`taskbar` (position bottom|top, autohide, labels, clock24,
-showDate, pinned app ids — drag icons onto the bar to pin, drag within the bar
-to reorder) · `widgets`
+`taskbar` (position bottom|top, align left|center|right — drives the
+`data-tb-align` body attr that anchors the Start+apps group and the Start
+menu (base CSS: left; center/right rules in styles.css; the 2.8 restyle's
+wide menu deliberately no longer hard-codes its own anchoring), autohide,
+labels, clock24, showDate, `pinned` app ids — drag icons onto the bar to
+pin, drag within the bar to reorder — and `startPins` app ids for the
+Start menu grid (right-click any Start row/tile → Pin/Unpin to Start;
+defaults seeded from `DEFAULT_START_PINS`, cleaned on uninstall) · `widgets`
 (enabled ids in display order) · `volume` (level, muted; broadcast to apps as a
 `webos:volume` CustomEvent) · `uiMode` (auto|desktop|mobile) · `events` ·
 `notes` · `weather.loc` + `weather.units` (metric|imperial; app and sidebar
