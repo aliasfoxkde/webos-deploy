@@ -21,7 +21,7 @@ export default function Welcome({ onEnter }) {
         </header>
 
         <ul className="wl-feats">
-          <li>8 real craft apps — CADCraft, PhotoCraft, GridCraft, WordCraft and friends — plus an App Store of web apps</li>
+          <li>11 real craft apps — CADCraft, PhotoCraft, SoundCraft, EffectCraft and friends — plus an App Store of web apps</li>
           <li>Real windows: drag, tile to halves and quadrants (Meta+arrows), minimize, maximize</li>
           <li>Files app with persistent storage, and a Terminal with a real SQLite database</li>
           <li>Widgets, wallpaper pack, icon groups, custom apps — everything stays in your browser</li>

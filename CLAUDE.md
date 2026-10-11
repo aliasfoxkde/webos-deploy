@@ -23,8 +23,10 @@ A checkout area holding 8 sibling **ArtCraft "craft" apps** — clean-room, pure
 | `vectorcraft/` | VectorCraft | Illustrator | 0.7.0 |
 | `wordcraft/` | WordCraft | Word | 0.3.0 |
 | `apps/deckcraft/` | DeckCraft | PowerPoint | 0.4.0 |
+| `apps/soundcraft/` | SoundCraft | Pro Tools | 0.5.0 |
+| `apps/effectcraft/` | EffectCraft | After Effects | 0.8.0 |
 
-DeckCraft's checkout lives at `apps/deckcraft/` (inside the gitignored apps/ dir, not a sibling) and its web build is deployed from that checkout to `deckcraft-web.pages.dev` — it has no upstream release zip yet, so it is NOT in `packaging/fetch-apps.sh`'s list (`--force` would `rm -rf` the checkout). (`filmcraft`, `effectcraft` are referenced in docs as siblings but are not checked out here. Docs reference `storytold/<app>` repos; the actual remotes use the `aliasfoxkde` org.)
+DeckCraft, SoundCraft and EffectCraft checkouts live at `apps/<name>/` (inside the gitignored apps/ dir, not siblings) and their web builds deploy from those checkouts to `<name>-web.pages.dev` — they have no upstream release zips yet, so they are NOT in `packaging/fetch-apps.sh`'s list (`--force` would `rm -rf` the checkouts). DeckCraft builds with `trunk build --release`; EffectCraft builds with `cargo xtask web` (its own PWA glue, not trunk). (`filmcraft` is referenced in docs as a sibling but is not checked out here. Docs reference `storytold/<app>` repos; the actual remotes use the `aliasfoxkde` org.)
 
 ## Read the per-repo agent doc first
 

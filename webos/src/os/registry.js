@@ -15,7 +15,9 @@
 import { PLUGIN_APPS } from '../apps/manifests.js';
 
 export const DEFAULT_APPS = [
-  // -- the 8 craft apps (deployed on Cloudflare Pages from upstream release zips) --
+  // -- the 11 craft apps (most deployed on Cloudflare Pages from upstream
+  //    release zips; deckcraft/soundcraft/effectcraft deploy from their
+  //    apps/<name> source checkouts — see packaging/fetch-apps.sh) --
   {
     id: 'cadcraft', name: 'CADCraft', tagline: 'CAD & drafting', version: '0.3.0',
     url: 'https://cadcraft-web.pages.dev/', icon: 'icons/craft/cadcraft.png', accent: '#22d3ee', embed: true,
@@ -69,6 +71,18 @@ export const DEFAULT_APPS = [
     url: 'https://deckcraft-web.pages.dev/', icon: 'icons/craft/deckcraft.png', accent: '#fb923c', embed: true,
     developer: 'ArtCraft', category: 'Productivity', rating: 4.4, reviews: 58,
     description: 'Slide decks with real layout: masters, placeholders, themes, shape geometry, and presenter flow — a clean-room reimagining of the classic presentation suite in Rust/WebAssembly.',
+  },
+  {
+    id: 'soundcraft', name: 'SoundCraft', tagline: 'Audio workstation', version: '0.5.0',
+    url: 'https://soundcraft-web.pages.dev/', icon: 'icons/craft/soundcraft.png', accent: '#2dd4bf', embed: true,
+    developer: 'ArtCraft', category: 'Media', rating: 4.5, reviews: 63,
+    description: 'A multitrack digital audio workstation: recording, mixing, editing, and routing with a real mixer model — a clean-room reimagining of the classic pro DAW in Rust/WebAssembly.',
+  },
+  {
+    id: 'effectcraft', name: 'EffectCraft', tagline: 'Motion graphics & VFX', version: '0.8.0',
+    url: 'https://effectcraft-web.pages.dev/', icon: 'icons/craft/effectcraft.png', accent: '#fb7185', embed: true,
+    developer: 'ArtCraft', category: 'Media', rating: 4.7, reviews: 91,
+    description: 'Layer-based motion graphics and visual effects: keyframes, effects, masks, trackers, and a GPU compositor with a render queue — a clean-room reimagining of the classic motion suite in Rust/WebAssembly.',
   },
 
   // -- extra default apps --

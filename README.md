@@ -1,6 +1,6 @@
 # ArtCraft WebOS
 
-A browser desktop ("WebOS") for the 8 ArtCraft craft apps, plus bundled
+A browser desktop ("WebOS") for the 11 ArtCraft craft apps, plus bundled
 first-party apps, an App Store of curated external web apps, and a
 customizable widget sidebar. Everything is **100% client-side rendered** —
 the shell is a Vite + React SPA, app builds are static WASM sites, and no
@@ -17,7 +17,7 @@ webos/          the OS shell (Vite + React) → deploys to artcraft-webos.pages.
 apps/           fetched upstream builds, one dir per app   [gitignored]
 zips/           release zip cache                          [gitignored]
 r2-blobs/       >25 MiB wasm blobs, uploaded to R2         [gitignored]
-packaging/      fetch-apps.sh, pwa-inject.sh, icons-*.sh, HOSTING.md
+packaging/      fetch-apps.sh, pwa-inject.sh, icons-*.sh
 docs/           architecture + planning notes
 cadcraft/ … zed/   sibling independent source repos (NOT part of this repo)
 ```
@@ -29,6 +29,8 @@ cadcraft/ … zed/   sibling independent source repos (NOT part of this repo)
 | artcraft-webos (the desktop) | https://artcraft-webos.pages.dev/ |
 | craft apps | `https://<app>-web.pages.dev/` (vectorcraft: `vectorcraft-web-9y7`) |
 | deckcraft | https://deckcraft-web.pages.dev/ (built from the `apps/deckcraft` source checkout — no upstream release zip yet) |
+| soundcraft | https://soundcraft-web.pages.dev/ (built from the `apps/soundcraft` source checkout) |
+| effectcraft | https://effectcraft-web.pages.dev/ (built from the `apps/effectcraft` source checkout) |
 | Browser in Browser (Firefox WASM) | https://browserinbrowser.pages.dev/ |
 
 ## Quickstart
@@ -42,14 +44,20 @@ cd webos && npm install
 npm run dev                             # vite dev server
 npm run build                           # → webos/dist/
 
-# 3. deploy (craft apps deploy from apps/<name>/, see packaging/HOSTING.md)
+# 3. deploy (craft apps deploy from apps/<name>/; each repo's
+#    packaging/web/README.md holds its hosting notes)
 cd webos && npx wrangler pages deploy dist --project-name artcraft-webos --branch main
 ```
 
-Oversized blobs (designcraft, pdfcraft, vectorcraft, wordcraft, browserinbrowser)
-are served from the R2 bucket `craftweb` through a per-app `_worker.js` — the
-only place Workers compute is involved, and only as a pass-through. See
-`packaging/HOSTING.md`.
+Craft app builds deploy as static sites to Cloudflare Pages
+(`<app>-web.pages.dev`), which caps static files at 25 MiB. Bundles over the
+cap (designcraft ~40 MiB, vectorcraft, pdfcraft, wordcraft, effectcraft
+~44.7 MiB) keep only a `_worker.js` in the Pages deploy — any `.wasm` request
+streams from the R2 bucket `craftweb` (binding `CRAFTWEB`, key = the bare
+filename) and everything else falls through to static assets. Upload the
+oversized blob with `wrangler r2 object put craftweb/<file>.wasm --file <f>
+--remote`, mirror it in `r2-blobs/`, and note that `--remote` is required
+(plain `wrangler r2 object put` writes to a local simulator).
 
 ## Quality gates (webos/)
 

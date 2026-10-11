@@ -17,9 +17,11 @@ apps they identify.
 | `webos/public/icons/craft/cadcraft.png` | aliasfoxkde/cadcraft `assets/app-icon/cadcraft-1024.png` | Apache-2.0 OR MIT |
 | `webos/public/icons/craft/deckcraft.png` | aliasfoxkde/deckcraft `assets/app-icon/deckcraft-1024.png` | Apache-2.0 OR MIT |
 | `webos/public/icons/craft/designcraft.png` | aliasfoxkde/designcraft `assets/app-icon/designcraft-1024.png` | Apache-2.0 OR MIT |
+| `webos/public/icons/craft/effectcraft.png` | aliasfoxkde/effectcraft `assets/app-icon/effectcraft-1024.png` | Apache-2.0 OR MIT |
 | `webos/public/icons/craft/gridcraft.png` | aliasfoxkde/gridcraft `assets/app-icon/gridcraft-1024.png` | Apache-2.0 OR MIT |
 | `webos/public/icons/craft/lightcraft.png` | aliasfoxkde/lightcraft `assets/app-icon/lightcraft-1024.png` | Apache-2.0 OR MIT |
 | `webos/public/icons/craft/pdfcraft.png` | aliasfoxkde/pdfcraft `assets/app-icon/pdfcraft-1024.png` | Apache-2.0 OR MIT |
+| `webos/public/icons/craft/soundcraft.png` | aliasfoxkde/soundcraft `assets/app-icon/soundcraft-1024.png` | Apache-2.0 OR MIT |
 | `webos/public/icons/craft/photocraft.png` | aliasfoxkde/photocraft `assets/app-icon/photocraft-1024.png` | Apache-2.0 OR MIT |
 | `webos/public/icons/craft/vectorcraft.png` | aliasfoxkde/vectorcraft `assets/app-icon/vectorcraft-1024.png` | Apache-2.0 OR MIT |
 | `webos/public/icons/craft/wordcraft.png` | aliasfoxkde/wordcraft `assets/app-icon/wordcraft-1024.png` | Apache-2.0 OR MIT |

@@ -450,7 +450,7 @@ real content, plus a third App Store wave.
 
 **Craft app icons.** Each sibling craft repo ships `assets/app-icon/<app>-1024.png`
 (original artwork by the project owner, Apache-2.0 OR MIT). Those are resized
-to 256 px into `webos/public/icons/craft/<app>.png` and the eight registry
+to 256 px into `webos/public/icons/craft/<app>.png` and the registry
 rows now point at them instead of placeholder SVGs. They are the projects'
 own marks — used to launch the apps they identify. License rows live in
 `docs/ATTRIBUTION.md` (kept out of `public/` per the scaffolding rule; the
