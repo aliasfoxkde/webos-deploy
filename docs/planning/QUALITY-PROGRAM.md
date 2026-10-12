@@ -96,3 +96,90 @@ and are out of scope; CI scans `webos/src` from `webos/`.
 - CSR-only, subpath-safe URLs (no root-absolute paths in shipped HTML).
 - Conventional commits; never `git stash`/`push --force`; confirm before
   destructive ops.
+
+## 2026-10-12 expansion — audit + the 99% push
+
+Audit snapshot at v3.13.0 (`npm run ci` green, 764 tests / 57 files, Aegis
+scan of `src` = 0 findings, contrast gate 15/15, repo clean at `914257b`):
+
+| Area | Measured state | Gap |
+|---|---|---|
+| Coverage (v8, `src/**` minus main.jsx/version.js) | 79.74 stmts / 74.70 branch / 72.13 func / 82.76 line; floors 79.7/74.7/72.1/82.7 | ~1,441 uncovered statements; 99% statements needs ≤ ~71 |
+| Lint | ESLint 9 flat: recommended + react-hooks + jsx-a11y + react; `no-console: error` in src; zero-warning gate | not yet "strictest sensible" (equality, coercion, var/let) |
+| A11y | auditor enforces AAA on danger/paper + accent-ink + text/dim, AA for danger over flattened chrome, 1.4.11 ring | not every ink/surface token pair is enumerated |
+| CI (GitHub) | one job: lint → contrast → coverage → build → artifact | duplicate artifact step (fixed 2026-10-12); no concurrency/timeout/least-privilege/SHA pinning |
+| CI (GitForge) | `.gitforce.yml` mirrors the gates; **repo not registered** (needs operator credentials) | validate the exact steps in a clean container locally |
+| Docs | ARCHITECTURE.md documents state/layout/browser/liquid-glass | **no per-module index** for the 110 files under `src/` (the phase-7 claim above was overstated on this point) |
+| Hygiene | markers clean; 0 `console.*` calls in src; deps all referenced | one unused devDep: `@testing-library/user-event` |
+
+### Coverage gap table (uncovered statements, descending; pct = covered)
+
+| File | Uncov | Cov % | | File | Uncov | Cov % |
+|---|---|---|---|---|---|---|
+| apps/terminal/wasi.js | 269 | 43.9 | | apps/taskmgr/TaskManager.jsx | 35 | 72.4 |
+| App.jsx | 208 | 50.5 | | apps/photos/Photos.jsx | 34 | 90.8 |
+| apps/terminal/Terminal.jsx | 157 | 72.3 | | apps/editor/Editor.jsx | 21 | — |
+| shell/settings/Panels.jsx | 111 | 10.5 | | apps/browser/BrowserApp.jsx | 23 | — |
+| apps/files/Files.jsx | 84 | 74.0 | | os/LensFilters.jsx | 20 | 70.6 |
+| shell/settings/Appearance.jsx | 76 | 68.5 | | os/bridge.js | 20 | 75.9 |
+| apps/terminal/coreutils.js | 60 | 3.2 | | calc modes/Scientific.jsx | 20 | 0.0 |
+| calc modes/Converter.jsx | 43 | 4.4 | | shell/Taskbar.jsx | 19 | — |
+| calc modes/Programmer.jsx | 43 | 4.4 | | calc engine/programmer.js | 17 | — |
+| calc modes/Graphing.jsx | 30 | 9.1 | | os/components.js | 8 | — |
+
+Plus ~45 files with 1–9 uncovered statements each (the long tail is mandatory
+for 99%). Honest scale: ~1,370 statements must gain real tests.
+
+### Phases (each ends with a commit + push; gates stay green throughout)
+
+**Phase A — hygiene.** ci.yml dedup (done); drop unused
+`@testing-library/user-event`; this section.
+
+**Phase B — CI hardening to OSS best practice.** Add to ci.yml:
+`permissions: contents: read` (least privilege), `concurrency` group with
+cancel-in-progress, `timeout-minutes`, actions pinned by commit SHA.
+GitForge: run the exact `.gitforce.yml` steps in a clean `node:24-trixie-slim`
+container and record the output; registration itself stays an operator action
+(no credentials in scope for the agent).
+
+**Phase C — lint hardening.** Curated strict set, all violations really fixed
+(no blanket disables): `eqeqeq`, `no-implicit-coercion`, `prefer-const`,
+`no-var`, `object-shorthand`, `prefer-template` where it does not fight the
+existing style. Zero-warning gate unchanged.
+
+**Phase D — WCAG AAA full-pair gate.** Extend `tests/contrast-audit.test.js`
+to enumerate EVERY ink×surface token pair per preset (× wallpaper extremes for
+flattened chrome): 7:1 where the pair carries text, 3:1 for non-text UI.
+Failures become real token fixes; pairs physically unattainable over
+semi-transparent flattened chrome are documented in the test, not baselined
+away silently.
+
+**Phase E — coverage to 99, ratcheted batches.** Order = testability × gap
+size; after each batch the floors move to the measured number:
+E1 `wasi.js` (269) — in-repo Node shim suite (the /var/tmp prototype is gone;
+rewrite it as `tests/wasi-shim.test.js`).
+E2 `coreutils.js` (60) — command surface against the bundled wasm contract.
+E3 `Terminal.jsx` (157) — testing-library over PTY reducer + render.
+E4 `App.jsx` (208) — OSProvider dispatch flows through the probe pattern
+(already proven in `tests/os-window-ids.test.jsx`).
+E5 settings: `Panels.jsx` (111) + `Appearance.jsx` (76).
+E6 `Files.jsx` (84).
+E7 calculator: Converter (43), Programmer (43), Graphing (30), Scientific
+(20), `engine/programmer.js` (17).
+E8 the tail: taskmgr (35), photos (34), BrowserApp (23), Editor (21),
+LensFilters (20), bridge (20), Taskbar (19), components (8), then every
+1–9-statement file.
+Rules: behavioral tests only (no line-chasing asserts); no new coverage
+exclusions unless the file is genuinely browser-only glue AND the exclusion
+is justified here first.
+
+**Phase F — docs coverage.** Add a "Module index" to ARCHITECTURE.md naming
+all 110 src files, then `tests/docs-coverage.test.js` asserts the index names
+every file under `src/` — a new file without a doc row turns CI red, which is
+the docs ratchet.
+
+**Phase G — release 3.14.0.** Full sweep + render-proof on the release build
+(real chromium, paint-evidence thresholds); version bump ×3 (package.json,
+src/version.js, public/sw.js); `npm run ci`; commit + push; watch GitHub
+Actions; `gh release create v3.14.0`; wrangler deploy from `webos/`; verify
+production serves the new bundle; final commit + push.
