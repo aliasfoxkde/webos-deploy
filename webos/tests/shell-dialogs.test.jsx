@@ -140,7 +140,7 @@ describe('StartMenu', () => {
   it('pinned tiles follow the persisted startPins slice; rows expose the pin menu', () => {
     localStorage.setItem('webos.taskbar', JSON.stringify({ startPins: ['calc'] }));
     const c = setup();
-    let tiles = [...c.container.querySelectorAll('.sm-tile')];
+    const tiles = [...c.container.querySelectorAll('.sm-tile')];
     expect(tiles.map((t) => t.textContent)).toEqual(['Calculator']);
     expect(tiles[0].getAttribute('data-cm')).toBe('smapp:calc'); // right-click target
     // unpin everything: the grid empties but the menu keeps working

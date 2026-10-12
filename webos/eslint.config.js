@@ -31,6 +31,21 @@ export default [
       // shipped browser app: development-only logging must not land
       'no-console': 'error',
       'no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+      // strict set (docs/planning/QUALITY-PROGRAM.md 2026-10-12, phase C):
+      // every rule here passed after real fixes — no blanket disables.
+      'eqeqeq': ['error', 'always', { null: 'ignore' }],
+      'no-implicit-coercion': ['error', { allow: ['!!'] }],
+      'prefer-const': 'error',
+      'no-var': 'error',
+      'object-shorthand': ['error', 'always'],
+      'no-param-reassign': ['error', { props: false }],
+      'prefer-rest-params': 'error',
+      'prefer-spread': 'error',
+      'no-useless-concat': 'error',
+      'no-useless-return': 'error',
+      'prefer-object-has-own': 'error',
+      'no-lonely-if': 'error',
+      'prefer-exponentiation-operator': 'error',
     },
   },
   {

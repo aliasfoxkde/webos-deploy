@@ -82,8 +82,8 @@ export function sortRows(rows, key, dir = 1, nameOf = (r) => r.appId) {
   return [...rows].sort((a, b) => {
     const va = val(a);
     const vb = val(b);
-    if (va < vb) return -1 * sign;
-    if (va > vb) return 1 * sign;
+    if (va < vb) return -sign;
+    if (va > vb) return sign;
     return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
   });
 }

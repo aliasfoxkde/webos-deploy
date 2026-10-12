@@ -35,7 +35,7 @@ export const FUNCTION_IMPL = {
   max: (a, b) => Math.max(a, b),
   gcd: (a, b) => gcd(a, b),
   lcm: (a, b) => { const g = gcd(a, b); return g === 0 ? 0 : Math.abs(a * b) / g; },
-  root: (x, n) => (x < 0 && n % 2 === 1 ? -Math.pow(-x, 1 / n) : Math.pow(x, 1 / n)),
+  root: (x, n) => (x < 0 && n % 2 === 1 ? -((-x) ** (1 / n)) : x ** (1 / n)),
   hypot: (a, b) => Math.hypot(a, b),
 };
 
@@ -51,9 +51,9 @@ export function factorial(n) {
   return r;
 }
 
-function gcd(a, b) {
-  a = Math.abs(Math.trunc(a));
-  b = Math.abs(Math.trunc(b));
-  while (b) { [a, b] = [b, a % b]; }
-  return a;
+function gcd(x0, y0) {
+  let x = Math.abs(Math.trunc(x0));
+  let y = Math.abs(Math.trunc(y0));
+  while (y) { [x, y] = [y, x % y]; }
+  return x;
 }

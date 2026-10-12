@@ -13,7 +13,7 @@ import {
   isImageName, folderOf, baseName, mimeFor, normRot, rotDims,
   normCrop, cropToDisplay, cropFromDisplay, wrapIndex, renderImage, canvasBlob,
   ADJUST_DEFAULTS, isAdjusted, adjustFilter, applyAdjust,
-  shapeFromDisplay, drawAnnotations,
+  shapeFromDisplay, drawAnnotations, editedName,
 } from './imops.js';
 import './photos.css';
 
@@ -322,13 +322,6 @@ export default function Photos({ args } = {}) {
   };
 
   /* ---- save ---- */
-  const editedPath = (path, taken) => {
-    const m = path.match(/^\/?(.*?)(\.[^.]+)?$/);
-    let name = `${m[1] || 'image'}-edited${m[2] || '.png'}`;
-    let n = 2;
-    while (taken.has(name)) name = `${m[1] || 'image'}-edited-${n}${m[2] || '.png'}`;
-    return name;
-  };
   const save = async (asCopy) => {
     if (!img || !cur || busy) return;
     setBusy(true);
@@ -337,7 +330,7 @@ export default function Photos({ args } = {}) {
       let path = cur;
       if (asCopy) {
         const taken = new Set(paths.map((p) => baseName(p)));
-        path = `${dir === '/' ? '' : dir}/${editedPath(baseName(cur), taken)}`;
+        path = `${dir === '/' ? '' : dir}/${editedName(baseName(cur), taken)}`;
       }
       let blob = blobRef.current;
       if (edited) {

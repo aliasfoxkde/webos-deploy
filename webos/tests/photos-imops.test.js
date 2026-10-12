@@ -2,7 +2,7 @@
 // types, tonal-adjustment curves, annotation geometry and stroke drawing.
 import { describe, it, expect } from 'vitest';
 import {
-  IMAGE_EXT, isImageName, folderOf, baseName, mimeFor, normRot, rotDims,
+  IMAGE_EXT, isImageName, folderOf, baseName, mimeFor, normRot, rotDims, editedName,
   normCrop, ptToDisplay, ptFromDisplay, cropToDisplay, cropFromDisplay,
   wrapIndex, ADJUST_DEFAULTS, isAdjusted, adjustFilter, adjustLuts,
   hexA, shapeFromDisplay, drawAnnotations,
@@ -36,6 +36,28 @@ describe('image triage', () => {
     expect(mimeFor('/Home/a.webp')).toBe('image/webp');
     expect(mimeFor('/Home/a.png')).toBe('image/png');
     expect(mimeFor('/Home/a.bmp')).toBe('image/png'); // canvas can't encode bmp
+  });
+});
+
+describe('edited-copy naming', () => {
+  it('suffixes -edited, keeping the extension (defaulting to .png)', () => {
+    expect(editedName('cat.png', new Set())).toBe('cat-edited.png');
+    expect(editedName('cat.jpg', new Set())).toBe('cat-edited.jpg');
+    expect(editedName('noext', new Set())).toBe('noext-edited.png');
+    expect(editedName('', new Set())).toBe('image-edited.png');
+  });
+
+  it('dedupes against taken names by advancing the counter', () => {
+    const taken = new Set(['cat.png', 'cat-edited.png', 'cat-edited-2.png']);
+    expect(editedName('cat.png', taken)).toBe('cat-edited-3.png');
+    expect(editedName('cat.png', new Set(['cat-edited.png']))).toBe('cat-edited-2.png');
+  });
+
+  it('keeps advancing through a fully-collided folder (no infinite loop)', () => {
+    // Regression: the loop used a constant `-2` suffix, so a folder holding
+    // both `x-edited.png` and `x-edited-2.png` spun forever.
+    const taken = new Set(['x.png', 'x-edited.png', 'x-edited-2.png', 'x-edited-3.png']);
+    expect(editedName('x.png', taken)).toBe('x-edited-4.png');
   });
 });
 

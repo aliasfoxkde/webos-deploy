@@ -20,6 +20,19 @@ export const folderOf = (path) => {
 
 export const baseName = (path) => path.slice(path.lastIndexOf('/') + 1);
 
+/* Name for an edited copy: `<stem>-edited.<ext>`, deduped against the names
+   already in the folder as `-edited-2`, `-edited-3`, … The counter MUST
+   advance each collision — a constant suffix would never escape a folder
+   holding both `x-edited.png` and `x-edited-2.png` (infinite loop). */
+export function editedName(name, taken) {
+  const m = name.match(/^(.*?)(\.[^.]+)?$/);
+  let out = `${m[1] || 'image'}-edited${m[2] || '.png'}`;
+  for (let n = 2; taken.has(out); n += 1) {
+    out = `${m[1] || 'image'}-edited-${n}${m[2] || '.png'}`;
+  }
+  return out;
+}
+
 /* Encode type for saving back to the store — keep the original format when
    we can encode it, PNG otherwise (transparency-safe fallback). */
 export function mimeFor(path) {

@@ -261,11 +261,15 @@ export class WasiHost {
       },
       args_get(argvPtr, bufPtr) {
         const dv = view();
+        // cursor locals: the params stay read-only (strict lint), the writes
+        // advance through guest memory
+        let aPtr = argvPtr;
+        let bPtr = bufPtr;
         for (const arg of host.args) {
-          dv.setUint32(argvPtr, bufPtr, true);
-          writeStr(bufPtr, arg);
-          bufPtr += encoder.encode(arg).length + 1;
-          argvPtr += 4;
+          dv.setUint32(aPtr, bPtr, true);
+          writeStr(bPtr, arg);
+          bPtr += encoder.encode(arg).length + 1;
+          aPtr += 4;
         }
         return errno.SUCCESS;
       },
@@ -277,11 +281,13 @@ export class WasiHost {
       },
       environ_get(environPtr, bufPtr) {
         const dv = view();
+        let ePtr = environPtr;
+        let bPtr = bufPtr;
         for (const env of host.envs) {
-          dv.setUint32(environPtr, bufPtr, true);
-          writeStr(bufPtr, env);
-          bufPtr += encoder.encode(env).length + 1;
-          environPtr += 4;
+          dv.setUint32(ePtr, bPtr, true);
+          writeStr(bPtr, env);
+          bPtr += encoder.encode(env).length + 1;
+          ePtr += 4;
         }
         return errno.SUCCESS;
       },

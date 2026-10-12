@@ -6,17 +6,29 @@ on:
   pull_request:
   workflow_dispatch:
 
+# Least privilege: the workflow only reads the repo (no deploy keys, no
+# packages). Deploy runs locally via wrangler, not from CI.
+permissions:
+  contents: read
+
+# Superseded runs on the same ref are cancelled — the gates take minutes
+# and only the latest push's verdict matters.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   webos:
     name: webos — lint, test, coverage gate, contrast audit, build
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     defaults:
       run:
         working-directory: webos
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 24
           cache: npm
@@ -40,7 +52,7 @@ jobs:
         run: npm run build
 
       - name: Upload dist artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: webos-dist
           path: webos/dist/

@@ -42,7 +42,7 @@ function evalNode(n, ctx) {
       if (arity === undefined) return fail(ctx, `Unknown function '${n.name}'`);
       if (n.args.length !== arity) return fail(ctx, `${n.name}() expects ${arity} argument${arity === 1 ? '' : 's'}`);
       const argv = n.args.map((a) => evalNode(a, ctx));
-      let impl = FUNCTION_IMPL[n.name];
+      const impl = FUNCTION_IMPL[n.name];
       if (ANGLE_IN.includes(n.name)) {
         const a0 = toRad(argv[0], ctx.angle);
         return impl(a0);
@@ -66,7 +66,7 @@ function evalBinary(op, a, b, ctx) {
     case 'mod':
       if (b === 0) return fail(ctx, 'Division by zero');
       return a % b;
-    case '^': return Math.pow(a, b);
+    case '^': return a ** b;
     default:
       return fail(ctx, `Unknown operator '${op}'`);
   }
