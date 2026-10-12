@@ -15,17 +15,17 @@ export default defineConfig({
       exclude: ['src/main.jsx', 'src/version.js'],
       reporter: ['text', 'lcov'],
       reportsDirectory: 'coverage',
-      // Ratchet: floors sit just under the measured baseline (83.42/77.36/
-      // 74.66/86.58 after the WASI syscall suite — the full imports()
-      // surface driven against a scratch WebAssembly.Memory, which also
-      // fixed path_open CREAT|DIRECTORY and implicit-dir rmdir ENOTEMPTY).
+      // Ratchet: floors sit just under the measured baseline (84.21/78.01/
+      // 74.82/87.49 after the coreutils bridge suite — ensure/persist/
+      // runUtil driven through a scripted fake guest over the REAL WASI
+      // imports, with the Node Blob pin making IDB blob roundtrips real).
       // Raise as tests land; a regression in any metric fails `npm run
       // coverage`.
       thresholds: {
-        statements: 83.4,
-        branches: 77.3,
-        functions: 74.6,
-        lines: 86.5,
+        statements: 84.2,
+        branches: 78.0,
+        functions: 74.8,
+        lines: 87.4,
       },
     },
   },
