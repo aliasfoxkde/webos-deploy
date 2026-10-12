@@ -100,3 +100,64 @@ describe('app CSS stays on tokens', () => {
     expect(chat).toContain('background: var(--paper)');
   });
 });
+
+/* The full ink×surface enumeration. Paper is the reading surface (AAA 1.4.6:
+   7:1 for all text); chrome panels are alpha-composited over unknown
+   wallpapers, so text there is held to the file's documented 4.5:1 (1.4.3)
+   floor at every wallpaper extreme. Desktop labels sit raw on the wallpaper
+   and are therefore gated at 7:1 over a scrim the CSS must provide. */
+describe('every preset ink clears AAA on paper', () => {
+  it('--text ≥ 7:1 and --text-dim ≥ 7:1 on the paper fill', () => {
+    for (const [key, t] of Object.entries(THEME_PRESETS)) {
+      expect(contrast(t.text, t.paper), `${key} text on paper`).toBeGreaterThanOrEqual(7);
+      expect(contrast(t.dim, t.paper), `${key} dim on paper`).toBeGreaterThanOrEqual(7);
+    }
+  });
+});
+
+describe('panel text on composited chrome', () => {
+  it('--text and --text-dim hold 4.5:1 at every wallpaper extreme', () => {
+    for (const [key, t] of Object.entries(THEME_PRESETS)) {
+      for (const base of WALLPAPER_EXTREMES) {
+        const panel = flatten(t.chrome, base);
+        expect(contrast(t.text, panel), `${key} text on chrome(${base})`).toBeGreaterThanOrEqual(4.5);
+        expect(contrast(t.dim, panel), `${key} dim on chrome(${base})`).toBeGreaterThanOrEqual(4.5);
+      }
+    }
+  });
+});
+
+describe('desktop labels survive any wallpaper (scrim pill)', () => {
+  // The label rules are read back out of styles.css so the math can't drift
+  // from the stylesheet: ink colors and the scrim are parsed, then checked
+  // over the same wallpaper extremes.
+  const rule = (sel) => {
+    const css = readFileSync('src/styles.css', 'utf8');
+    const m = css.match(new RegExp(`${sel.replace('.', '\\.')} \\{([^}]*)\\}`));
+    return m ? m[1] : '';
+  };
+  const prop = (body, name) => {
+    const m = body.match(new RegExp(`${name}:\\s*([^;]+);`));
+    return m ? m[1].trim() : null;
+  };
+
+  it('labels and version chips declare a scrim background, not just a shadow', () => {
+    for (const sel of ['.desk-icon .lbl', '.desk-icon .ver']) {
+      const body = rule(sel);
+      expect(body, `${sel} exists`).toBeTruthy();
+      expect(prop(body, 'background'), `${sel} scrim`).toMatch(/rgba\(8,\s*12,\s*18/);
+    }
+  });
+
+  it('label ink and version ink hold 7:1 over the scrim at every extreme', () => {
+    for (const sel of ['.desk-icon .lbl', '.desk-icon .ver']) {
+      const body = rule(sel);
+      const ink = prop(body, 'color');
+      const scrim = prop(body, 'background');
+      for (const base of WALLPAPER_EXTREMES) {
+        const panel = flatten(scrim, base);
+        expect(contrast(ink, panel), `${sel} ink over scrim(${base})`).toBeGreaterThanOrEqual(7);
+      }
+    }
+  });
+});

@@ -192,7 +192,7 @@ export const THEME_PRESETS = {
   },
   ocean: {
     paper: '#0b1a26',
-    label: 'Ocean', text: '#e4f2fa', dim: '#90b1c5', chrome: 'rgba(10,26,40,0.82)', line: 'rgba(255,255,255,0.10)',
+    label: 'Ocean', text: '#e4f2fa', dim: '#95b6c9', chrome: 'rgba(10,26,40,0.82)', line: 'rgba(255,255,255,0.10)',
     danger: '#fca5a5', focus: 'rgba(228,242,250,0.45)',
     bg: 'radial-gradient(1000px 700px at 20% 15%, rgba(34,211,238,0.16), transparent 60%), radial-gradient(900px 700px at 85% 85%, rgba(59,130,246,0.18), transparent 60%), linear-gradient(165deg, #06202e, #030b13 75%)',
   },

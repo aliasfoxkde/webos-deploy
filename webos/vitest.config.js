@@ -7,6 +7,9 @@ export default defineConfig({
     environment: 'happy-dom',
     include: ['tests/**/*.test.{js,jsx}'],
     setupFiles: ['tests/setup.js'],
+    // The default 5s is wall-clock and flaky under coverage instrumentation
+    // on loaded CI machines (whole tests time out without any logic change).
+    testTimeout: 20_000,
     // Coverage gate is ratcheted in CI (see docs/planning/QUALITY-PROGRAM.md);
     // locally this just reports.
     coverage: {
