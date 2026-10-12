@@ -15,17 +15,16 @@ export default defineConfig({
       exclude: ['src/main.jsx', 'src/version.js'],
       reporter: ['text', 'lcov'],
       reportsDirectory: 'coverage',
-      // Ratchet: floors sit just under the measured baseline (84.21/78.01/
-      // 74.82/87.49 after the coreutils bridge suite — ensure/persist/
-      // runUtil driven through a scripted fake guest over the REAL WASI
-      // imports, with the Node Blob pin making IDB blob roundtrips real).
-      // Raise as tests land; a regression in any metric fails `npm run
-      // coverage`.
+      // Ratchet: floors sit just under the measured baseline (85.67/79.34/
+      // 77.94/89.19 after the settings-panels suite — every Panels.jsx panel
+      // driven through real clicks/radios, incl. both confirm branches of
+      // Reset/Factory reset). Raise as tests land; a regression in any
+      // metric fails `npm run coverage`.
       thresholds: {
-        statements: 84.2,
-        branches: 78.0,
-        functions: 74.8,
-        lines: 87.4,
+        statements: 85.6,
+        branches: 79.3,
+        functions: 77.9,
+        lines: 89.1,
       },
     },
   },
