@@ -449,3 +449,55 @@ describe('AppStore', () => {
     expect(cur.installed).toContain(target.id);
   });
 });
+
+describe('AddApp — icon and accent surfaces', () => {
+  const setup = () => mount(<AddApp onClose={noop} />);
+
+  it('an uploaded icon becomes a data: URL on the preview and on the saved app', async () => {
+    const c = setup();
+    const fileInput = c.container.querySelector('input[type="file"]');
+    const png = new File([new Uint8Array([137, 80, 78, 71])], 'icon.png', { type: 'image/png' });
+    Reflect.defineProperty(fileInput, 'files', { configurable: true, value: [png] });
+    fireEvent.change(fileInput);
+    for (let i = 0; i < 5; i += 1) {
+      await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+      if (c.container.querySelector('.props-head img').src.startsWith('data:')) break;
+    }
+    expect(c.container.querySelector('.props-head img').src).toMatch(/^data:image\/png;base64,/);
+    // data: URLs clear the text field (the preview carries the image instead)
+    expect(c.container.querySelector('.addapp-iconrow input').value).toBe('');
+
+    fireEvent.change(c.container.querySelectorAll('.addapp-form input')[0], { target: { value: 'Pixed' } });
+    fireEvent.change(c.container.querySelectorAll('.addapp-form input')[1], { target: { value: 'https://pixed.example' } });
+    fireEvent.click(c.container.querySelector('.props-actions .btn.accent'));
+    expect(cur.userApps[0].icon).toMatch(/^data:image\/png;base64,/);
+  });
+
+  it('the Upload… button delegates to the hidden file input', () => {
+    const clicks = vi.spyOn(HTMLInputElement.prototype, 'click').mockImplementation(() => {});
+    const c = setup();
+    const upload = [...c.container.querySelectorAll('.addapp-iconrow .btn')].find((b) => b.textContent === 'Upload…');
+    fireEvent.click(upload);
+    expect(clicks).toHaveBeenCalledOnce();
+    clicks.mockRestore();
+  });
+
+  it('a broken icon URL falls back to the built-in icon', () => {
+    const c = setup();
+    expect(c.container.querySelector('.props-head img').src).toContain('icons/custom.svg');
+    const iconInput = c.container.querySelector('.addapp-iconrow input');
+    fireEvent.change(iconInput, { target: { value: 'icons/nope.svg' } });
+    expect(c.container.querySelector('.props-head img').src).toContain('icons/nope.svg');
+    fireEvent.error(c.container.querySelector('.props-head img'));
+    expect(c.container.querySelector('.props-head img').src).toContain('icons/custom.svg');
+  });
+
+  it('the accent color picker lands on the saved app', () => {
+    const c = setup();
+    fireEvent.change(c.container.querySelector('input[type="color"]'), { target: { value: '#ff8800' } });
+    fireEvent.change(c.container.querySelectorAll('.addapp-form input')[0], { target: { value: 'Tinted' } });
+    fireEvent.change(c.container.querySelectorAll('.addapp-form input')[1], { target: { value: 'https://tint.example' } });
+    fireEvent.click(c.container.querySelector('.props-actions .btn.accent'));
+    expect(cur.userApps[0].accent).toBe('#ff8800');
+  });
+});

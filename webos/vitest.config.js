@@ -15,17 +15,18 @@ export default defineConfig({
       exclude: ['src/main.jsx', 'src/version.js'],
       reporter: ['text', 'lcov'],
       reportsDirectory: 'coverage',
-      // Ratchet: floors sit just under the measured baseline (92.75/86.31/
-      // 87.57/95.58 after the Files suite extension — full context-menu
-      // surface, Escape/blur create+rename paths, device-tab navigation with
-      // nested walks, device preview Import, and the import-raw fix).
+      // Ratchet: floors sit just under the measured baseline (93.9/87.15/
+      // 89.47/96.84 after the shell-surface sweep — real <App/> launches of
+      // every lazy plugin chunk, the lens-filter debounce wiring, live
+      // TaskManager signals, editor language detection, notepad timestamps +
+      // export failure, AddApp icon upload/accent, bridgeRequest protocol).
       // Raise as tests land; a regression in any metric fails `npm run
       // coverage`.
       thresholds: {
-        statements: 92.7,
-        branches: 86.2,
-        functions: 87.5,
-        lines: 95.5,
+        statements: 93.9,
+        branches: 87.1,
+        functions: 89.4,
+        lines: 96.8,
       },
     },
   },

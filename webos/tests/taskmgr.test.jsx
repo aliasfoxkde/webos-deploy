@@ -239,3 +239,76 @@ describe('TaskManager component', () => {
     expect(screen.getByText(/IndexedDB/)).toBeTruthy();
   });
 });
+
+describe('TaskManager live signals', () => {
+  let cur;
+  const Probe = () => {
+    cur = useOS();
+    return null;
+  };
+  let rafCb;
+  let obsCb;
+
+  beforeEach(() => {
+    localStorage.clear();
+    localStorage.setItem('webos.theme', '{"preset":"midnight"}');
+    cleanup();
+    document.body.innerHTML = '';
+    vi.stubGlobal('fetch', () => new Promise(() => {}));
+    vi.stubGlobal('requestAnimationFrame', (cb) => { rafCb = cb; return 7; });
+    vi.stubGlobal('cancelAnimationFrame', () => {});
+    class PO {
+      constructor(cb) { obsCb = cb; }
+      observe() {}
+      disconnect() {}
+    }
+    vi.stubGlobal('PerformanceObserver', PO);
+    navigator.storage = { estimate: async () => ({ usage: 4096, quota: 1e9 }), persisted: async () => true };
+    navigator.serviceWorker = { getRegistrations: async () => [{}] };
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    delete navigator.storage;
+    delete navigator.serviceWorker;
+    delete performance.memory;
+  });
+
+  const mount = () => render(
+    <OSProvider>
+      <Probe />
+      <TaskManager />
+    </OSProvider>
+  );
+
+  it('the 1 s tick, the rAF loop and long-task events feed the Performance tab', async () => {
+    performance.memory = { usedJSHeapSize: 10, jsHeapSizeLimit: 100 };
+    mount();
+    act(() => { rafCb(performance.now()); }); // first frame — no sample yet
+    fireEvent.click(screen.getByRole('tab', { name: 'Performance' }));
+    await act(async () => { await new Promise((r) => setTimeout(r, 1150)); }); // ≥1 interval tick
+    act(() => { rafCb(performance.now()); }); // second frame ≥1 s later → fps sampled
+    act(() => { obsCb({ getEntries: () => [{ duration: 80.4 }, { duration: 120.5 }] }); });
+
+    const card = (label) => screen.getByText(label).closest('.tm-metric');
+    expect(card('Memory (JS heap)').textContent).toContain('now 10 B'); // heap sampled each tick
+    expect(card('Frame rate').textContent).toContain('now 2 fps'); // 2 frames over ~1.1 s
+    expect(card('Event loop lag').textContent).toMatch(/now \d+ ms/); // drift measured
+    expect(screen.getByText('Main-thread stalls >50 ms').closest('div').textContent)
+      .toContain('2 · worst 121 ms · last 121 ms'); // last = most recent entry (120.5)
+    expect(screen.getByText('Service worker').closest('div').textContent).toContain('active');
+    expect(screen.getByText('Site storage').closest('div').textContent).toContain('persistent');
+    expect(screen.getByText(/up \d+s/)).toBeTruthy(); // the clock tick advances uptime
+  });
+
+  it('Status header sorts rows and toggles aria-sort direction', async () => {
+    mount();
+    await act(async () => { cur.launch('calc'); cur.launch('notepad'); });
+    await act(async () => { cur.minimize(cur.windows[0].id); cur.focus(cur.windows[1].id); });
+    const statusBtn = screen.getByRole('button', { name: /^Status/ });
+    fireEvent.click(statusBtn);
+    expect(document.querySelector('th[aria-sort="ascending"]')?.textContent).toContain('Status');
+    fireEvent.click(statusBtn);
+    expect(document.querySelector('th[aria-sort="descending"]')?.textContent).toContain('Status');
+  });
+});

@@ -7,6 +7,17 @@ import { parseInline, parseMarkdown, safeHref } from '../src/apps/editor/markdow
 import { loadState, persist, reducer } from '../src/apps/editor/buffers.js';
 import { detectLanguage, languageLabel, editorExtensions } from '../src/apps/editor/language.js';
 
+describe('language detection', () => {
+  it('covers every extension group and labels unknowns TEXT', () => {
+    for (const name of ['app.js', 'mod.tsx', 'page.html', 'theme.css', 'data.json', 'READ.md', 'main.py', 'lib.rs']) {
+      expect(detectLanguage(name), name).not.toEqual([]); // the no-match fallback is exactly []
+    }
+    expect(detectLanguage('archive.tar')).toEqual([]); // no group matches
+    expect(languageLabel('styles.CSS')).toBe('CSS');
+    expect(languageLabel('noext')).toBe('TEXT');
+  });
+});
+
 describe('markdown blocks', () => {
   it('headings, paragraphs, hr and quotes', () => {
     expect(parseMarkdown('# h1\n## h2\n###### h6')).toEqual([

@@ -5,10 +5,13 @@ import React from 'react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, act, fireEvent, cleanup } from '@testing-library/react';
 
-const h = vi.hoisted(() => ({ files: new Map() }));
+const h = vi.hoisted(() => ({ files: new Map(), failGet: false }));
 
 vi.mock('../src/os/db.js', () => ({
-  fileGet: async (path) => (h.files.has(path) ? { blob: h.files.get(path), type: 'text/markdown' } : null),
+  fileGet: async (path) => {
+    if (h.failGet) throw new Error('disk gone');
+    return h.files.has(path) ? { blob: h.files.get(path), type: 'text/markdown' } : null;
+  },
   filePut: async (path, blob) => { h.files.set(path, blob); },
 }));
 
@@ -19,6 +22,7 @@ beforeEach(() => {
   cleanup();
   document.body.innerHTML = '';
   h.files.clear();
+  h.failGet = false;
 });
 
 afterEach(() => vi.restoreAllMocks());
@@ -121,5 +125,52 @@ describe('Notepad', () => {
     expect(document.querySelector('.np-item-snippet').textContent).toContain('they persist');
     fireEvent.change(screen.getByLabelText('Note text'), { target: { value: '' } });
     expect(screen.getByText('empty note')).toBeTruthy();
+  });
+});
+
+describe('Notepad — remaining surfaces', () => {
+  it('relative timestamps cover the hours and days branches', () => {
+    localStorage.setItem('webos.notepad.v1', JSON.stringify({
+      activeId: 'n1',
+      notes: [
+        { id: 'n1', title: 'Hours', text: 'h', created: Date.now() - 2 * 3600 * 1000, mtime: Date.now() - 2 * 3600 * 1000 },
+        { id: 'n2', title: 'Days', text: 'd', created: Date.now() - 3 * 86400 * 1000, mtime: Date.now() - 3 * 86400 * 1000 },
+      ],
+    }));
+    render(<Notepad />);
+    expect(screen.getByText('2h ago')).toBeTruthy();
+    expect(screen.getByText('3d ago')).toBeTruthy();
+  });
+
+  it('Enter on a focused list row selects it; double-clicking ✕ neither selects nor deletes', () => {
+    render(<Notepad />);
+    fireEvent.click(screen.getByTitle('New note')); // active = Untitled
+    const welcomeRow = screen.getByText('Welcome').closest('[role="option"]');
+    fireEvent.keyDown(welcomeRow, { key: 'Enter' });
+    expect(screen.getByRole('option', { selected: true }).textContent).toContain('Welcome');
+
+    const untitledRow = screen.getByText('Untitled').closest('[role="option"]');
+    const untitledDel = [...untitledRow.querySelectorAll('button')].find((b) => b.getAttribute('aria-label')?.startsWith('Delete'));
+    fireEvent.doubleClick(untitledDel); // propagation stops — the row is not selected
+    expect(screen.getByRole('option', { selected: true }).textContent).toContain('Welcome');
+    expect(screen.getByText('Untitled')).toBeTruthy(); // and nothing was deleted
+  });
+
+  it('markdown mode toggles back to the textarea via Edit', () => {
+    render(<Notepad />);
+    fireEvent.change(screen.getByLabelText('Note title'), { target: { value: 'ideas.md' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Preview' }));
+    expect(screen.queryByLabelText('Note text')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    expect(screen.getByLabelText('Note text')).toBeTruthy();
+  });
+
+  it('a failing disk surfaces "export failed" instead of crashing', async () => {
+    h.failGet = true;
+    render(<Notepad />);
+    fireEvent.click(screen.getByText('Save to Files'));
+    await act(async () => {});
+    expect(screen.getByText('export failed: disk gone')).toBeTruthy();
+    expect(h.files.size).toBe(0);
   });
 });

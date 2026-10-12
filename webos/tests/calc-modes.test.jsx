@@ -386,3 +386,13 @@ describe('Keypad primitive', () => {
     expect(keys[2].querySelector('small').textContent).toBe('small');
   });
 });
+
+describe('History tape', () => {
+  it('the tape’s clear button empties history', () => {
+    mount();
+    for (const l of ['1', '+', '2', '=']) press(l);
+    expect(q('.calc-history')).toBeTruthy();
+    act(() => { fireEvent.click(q('.calc-history .tb-btn')); });
+    expect(q('.calc-history')).toBeNull(); // clearHistory → the tape unmounts
+  });
+});

@@ -1,7 +1,7 @@
 // File-storage bridge: path containment, trust checks, request dispatch.
 import { describe, it, expect, vi } from 'vitest';
 import {
-  appRoot, appOrigin, safeJoin, handleBridge, MAX_SAVE,
+  appRoot, appOrigin, safeJoin, handleBridge, bridgeRequest, MAX_SAVE,
 } from '../src/os/bridge.js';
 
 const APP = { id: 'wordcraft', url: 'https://wordcraft-web.pages.dev/' };
@@ -139,5 +139,40 @@ describe('dispatch', () => {
     const files = { get: vi.fn(async () => { throw new Error('idb closed'); }), put: vi.fn(), del: vi.fn(), list: vi.fn(async () => []) };
     const reply = await handleBridge(files, APP, evt({ source: 'webos-app', type: 'webos:file-open', path: 'x' }));
     expect(reply).toMatchObject({ ok: false, error: 'idb closed' });
+  });
+});
+
+describe('bridgeRequest', () => {
+  it('resolves the matching reply and ignores unrelated messages', async () => {
+    const win = { postMessage: vi.fn() };
+    const p = bridgeRequest(win, { type: 'webos:file-list' }, 500);
+    expect(win.postMessage).toHaveBeenCalledTimes(1);
+    const sent = win.postMessage.mock.calls[0][0];
+    expect(sent).toMatchObject({ source: 'webos-app', type: 'webos:file-list' });
+    // wrong requestId, wrong source — both ignored
+    window.dispatchEvent(new MessageEvent('message', { data: { source: 'webos-host', requestId: 'other', ok: true, payload: 'x' } }));
+    window.dispatchEvent(new MessageEvent('message', { data: { source: 'webos-app', requestId: sent.requestId, ok: true, payload: 'x' } }));
+    window.dispatchEvent(new MessageEvent('message', { data: { source: 'webos-host', requestId: sent.requestId, ok: true, payload: { files: ['a.txt'] } } }));
+    await expect(p).resolves.toEqual({ files: ['a.txt'] });
+  });
+
+  it('rejects ok:false replies with the error text', async () => {
+    const win = { postMessage: vi.fn() };
+    const p = bridgeRequest(win, { type: 'webos:file-open', path: 'x' }, 500);
+    const { requestId } = win.postMessage.mock.calls[0][0];
+    window.dispatchEvent(new MessageEvent('message', { data: { source: 'webos-host', requestId, ok: false, error: 'not found' } }));
+    await expect(p).rejects.toThrow('not found');
+  });
+
+  it('times out when no reply ever lands, and stops listening', async () => {
+    vi.useFakeTimers();
+    const removeSpy = vi.spyOn(window, 'removeEventListener');
+    const p = bridgeRequest({ postMessage: vi.fn() }, { type: 'webos:file-list' }, 50);
+    const assertion = expect(p).rejects.toThrow('bridge timeout');
+    await vi.advanceTimersByTimeAsync(60);
+    await assertion;
+    expect(removeSpy).toHaveBeenCalledWith('message', expect.any(Function));
+    vi.useRealTimers();
+    removeSpy.mockRestore();
   });
 });
