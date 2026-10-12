@@ -13,6 +13,7 @@ const h = vi.hoisted(() => ({
   dataHandlers: [],
   kv: new Map(),
   files: [],
+  filesFail: false,
   runUtil: null,
 }));
 
@@ -65,13 +66,19 @@ vi.mock('../src/apps/terminal/coreutils.js', () => ({
 vi.mock('../src/os/db.js', () => ({
   kvGet: async (k) => h.kv.get(k),
   kvSet: async (k, v) => { h.kv.set(k, v); },
-  fileList: async () => h.files,
+  // filesFail simulates an IndexedDB hiccup so the completion-cache
+  // fallback (refreshEntries catch) is exercised, not just the happy path.
+  fileList: async () => {
+    if (h.filesFail) throw new Error('idb unavailable');
+    return h.files;
+  },
 }));
 
 vi.mock('sql.js', () => ({
   default: async () => ({
     Database: class {
       exec(sql) {
+        if (sql.includes('boom')) throw new Error('near "boom": syntax error');
         return /select/i.test(sql)
           ? [{ columns: ['id', 'name'], values: [[1, 'one'], [2, 'two']] }]
           : [];
@@ -113,6 +120,7 @@ beforeEach(() => {
   h.dataHandlers.length = 0;
   h.kv.clear();
   h.files.length = 0;
+  h.filesFail = false;
   h.runUtil.mockClear();
   vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} });
 });
@@ -401,5 +409,147 @@ describe('wosh JS pass-through + sqlite', () => {
     // a fresh line still works
     await run('echo third');
     expect(screen()).toContain('third');
+  });
+});
+
+describe('wosh remaining branches', () => {
+  it('every settings path writes through `set` and echoes the applied value', async () => {
+    mountTerm();
+    // theme.preset clears the wallpaper as a side effect — start from one
+    await run('wallpaper https://x.example/w.png');
+    const cases = [
+      ['set persona mac', () => cur.persona === 'mac'],
+      ['set theme.preset midnight', () => cur.theme.preset === 'midnight' && cur.theme.wallpaper === ''],
+      ['set theme.accent #123456', () => cur.theme.accent === '#123456'],
+      ['set theme.wallpaper https://x.example/t.png', () => cur.theme.wallpaper === 'https://x.example/t.png'],
+      ['set ui.anim off', () => cur.ui.anim === false],
+      ['set ui.anim on', () => cur.ui.anim === true],
+      ['set ui.transparency 0.6', () => cur.ui.transparency === 0.6],
+      ['set ui.radius 18px', () => cur.ui.radius === '18px'],
+      ['set ui.blur 8px', () => cur.ui.blur === '8px'],
+      ['set ui.focusHover on', () => cur.ui.focusHover === true],
+      ['set ui.tbSide left', () => cur.ui.tbSide === 'left'],
+      ['set ui.titleAlign center', () => cur.ui.titleAlign === 'center'],
+      ['set ui.font mono', () => cur.ui.font === 'mono'],
+      ['set ui.shadow deep', () => cur.ui.shadow === 'deep'],
+      ['set taskbar.align center', () => cur.taskbar.align === 'center'],
+      ['set taskbar.iconSize sm', () => cur.taskbar.iconSize === 'sm'],
+      ['set taskbar.autohide on', () => cur.taskbar.autohide === true],
+      ['set taskbar.labels off', () => cur.taskbar.labels === false],
+      ['set taskbar.clock24 on', () => cur.taskbar.clock24 === true],
+      ['set taskbar.showDate off', () => cur.taskbar.showDate === false],
+      ['set desktop.iconSize lg', () => cur.desktop.iconSize === 'lg'],
+      ['set desktop.gap compact', () => cur.desktop.gap === 'compact'],
+      ['set volume.mute on', () => cur.volume.muted === true],
+    ];
+    for (const [line, check] of cases) {
+      const s = await run(line);
+      expect(s, line).toContain('=');
+      expect(check(), line).toBe(true);
+    }
+    // persona-default fallbacks: an invalid value resets to '' and echoes so
+    for (const line of ['set ui.tbSide diagonal', 'set ui.font cursive', 'set ui.shadow fog', 'set ui.titleAlign diagonal']) {
+      expect(await run(line), line).toContain('(persona)');
+    }
+    expect(cur.ui.tbSide).toBe('');
+    expect(cur.ui.font).toBe('');
+  });
+
+  it('set errors: an unknown path lists paths; a bad preset surfaces the throw', async () => {
+    mountTerm();
+    expect(await run('set nope.path x')).toContain('unknown settings path: nope.path');
+    expect(await run('set theme.preset bogus')).toContain('themes: midnight');
+  });
+
+  it('completion pools: persona ids, theme presets, settings panels; unknown heads have none', async () => {
+    mountTerm();
+    type('persona an');
+    type('\t');
+    expect(screen()).toContain('persona android'); // unique hit completes inline
+    type('\x03');
+    type('theme mid');
+    type('\t');
+    expect(screen()).toContain('theme midnight');
+    type('\x03');
+    type('settings s');
+    type('\t');
+    expect(screen()).toMatch(/sound\s+storage/); // ambiguous → options listed
+    type('\x03');
+    type('zzz foo');
+    type('\t');
+    type(' echo still works\r');
+    await settle();
+    expect(screen()).toContain('still works'); // no candidates, no crash
+  });
+
+  it('a failed disk read empties the completion cache instead of crashing; it recovers', async () => {
+    h.files.push({ path: '/Home/Docs', dir: true }, { path: '/Home/Notes.txt' });
+    h.filesFail = true;
+    mountTerm();
+    await run('echo bump'); // the post-command refresh fails → cache empties
+    type('cat No');
+    type('\t');
+    expect(screen()).not.toContain('Notes.txt'); // nothing to complete from
+    type('\x03');
+    h.filesFail = false;
+    await run('echo bump'); // refresh succeeds again
+    type('cat No');
+    type('\t');
+    expect(screen()).toContain('Notes.txt');
+  });
+
+  it('pipeline error paths: a throwing util is caught; a failing util exits nonzero', async () => {
+    mountTerm();
+    h.runUtil.mockRejectedValueOnce(new Error('kaboom'));
+    expect(await run('echo hi | coreutils tr a-z A-Z')).toContain('coreutils: kaboom');
+    expect(await run('echo hi | coreutils nosuch')).toContain('exit 2');
+    expect(screen()).toContain('nosuch: mocked failure');
+    // the plain (non-piped) dispatch has its own catch
+    h.runUtil.mockRejectedValueOnce(new Error('kaboom again'));
+    expect(await run('tr a-z A-Z')).toContain('coreutils: kaboom again');
+  });
+
+  it('sqlite surfaces engine errors instead of crashing', async () => {
+    mountTerm();
+    expect(await run('sqlite boom')).toContain('syntax error');
+    await run('sqlite SELECT id FROM t'); // a good statement still works after
+    expect(screen()).toContain('one');
+  });
+
+  it('clear wipes the scrollback (Ctrl+L equivalent as a command)', async () => {
+    mountTerm();
+    await run('echo mark');
+    expect(screen()).toContain('mark');
+    await run('clear');
+    expect(screen()).not.toContain('mark');
+    expect(screen()).toContain('❯'); // prompt redrawn
+  });
+
+  it('os reports open windows; store + settings launch with their echoes', async () => {
+    mountTerm();
+    await run('open calc');
+    await run('os');
+    expect(screen()).toContain('"app": "calc"');
+    await run('store');
+    expect(cur.windows.some((w) => w.appId === 'store')).toBe(true);
+    await run('settings sound');
+    expect(cur.windows.some((w) => w.appId === 'settings')).toBe(true);
+    expect(screen()).toContain('settings → sound');
+    await run('settings');
+    expect(screen()).toContain('opening settings…');
+  });
+
+  it('history ↓ walks forward and past the newest entry clears the line', async () => {
+    mountTerm();
+    await run('echo one');
+    await run('echo two');
+    type('\x1b[A'); // → echo two
+    expect(screen()).toContain('❯ echo two');
+    type('\x1b[B'); // forward → empty line
+    type('echo three\r');
+    await settle();
+    expect(screen()).toContain('three');
+    await run('history');
+    expect(screen()).toMatch(/echo one/);
   });
 });
