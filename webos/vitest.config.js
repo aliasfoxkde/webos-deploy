@@ -15,17 +15,17 @@ export default defineConfig({
       exclude: ['src/main.jsx', 'src/version.js'],
       reporter: ['text', 'lcov'],
       reportsDirectory: 'coverage',
-      // Ratchet: floors sit just under the measured baseline (91.82/85.77/
-      // 86.35/94.92 after the wosh remaining-branches suite — every settings
-      // `set` path, completion pools, FS-cache failure fallback, pipeline +
-      // sqlite error paths, clear/store/settings commands, ↓-past-history).
+      // Ratchet: floors sit just under the measured baseline (92.75/86.31/
+      // 87.57/95.58 after the Files suite extension — full context-menu
+      // surface, Escape/blur create+rename paths, device-tab navigation with
+      // nested walks, device preview Import, and the import-raw fix).
       // Raise as tests land; a regression in any metric fails `npm run
       // coverage`.
       thresholds: {
-        statements: 91.8,
-        branches: 85.7,
-        functions: 86.3,
-        lines: 94.9,
+        statements: 92.7,
+        branches: 86.2,
+        functions: 87.5,
+        lines: 95.5,
       },
     },
   },

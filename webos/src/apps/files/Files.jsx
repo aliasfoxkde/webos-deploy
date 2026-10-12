@@ -129,7 +129,8 @@ export default function FilesApp() {
   const openBlob = useCallback((rec, blob) => {
     const kind = kindOf(rec);
     if (kind === 'text' && blob.size <= TEXT_CAP) {
-      blob.slice(0, TEXT_CAP).text().then((text) => setPreview({ rec, text }));
+      // raw rides along so a device-file preview can Import the blob
+      blob.slice(0, TEXT_CAP).text().then((text) => setPreview({ rec, text, raw: blob }));
     } else {
       const url = URL.createObjectURL(blob);
       setPreview({ rec, url, kind, raw: blob });
@@ -484,7 +485,7 @@ export default function FilesApp() {
             <span className="f-spring" />
             {preview.rec.device ? (
               <button className="f-btn primary" onClick={async () => {
-                const f = preview.rec.raw;
+                const f = preview.raw; // set by openBlob alongside text/url
                 if (f) { await filePut(join(cwd, f.name), f); await refresh(); setTab('disk'); }
                 setPreview(null);
               }} title={`Import into ${cwd}`}>Import</button>
