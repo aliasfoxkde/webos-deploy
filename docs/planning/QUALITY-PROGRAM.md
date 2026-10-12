@@ -132,6 +132,14 @@ for 99%). Honest scale: ~1,370 statements must gain real tests.
 
 ### Phases (each ends with a commit + push; gates stay green throughout)
 
+**Status 2026-10-12:** A ✅ (commit history + this section); B partially —
+GitHub Actions side done, GitForge local container run pending (task #104);
+C ✅ (`fcba20d` lineage); D ✅ (`6fa53a5` — full enumeration + two real token
+fixes: ocean dim, desktop label scrim); E ✅ (`fcba20d` — 99.92% lines /
+96.76 stmts / 88.78 branches / 96.02 funcs, floors 96.5/88.5/95.8/99.8, 1015
+tests; the 4 uncovered lines are documented unreachable arms + one V8
+attribution quirk); F and G remain.
+
 **Phase A — hygiene.** ci.yml dedup (done); drop unused
 `@testing-library/user-event`; this section.
 
@@ -183,3 +191,25 @@ the docs ratchet.
 src/version.js, public/sw.js); `npm run ci`; commit + push; watch GitHub
 Actions; `gh release create v3.14.0`; wrangler deploy from `webos/`; verify
 production serves the new bundle; final commit + push.
+
+## Aegis full-tree scan (2026-10-12, phase-103 cleanup)
+
+`aegis scan src` + `aegis scan tests` (110 + 68 files): every high/medium
+finding triaged by hand; **zero real defects**. The actionable-looking ones:
+
+| Finding | Verdict |
+|---|---|
+| dom-xss `Terminal.jsx:485` (`new Function`) | by design — the terminal's documented JS pass-through REPL, same trust domain as the keyboard |
+| insecure-random `bridge.js:110` (`Math.random`) | correlation id for postMessage replies, not a security token |
+| event-listener-leak `bridge.js:124` | listener removed on both the timeout and reply paths (scanner can't see pairs) |
+| ssrf `coreutils.js:33` | client-side fetch of a bundled wasm asset |
+| pii high (australian-tfn / aba / ssn / aadhaar) | numeric literals in unit-conversion tables and gradient color stops |
+| x-frame-options `registry.js:109` | a comment documenting why frame-hostile apps ship `embed:false` |
+| innerhtml/stored-xss ×18 | only a comment; markdown.js deliberately renders no raw HTML |
+| missing-form-label ×75 | every flagged input sits inside a wrapping `<label className="check-row">` (jsx-a11y passes) |
+| llm-guardrails ×985, react-missing-key ×125, chart-a11y ×87 | pattern-bundle noise on an OS codebase ("model", SVG filters, non-list JSX) |
+
+Repo hygiene: no backup/versioned/junk files, no TODO/FIXME/HACK markers in
+shipped code, build artifacts and sibling repos gitignored, tracked tree is
+269 well-placed files. Aegis CLI (`~/.local/bin/aegis`) is the local scanner;
+the MCP file-scan endpoint is broken ("file not found") — use the CLI.
