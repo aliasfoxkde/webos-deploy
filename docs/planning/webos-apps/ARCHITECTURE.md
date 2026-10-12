@@ -202,6 +202,125 @@ Pure logic (`urls.js` classification/embed rewrites, `tabs.js` reducer) is
 separated from `BrowserApp.jsx` for unit tests. Framing politics and the
 `/proxy` Pages Function: see BROWSER.md in this directory.
 
+## Module index
+
+One row per file under `webos/src/` — a contract enforced by
+`webos/tests/docs-coverage.test.js`: the set of rows here must equal the
+set of files on disk, so a new module cannot land undocumented and a
+deleted one cannot leave a stale row. Per-area detail lives in the
+sections above and below; this index is the complete file-level map.
+
+- `src/App.jsx` — desktop root: window list, icon drag-reorder, context menus, properties dialog, widget sidebar, mobile drawer, deep links
+- `src/main.jsx` — Vite entry: mounts the desktop into #root under the root ErrorBoundary
+- `src/styles.css` — shell chrome stylesheet (desktop, windows, taskbar, popups, persona skins); the desktop label block is parsed by tests/contrast-audit.test.js
+- `src/version.js` — single VERSION constant shown in the UI (bump alongside package.json and public/sw.js)
+- `src/apps/components.js` — React component map for bundled plugins, keyed by app id — kept separate from manifests.js so the registry can import app data without pulling the component graph
+- `src/apps/manifests.js` — bundled plugin manifests (data only, no React), merged into the registry
+- `src/apps/browser/BrowserApp.jsx` — browser window UI: tabs, per-site embed classification, history, reload
+- `src/apps/browser/manifest.js` — Browser plugin manifest (id, name, icon, default window size)
+- `src/apps/browser/tabs.js` — pure tab/window reducer (open/close/activate, per-tab history, mode overrides) unit-tested without a DOM
+- `src/apps/browser/urls.js` — URL intelligence: normalize typed input into a navigable URL and classify how a site may render in a WebOS window
+- `src/apps/calculator/BasicKeys.jsx` — digit/decimal key set shared by the Standard and Scientific keypads
+- `src/apps/calculator/Calculator.jsx` — calculator plugin shell: mode tabs, engine state wiring
+- `src/apps/calculator/Display.jsx` — expression + result display, error surfacing
+- `src/apps/calculator/Keypad.jsx` — per-mode key grid: dispatches the active mode layout to its key rows
+- `src/apps/calculator/calcState.jsx` — calculator state reducer (expression, history, converter units, programmer registers) — pure and unit-tested
+- `src/apps/calculator/calculator.css` — calculator styles (theme tokens only — a persona-aware audit fails on hardcoded palette hexes)
+- `src/apps/calculator/manifest.js` — Calculator plugin manifest (id, name, icon, default window size)
+- `src/apps/calculator/engine/errors.js` — CalcError taxonomy (lex/parse/eval) surfaced in the Display instead of thrown to the boundary
+- `src/apps/calculator/engine/evaluate.js` — evaluator: walks the parser AST and reduces it to a number or a CalcError
+- `src/apps/calculator/engine/format.js` — result formatting (grouping, precision, exponent thresholds)
+- `src/apps/calculator/engine/functions.js` — function/constant table shared by lexer, parser and evaluator
+- `src/apps/calculator/engine/index.js` — public barrel + compile(); the only import app code should use
+- `src/apps/calculator/engine/lexer.js` — tokenizer: numbers, operators, parens, functions, constants
+- `src/apps/calculator/engine/parser.js` — recursive-descent parser producing the AST
+- `src/apps/calculator/engine/programmer.js` — BigInt bitwise evaluator for Programmer mode (word sizes, signedness, shifts)
+- `src/apps/calculator/graph/PlotCanvas.jsx` — canvas function plotter for Graphing mode (sampling, axis ticks, zoom)
+- `src/apps/calculator/modes/Converter.jsx` — unit converter (category factor tables, live two-way conversion)
+- `src/apps/calculator/modes/Graphing.jsx` — Graphing mode UI (function list + PlotCanvas)
+- `src/apps/calculator/modes/History.jsx` — calculation history list with entry reuse
+- `src/apps/calculator/modes/Programmer.jsx` — Programmer mode UI (hex/dec/oct/bin, word size, bit ops)
+- `src/apps/calculator/modes/Scientific.jsx` — Scientific keypad (functions, powers, memory)
+- `src/apps/calculator/modes/Standard.jsx` — Standard keypad (BasicKeys + operators)
+- `src/apps/chat/Chat.jsx` — chat window UI: transcript, composer, adapter status; streams adapter output token by token
+- `src/apps/chat/adapters.js` — model integration seam — adapters are { id, label, ready, run } with AsyncGenerator streams
+- `src/apps/chat/chat.css` — chat window styles (theme tokens only)
+- `src/apps/chat/manifest.js` — Chat plugin manifest (id, name, icon, default window size)
+- `src/apps/chat/store.js` — shared chat history (window + sidebar widget); localStorage-backed, capped, synced via the webos:chat window event
+- `src/apps/editor/Editor.jsx` — text/code editor window: CodeMirror, buffer tabs, open/save pipeline with honest failure status
+- `src/apps/editor/MarkdownView.jsx` — markdown preview renderer (token-walking React renderer — no raw HTML anywhere)
+- `src/apps/editor/buffers.js` — buffer model: pure reducer + localStorage persistence; File System Access handles stay session-only and are never persisted
+- `src/apps/editor/editor.css` — editor window styles (theme tokens only)
+- `src/apps/editor/language.js` — language detection + CodeMirror extension/theme wiring
+- `src/apps/editor/manifest.js` — Editor plugin manifest (id, name, icon, default window size)
+- `src/apps/editor/markdown.js` — markdown tokenizer (headings, lists, fences, inline spans) feeding MarkdownView
+- `src/apps/files/Files.jsx` — Files app: virtual-disk browser (grid/list views, drag-drop, new folder, upload/import/export, rename/delete, context menus)
+- `src/apps/files/files.css` — Files window styles (theme tokens only)
+- `src/apps/files/manifest.js` — Files plugin manifest (id, name, icon, default window size)
+- `src/apps/notepad/Notepad.jsx` — sticky-note scratchpad window backed by notes.js
+- `src/apps/notepad/manifest.js` — Notepad plugin manifest (id, name, icon, default window size)
+- `src/apps/notepad/notepad.css` — Notepad window styles (theme tokens only)
+- `src/apps/notepad/notes.js` — note store: pure functions + debounced localStorage autosave
+- `src/apps/photos/Photos.jsx` — image viewer: disk library, viewer stage, transform/adjust/markup panels
+- `src/apps/photos/imops.js` — pure image ops: path triage, rotate/flip/crop math, tonal adjust baking, annotation rendering, canvas output
+- `src/apps/photos/manifest.js` — Photos plugin manifest (id, name, icon, default window size)
+- `src/apps/photos/photos.css` — Photos window styles (theme tokens only)
+- `src/apps/taskmgr/TaskManager.jsx` — Task Manager: process cards + Performance tab (heap, loop lag, frame rate, long tasks)
+- `src/apps/taskmgr/manifest.js` — Task Manager plugin manifest (id, name, icon, default window size)
+- `src/apps/taskmgr/sysmon.js` — honest web metrics (heap, event-loop lag, fps, PerformanceObserver long tasks) + pure formatters
+- `src/apps/taskmgr/taskmgr.css` — Task Manager window styles (theme tokens only)
+- `src/apps/terminal/Terminal.jsx` — wosh terminal on xterm.js: prompt, history, pipelines, builtin dispatch over wasm coreutils
+- `src/apps/terminal/coreutils-commands.js` — the JS-eval fallback implementations used when the wasm image lacks a utility
+- `src/apps/terminal/coreutils.js` — coreutils.wasm loader + dispatch (wasi host wiring, seeded filesystem)
+- `src/apps/terminal/lineedit.js` — pure readline-style line-editing transitions (buffer + cursor) unit-tested without a DOM
+- `src/apps/terminal/manifest.js` — Terminal plugin manifest (id, name, icon, default window size)
+- `src/apps/terminal/paths.js` — path presentation (~ prompt, ~-expansion) over the Files disk root
+- `src/apps/terminal/pipes.js` — quote-aware pipe splitter: a line becomes segments, or null on an unterminated quote
+- `src/apps/terminal/wasi.js` — MemFS + WasiHost: the Files-disk-backed filesystem handed to the wasm image
+- `src/apps/video/VideoApp.jsx` — video player window: builds /embed/ URLs from a pasted link or ID, plus presets
+- `src/apps/video/manifest.js` — Video plugin manifest (id, name, icon, default window size)
+- `src/apps/weather/WeatherApp.jsx` — weather window: current conditions + 7-day forecast, unit toggle, stored location
+- `src/apps/weather/WxIcon.jsx` — hand-drawn SVG weather glyphs shared by the window and the sidebar widget
+- `src/apps/weather/api.js` — Open-Meteo client (keyless, no CORS): geocoding + forecast; network errors surface as thrown Errors for the UI
+- `src/apps/weather/manifest.js` — Weather plugin manifest (id, name, icon, default window size)
+- `src/apps/weather/weather.css` — Weather window styles (theme tokens only)
+- `src/os/LensFilters.jsx` — SVG filter chain that renders the lens displacement maps for the Liquid Glass refraction
+- `src/os/bridge.js` — postMessage app-storage bridge (private /Apps/<id>/ folders) and the dev-driver bridge (evalAsync envelope, screenshots)
+- `src/os/db.js` — IndexedDB virtual disk (fileGet/filePut/fileList/…) shared by Files, Terminal and the bridge
+- `src/os/format.js` — shared byte/duration/number formatting helpers
+- `src/os/lens.js` — pure lens displacement-map math (SDF shapes, band neutrality, stable filter ids)
+- `src/os/personas.js` — persona registry (id → theme preset + accent + taskbar side), applied to <body data-persona>
+- `src/os/registry.js` — app data: external defaults, store rows, plugin manifests, VIRTUAL_APPS singletons; every row carries description/developer/category/rating
+- `src/os/snap.js` — snap zones (edge halves, corner quarters, top maximize) and Meta+arrow tiling rectangles
+- `src/os/state.jsx` — OS reducer + webos.* persistence, theme engine, taskbar/desktop/widgets/volume/uiMode state, mobile detect
+- `src/os/themes.js` — theme token presets (text/dim/chrome/paper/line/danger/focus) — every pair is WCAG-audited by tests/contrast-audit.test.js
+- `src/os/wallpapers.js` — CSS-art wallpaper pack (clean-room by construction) + upload/URL dimming math
+- `src/os/waterfx.js` — parameter model for the water wallpaper (wave-equation sim params, presets) shared by UI and GL engine
+- `src/os/wpcompose.js` — composite wallpaper model: layered base/pattern/effect/floats spec + pure layout math
+- `src/shell/AddApp.jsx` — Add-app dialog: custom URL/name/icon persisted as a user app
+- `src/shell/AppStore.jsx` — App Store window: catalog, ratings, detail view, install/uninstall
+- `src/shell/Calendar.jsx` — tray calendar popup (month navigation, today highlight, day selection)
+- `src/shell/CompositeWallpaper.jsx` — renders the composited wallpaper layer from wpcompose specs (base, pattern, effect, floats)
+- `src/shell/ContextMenu.jsx` — global right-click system (data-cm="kind:arg" targets; the item builder is read at dispatch time via a ref mirror)
+- `src/shell/EmbedFrame.jsx` — iframe host for plugin/external apps: bridge wiring, load-timeout honesty panel, file-storage glue
+- `src/shell/ErrorBoundary.jsx` — render-crash containment: soft per-window card + hard root boundary (a rejected lazy import never blanks the desktop)
+- `src/shell/FxWallpaper.jsx` — canvas FX wallpaper layer (pointer parallax, reduced-motion gates) sharing the wallpaper slot
+- `src/shell/MobileDrawer.jsx` — full-screen app grid for mobile mode
+- `src/shell/Properties.jsx` — app property sheet (registry row, stars, actions) opened from any icon/taskbar/titlebar menu
+- `src/shell/SaverPreview.jsx` — Settings mini-preview of the selected screen-saver kind (reuses the fullscreen implementations)
+- `src/shell/Screensaver.jsx` — idle screen saver (clock/photos/wireframe modes)
+- `src/shell/Settings.jsx` — Settings window: section navigation over the Panels + Appearance views
+- `src/shell/Sidebar.jsx` — widget sidebar (weather/clock/battery/events/notes/storage; enable + reorder persisted)
+- `src/shell/StartMenu.jsx` — Start menu: search, pinned apps, power actions
+- `src/shell/Taskbar.jsx` — taskbar + tray popups (volume/network via body portals), clock config, position/autohide via body[data-tb]
+- `src/shell/WaterWallpaper.jsx` — interactive water wallpaper host: canvas lifecycle, pointer input, watergl engine + waterfx params
+- `src/shell/Welcome.jsx` — first-run welcome screen and persona chooser
+- `src/shell/Window.jsx` — window chrome: 8-direction resize, titlebar drag, plugin vs EmbedFrame content, focus/z-order hooks
+- `src/shell/watergl.js` — WebGL water simulation (wave equation, pointer ripples) behind WaterWallpaper; falls back to a 2D canvas render
+- `src/shell/winDrag.js` — shared titlebar move-drag with snap-zone integration (used by Window.jsx and the virtual windows in App.jsx)
+- `src/shell/settings/Appearance.jsx` — Appearance panel: persona/theme pickers, chrome knobs, the wallpaper studio (composite builder)
+- `src/shell/settings/Panels.jsx` — remaining Settings sections (desktop/taskbar/widgets/sound/network/apps/storage/about) + shared section controls
+
 ## Liquid Glass design language (win/mac)
 
 The win and mac personas layer a four-phase glass treatment (plan:
@@ -346,8 +465,10 @@ apps without a manifest fall back to the 1120×700 default.
   `npm run build`. `npm run ci` chains all three; CI runs them on GitHub
   (`.github/workflows/ci.yml`, push/PR/manual) and locally via GitForge
   (`.gitforce.yml`, single-ordered-job mirror).
-- Tests: `npm run test` (600+ suites/specs, happy-dom + Testing Library);
-  single file: `npx vitest run tests/<name>.test.jsx`.
+- Tests: `npm run test` (1015 specs across 67 files, happy-dom + Testing
+  Library); single file: `npx vitest run tests/<name>.test.jsx`.
+  `tests/docs-coverage.test.js` additionally pins the Module index to the
+  tree (every file under `src/` needs a row, and vice versa).
 - Build: `npm run build` in `webos/` → `dist/` (static, base `./`).
 - Deploy: `npx wrangler pages deploy dist --project-name artcraft-webos --branch main`
   (see `packaging/HOSTING.md` and the root `README.md` for the full procedure and live URLs).

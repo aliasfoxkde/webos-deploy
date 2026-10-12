@@ -143,7 +143,9 @@ C ✅ (`fcba20d` lineage); D ✅ (`6fa53a5` — full enumeration + two real toke
 fixes: ocean dim, desktop label scrim); E ✅ (`fcba20d` — 99.92% lines /
 96.76 stmts / 88.78 branches / 96.02 funcs, floors 96.5/88.5/95.8/99.8, 1015
 tests; the 4 uncovered lines are documented unreachable arms + one V8
-attribution quirk); F and G remain.
+attribution quirk); F ✅ (`Module index` in ARCHITECTURE.md — one row per src/ file, 110 rows —
+   enforced by tests/docs-coverage.test.js, two-way set equality + real-
+   description checks); G remains (final e2e + release 3.14.0 + deploy).
 
 **Phase A — hygiene.** ci.yml dedup (done); drop unused
 `@testing-library/user-event`; this section.
