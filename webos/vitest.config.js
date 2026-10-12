@@ -15,16 +15,18 @@ export default defineConfig({
       exclude: ['src/main.jsx', 'src/version.js'],
       reporter: ['text', 'lcov'],
       reportsDirectory: 'coverage',
-      // Ratchet: floors sit just under the measured baseline (85.67/79.34/
-      // 77.94/89.19 after the settings-panels suite — every Panels.jsx panel
-      // driven through real clicks/radios, incl. both confirm branches of
-      // Reset/Factory reset). Raise as tests land; a regression in any
-      // metric fails `npm run coverage`.
+      // Ratchet: floors sit just under the measured baseline (88.02/82.31/
+      // 82.39/91.71 after the calc-modes + appearance-panel suites — all five
+      // calculator mode surfaces driven through real clicks against the real
+      // engine, and the Appearance panel's persona/interface/accent/wallpaper/
+      // studio controls incl. upload size guards and the float cap).
+      // Raise as tests land; a regression in any metric fails `npm run
+      // coverage`.
       thresholds: {
-        statements: 85.6,
-        branches: 79.3,
-        functions: 77.9,
-        lines: 89.1,
+        statements: 88.0,
+        branches: 82.3,
+        functions: 82.3,
+        lines: 91.7,
       },
     },
   },
