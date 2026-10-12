@@ -22,7 +22,7 @@ const errno = {
   ENAMETOOLONG: 37, ENOENT: 44, ENOSYS: 52, ENOTDIR: 54, ENOTEMPTY: 55,
   ENOTSUP: 58,
 };
-const FILETYPE = { unknown: 0, dir: 3, regular: 4 };
+const FILETYPE = { unknown: 0, char: 2, dir: 3, regular: 4 };
 const OFLAGS = { CREAT: 1, DIRECTORY: 2, EXCL: 4, TRUNC: 8 };
 const FDFLAGS = { APPEND: 1 };
 const FSTFLAGS = { SET_ATIM: 1, SET_ATIM_NOW: 2, SET_MTIM: 4, SET_MTIM_NOW: 8 };
@@ -128,7 +128,18 @@ export class MemFS {
   remove(path, { dir = false } = {}) {
     const p = normalize(path);
     const entry = this.entries.get(p);
-    if (!entry) { this.dirty = true; return; } // rm -f semantics; missing is fine
+    if (!entry) {
+      // implicit dir: exists only while stored entries live under it.
+      // rmdir on one with children is ENOTEMPTY; truly missing paths fall
+      // through to rm -f semantics (no materialization — snapshot() must
+      // not grow empty parent records from a failed remove).
+      const prefix = p.endsWith('/') ? p : `${p}/`;
+      for (const key of this.entries.keys()) {
+        if (key.startsWith(prefix)) throw errno.ENOTEMPTY;
+      }
+      this.dirty = true;
+      return;
+    }
     if (dir && !entry.dir) throw errno.ENOTDIR;
     if (!dir && entry.dir) throw errno.EISDIR;
     if (entry.dir && this.children(p).length) throw errno.ENOTEMPTY;
@@ -499,7 +510,9 @@ export class WasiHost {
         if ((oflags & OFLAGS.EXCL) && existed) return errno.EEXIST;
         if ((oflags & OFLAGS.DIRECTORY) && !entry.dir) return errno.ENOTDIR;
         if (entry.dir) {
-          if (oflags & OFLAGS.CREAT) return errno.EISDIR;
+          // CREAT|DIRECTORY is the mkdir-then-open pattern — legit on the
+          // directory it just made. CREAT alone on a dir is the error.
+          if ((oflags & OFLAGS.CREAT) && !(oflags & OFLAGS.DIRECTORY)) return errno.EISDIR;
           if (oflags & OFLAGS.TRUNC) return errno.EISDIR;
         } else if (oflags & OFLAGS.TRUNC) {
           host.fs.write(full, new Uint8Array(0));

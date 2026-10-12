@@ -15,15 +15,17 @@ export default defineConfig({
       exclude: ['src/main.jsx', 'src/version.js'],
       reporter: ['text', 'lcov'],
       reportsDirectory: 'coverage',
-      // Ratchet: floors sit just under the measured baseline (79.71/74.79/
-      // 72.13/82.69 after the strict-lint pass — editedName extracted to
-      // imops.js with counter-advance regression tests). Raise as tests
-      // land; a regression in any metric fails `npm run coverage`.
+      // Ratchet: floors sit just under the measured baseline (83.42/77.36/
+      // 74.66/86.58 after the WASI syscall suite — the full imports()
+      // surface driven against a scratch WebAssembly.Memory, which also
+      // fixed path_open CREAT|DIRECTORY and implicit-dir rmdir ENOTEMPTY).
+      // Raise as tests land; a regression in any metric fails `npm run
+      // coverage`.
       thresholds: {
-        statements: 79.7,
-        branches: 74.7,
-        functions: 72.1,
-        lines: 82.6,
+        statements: 83.4,
+        branches: 77.3,
+        functions: 74.6,
+        lines: 86.5,
       },
     },
   },
