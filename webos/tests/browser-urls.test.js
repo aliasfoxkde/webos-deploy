@@ -102,3 +102,10 @@ describe('small helpers', () => {
     expect(hostOf('/proxy?url=x')).toBe(location.hostname); // same-origin proxy URL
   });
 });
+
+describe('hostOf', () => {
+  it('returns "" for input a URL parser rejects outright', () => {
+    expect(hostOf('http://')).toBe('');
+    expect(hostOf('')).toBe('');
+  });
+});

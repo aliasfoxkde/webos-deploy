@@ -329,6 +329,22 @@ describe('Properties', () => {
     expect(onClose).toHaveBeenCalledOnce();
   });
 
+  it('a url app offers Open in new tab from the property sheet', () => {
+    const openSpy = vi.spyOn(window, 'open').mockReturnValue(null);
+    const c = mount(<Properties appId="user-link" onClose={noop} />);
+    const app = {
+      id: 'user-link', name: 'Linked', url: 'https://linked.example', icon: 'icons/custom.svg',
+      tagline: 'Web app', version: '1.0', accent: '#38bdf8', embed: false,
+      singleInstance: false, developer: 'You', category: 'Custom', description: 'd',
+    };
+    act(() => cur.addUserApp(app));
+    const tabBtn = [...c.container.querySelectorAll('.props-actions .btn')].find((b) => b.textContent === 'Open in new tab');
+    expect(tabBtn).toBeTruthy();
+    fireEvent.click(tabBtn);
+    expect(openSpy).toHaveBeenCalledWith('https://linked.example', '_blank', 'noopener');
+    openSpy.mockRestore();
+  });
+
   it('Escape and backdrop clicks close; dialog body clicks do not', () => {
     const onClose = vi.fn();
     const c = mount(<Properties appId="calc" onClose={onClose} />);
@@ -376,6 +392,14 @@ describe('MobileDrawer', () => {
     expect(c.container.textContent).toContain('No apps match');
     expect(c.container.textContent).not.toContain('App Store');
   });
+
+  it('the footer store button closes the drawer and launches the store', () => {
+    const onClose = vi.fn();
+    const c = mount(<MobileDrawer onClose={onClose} />);
+    fireEvent.click([...c.container.querySelectorAll('button')].find((b) => b.textContent.includes('App Store')));
+    expect(onClose).toHaveBeenCalledOnce();
+    expect(cur.windows.some((w) => w.appId === 'store')).toBe(true);
+  });
 });
 
 describe('AppStore', () => {
@@ -402,6 +426,36 @@ describe('AppStore', () => {
       .find((b) => b.textContent === 'All'));
     fireEvent.change(input, { target: { value: STORE_APPS[0].name.toLowerCase() } });
     expect(c.container.querySelectorAll('.store-card')).toHaveLength(1);
+  });
+
+  it('an installed listing opens from its card; the detail sheet opens and uninstalls', () => {
+    const c = mount(<AppStore />);
+    const target = STORE_APPS.find((a) => !cur.installed.includes(a.id));
+    act(() => cur.install(target.id));
+    const card = [...c.container.querySelectorAll('.store-card')]
+      .find((el) => el.textContent.includes(target.name));
+    const cardOpen = [...card.querySelectorAll('button')].find((b) => b.textContent === 'Open');
+    expect(cardOpen).toBeTruthy();
+    fireEvent.click(cardOpen);
+    expect(cur.windows.some((w) => w.appId === target.id)).toBe(true);
+
+    // detail sheet (install → uninstall round-trip through its own buttons)
+    fireEvent.click(card.querySelector('.store-icon'));
+    const detail = c.container.querySelector('.store-detail');
+    expect(detail).toBeTruthy();
+    expect(detail.textContent).toContain('Uses this browser');
+    const detailOpen = [...detail.querySelectorAll('button')].find((b) => b.textContent === 'Open');
+    const installedBefore = cur.installed.includes(target.id);
+    expect(detailOpen).toBeTruthy();
+    expect(installedBefore).toBe(true);
+    fireEvent.click(detailOpen); // the sheet header's own launch button
+    expect(cur.windows.some((w) => w.appId === target.id)).toBe(true);
+    fireEvent.click([...detail.querySelectorAll('button')].find((b) => b.textContent.includes('Uninstall')));
+    expect(cur.installed).not.toContain(target.id);
+    // now the sheet shows Install instead, and Back returns to the grid
+    expect([...detail.querySelectorAll('button')].some((b) => b.textContent === 'Get')).toBe(true);
+    fireEvent.click([...detail.querySelectorAll('button')].find((b) => b.textContent.includes('All apps')));
+    expect(c.container.querySelector('.store-detail')).toBeNull();
   });
 
   it('install → open/uninstall lifecycle through the card buttons', () => {

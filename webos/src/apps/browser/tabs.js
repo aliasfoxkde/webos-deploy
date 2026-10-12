@@ -77,11 +77,6 @@ export function tabsReducer(state, action) {
     case 'activate':
       return state.tabs.some((t) => t.id === action.id) ? { ...state, active: action.id } : state;
 
-    case 'activateAt': {
-      const tab = state.tabs[action.index];
-      return tab ? { ...state, active: tab.id } : state;
-    }
-
     /* Navigate the current tab: truncate the forward stack, append the entry. */
     case 'navigate':
       return updateTab(state, action.tabId, (t) => ({
@@ -110,9 +105,6 @@ export function tabsReducer(state, action) {
 
     case 'reload':
       return updateTab(state, action.tabId, (t) => ({ ...t, reloadKey: t.reloadKey + 1 }));
-
-    case 'setLoading':
-      return updateTab(state, action.tabId, (t) => ({ ...t, loading: action.loading }));
 
     default:
       return state;

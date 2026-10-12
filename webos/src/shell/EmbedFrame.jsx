@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { fileGet, filePut, fileDel, fileList } from '../os/db.js';
 import { appOrigin, handleBridge } from '../os/bridge.js';
 import { useOS } from '../os/state.jsx';
@@ -11,7 +11,9 @@ import { useOS } from '../os/state.jsx';
    handleBridge checks the message itself; here we additionally pin the event
    to THIS iframe's window so sibling frames can't impersonate each other. */
 export default function EmbedFrame({ app, onLoaded }) {
-  const [failed, setFailed] = useState(false);
+  // NB: no onError/failed fallback here — React never dispatches `error` for
+  // iframes (it traps only `load`), so such a handler would be dead code.
+  // Embed failures are handled by the honest blocked panel for non-embed apps.
   const frame = useRef(null);
   const os = useOS();
 
@@ -51,14 +53,7 @@ export default function EmbedFrame({ app, onLoaded }) {
         title={app.name}
         allow="fullscreen; clipboard-read; clipboard-write; camera; microphone; autoplay"
         onLoad={onLoaded}
-        onError={() => setFailed(true)}
       />
-      {failed && (
-        <div className="blocked">
-          <h3>Couldn&rsquo;t load {app.name}</h3>
-          <button className="btn accent" onClick={() => window.open(app.url, '_blank', 'noopener')}>Open in a new tab ↗</button>
-        </div>
-      )}
     </div>
   );
 }

@@ -286,12 +286,43 @@ describe('install / uninstall / user apps', () => {
     act6((o) => o.updateUserApp({ ...app, name: 'Renamed' }));
     expect(cur.userApps[0].name).toBe('Renamed');
     act6((o) => o.launch('myapp'));
+    act6((o) => o.setOrder(['myapp', 'terminal'])); // a custom order mentioning it
     act6((o) => o.removeUserApp('myapp'));
     expect(cur.userApps).toEqual([]);
     expect(cur.windows).toEqual([]);
+    expect(cur.order).toEqual(['terminal']); // removed from the custom order too
     expect(cur.isCustom('myapp')).toBe(false);
     expect(cur.isDefault('terminal')).toBe(true);
     expect(cur.isDefault('myapp')).toBe(false);
+  });
+});
+
+describe('state guards', () => {
+  it('a corrupt persisted slice falls back to the factory default', () => {
+    localStorage.setItem('webos.desktop', '{oops');
+    mount();
+    expect(cur.desktop).toMatchObject({ sort: 'custom', iconSize: 'md' }); // factory desktop
+    expect(localStorage.getItem('webos.desktop')).toBe('{oops'); // corrupt value not rewritten
+  });
+
+  it('uninstall drops the app from the custom desktop order too', () => {
+    mount();
+    act6((o) => o.install('globe'));
+    act6((o) => o.setOrder(['globe', 'terminal']));
+    expect(cur.order).toEqual(['globe', 'terminal']);
+    act6((o) => o.uninstall('globe'));
+    expect(cur.order).toEqual(['terminal']);
+  });
+
+  it('mobile mode launches apps maximized to the viewport', () => {
+    mount();
+    act6((o) => o.setUiMode('mobile'));
+    expect(cur.mobile).toBe(true);
+    act6((o) => o.launch('calc'));
+    const w = cur.windows[0];
+    expect(w.max).toBe(true);
+    expect(w.rect.w).toBe(window.innerWidth);
+    expect(w.rect.h).toBe(window.innerHeight - 56);
   });
 });
 

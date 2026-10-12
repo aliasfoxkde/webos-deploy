@@ -312,3 +312,26 @@ describe('TaskManager live signals', () => {
     expect(document.querySelector('th[aria-sort="descending"]')?.textContent).toContain('Status');
   });
 });
+
+describe('TaskManager — unsupported entry type', () => {
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    vi.stubGlobal('requestAnimationFrame', () => 1);
+    vi.stubGlobal('cancelAnimationFrame', () => {});
+    vi.stubGlobal('fetch', () => new Promise(() => {}));
+    // some engines ship PerformanceObserver but throw on unsupported entry types
+    vi.stubGlobal('PerformanceObserver', class {
+      observe() { throw new Error('entry type not supported'); }
+      disconnect() {}
+    });
+  });
+  afterEach(() => { vi.unstubAllGlobals(); });
+
+  it('a PerformanceObserver that rejects longtask keeps the stall row at zero', () => {
+    render(<OSProvider><TaskManager /></OSProvider>);
+    fireEvent.click(screen.getByRole('tab', { name: 'Performance' }));
+    const row = screen.getByText('Main-thread stalls >50 ms').closest('div');
+    expect(row.textContent).toContain('0'); // counted nothing, honestly
+    expect(row.textContent).not.toContain('worst');
+  });
+});

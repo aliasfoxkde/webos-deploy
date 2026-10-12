@@ -154,7 +154,9 @@ export default function Appearance() {
   // shape — normalizes to a full tree on the first edit instead of
   // silently dropping edits to groups it doesn't carry)
   const patchWater = (group, kv) =>
-    os.setTheme({ water: mergeParams(DEFAULTS, { ...t.water, [group]: kv }) });
+    // carry the group's current values along — a bare kv would let the
+    // DEFAULTS merge snap the group's other knobs back on every edit
+    os.setTheme({ water: mergeParams(DEFAULTS, { ...t.water, [group]: { ...t.water?.[group], ...kv } }) });
   const needle = q.trim().toLowerCase();
   const list = WALLPAPERS.filter((w) => (cat === 'All' || w.cat === cat)
     && (!needle

@@ -122,7 +122,10 @@ export default function Editor({ args } = {}) {
         const [handle] = await window.showOpenFilePicker();
         const file = await handle.getFile();
         picked = { name: file.name, text: await file.text(), handle };
-      } catch { return; } // user cancelled
+      } catch (e) {
+        if (e?.name !== 'AbortError') setStatus(`open failed: ${e.message ?? e}`);
+        return; // cancelled pickers stay silent
+      }
     } else {
       picked = await readFile();
     }

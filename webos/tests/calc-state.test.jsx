@@ -197,3 +197,18 @@ describe('useCalcHotkeys', () => {
     expect(equals).toHaveBeenCalledTimes(1); // disabled → no new calls
   });
 });
+
+describe('state guards', () => {
+  it('corrupt persisted values fall back to defaults', () => {
+    localStorage.setItem('webos.calc.angle', '{broken json');
+    expect(() => mount()).not.toThrow();
+    expect(cur.angle).toBe('deg'); // the factory default survives
+  });
+
+  it('memStore keeps the register on a NaN entry', () => {
+    mount();
+    type('1/0');
+    act(() => { cur.memStore(); });
+    expect(cur.memory).toBe(0); // register untouched by the invalid entry
+  });
+});

@@ -370,3 +370,259 @@ describe('fx wallpaper mount', () => {
     expect(fx).toBeGreaterThan(0);
   });
 });
+
+
+describe('shell remainder', () => {
+  it('desktop menu: Sort by name, Rearrange freely, Display settings, Toggle fullscreen', async () => {
+    mountApp();
+    await ctx(document.querySelector('#desktop'));
+    await clickItem('Sort icons by name');
+    expect(osNow().desktop.sort).toBe('name');
+    await closeMenu();
+    await ctx(document.querySelector('#desktop'));
+    await clickItem('Rearrange freely');
+    expect(osNow().desktop.sort).toBe('custom');
+    expect(osNow().order.length).toBeGreaterThan(0);
+    await closeMenu();
+    await ctx(document.querySelector('#desktop'));
+    await clickItem('Display settings…');
+    expect(osNow().windows.some((w) => w.appId === 'settings')).toBe(true);
+    await closeMenu();
+
+    const events = [];
+    const onFs = () => events.push(1);
+    document.addEventListener('webos:fullscreen', onFs);
+    await ctx(document.querySelector('#desktop'));
+    await clickItem('Toggle fullscreen');
+    document.removeEventListener('webos:fullscreen', onFs);
+    expect(events).toHaveLength(1); // the same event F11 dispatches
+  });
+
+  it('icon menu: Open launches the app; Properties opens the dialog', async () => {
+    mountApp();
+    await ctx(iconOf('calc'));
+    await clickItem('Open Calculator');
+    expect(osNow().windows.some((w) => w.appId === 'calc')).toBe(true);
+    await closeMenu();
+    await ctx(iconOf('editor'));
+    await clickItem('Properties');
+    expect(document.querySelector('[aria-label="Editor properties"]')).toBeTruthy();
+  });
+
+  it('titlebar menu maximizes/restores; a pinned icon offers Unpin', async () => {
+    const os = mountApp();
+    act(() => { os.launch('calc'); });
+    await act(async () => {});
+    await ctx(document.querySelector('.titlebar'));
+    await clickItem('Maximize');
+    expect(osNow().windows.find((w) => w.appId === 'calc').max).toBe(true);
+    await closeMenu();
+    await ctx(document.querySelector('.titlebar'));
+    await clickItem('Restore');
+    expect(osNow().windows.find((w) => w.appId === 'calc').max).toBe(false);
+    await closeMenu();
+
+    await ctx(iconOf('editor'));
+    await clickItem('Pin to taskbar');
+    expect(osNow().taskbar.pinned).toContain('editor');
+    await closeMenu();
+    await ctx(iconOf('editor'));
+    await clickItem('Unpin from taskbar');
+    expect(osNow().taskbar.pinned).not.toContain('editor');
+  });
+
+  it('taskbar menu: Taskbar settings… and App Store… launch their targets', async () => {
+    mountApp();
+    await ctx(document.querySelector('#taskbar'));
+    await clickItem('Taskbar settings…');
+    const settings1 = osNow().windows.filter((w) => w.appId === 'settings').pop();
+    expect(settings1.args).toEqual({ initial: 'taskbar' });
+    await closeMenu();
+    await ctx(document.querySelector('#taskbar'));
+    await clickItem('App Store…');
+    expect(osNow().windows.some((w) => w.appId === 'store')).toBe(true);
+  });
+
+  it('Start menu links open the Store and Settings through the shell', async () => {
+    mountApp();
+    fireEvent.click(document.querySelector('#start-btn'));
+    await act(async () => {});
+    fireEvent.click([...document.querySelectorAll('#start-menu .sm-link')]
+      .find((b) => b.textContent.includes('App Store')));
+    await act(async () => {});
+    expect(osNow().windows.some((w) => w.appId === 'store')).toBe(true);
+    fireEvent.click(document.querySelector('#start-btn'));
+    await act(async () => {});
+    fireEvent.click([...document.querySelectorAll('#start-menu .sm-link')]
+      .find((b) => b.textContent.includes('Settings &')));
+    await act(async () => {});
+    expect(osNow().windows.some((w) => w.appId === 'settings')).toBe(true);
+  });
+
+  it('a composite wallpaper mounts the composite layer on the desktop', async () => {
+    const os = mountApp();
+    act(() => {
+      os.wpSave({
+        id: 'wp-shell-comp',
+        name: 'Desk comp',
+        base: { kind: 'gradient', angle: 160, stops: [{ color: '#101828', at: 0 }, { color: '#0b0e14', at: 100 }] },
+        pattern: { kind: 'none', size: 32, color: '#ffffff', opacity: 0.08 },
+        effect: { kind: 'none', strength: 0.5, color: '#38bdf8' },
+        floats: [],
+      });
+    });
+    expect(osNow().composites).toHaveLength(1);
+    act(() => { osNow().setTheme({ wallpaper: 'wp-shell-comp' }); });
+    await act(async () => {});
+    expect(document.querySelector('.wpcomp')).toBeTruthy(); // the composite layer mounted
+  });
+
+  it('a pointerdown far from an icon never starts a drag (click still launches)', async () => {
+    mountApp();
+    const ico = iconOf('calc');
+    press(ico, 'pointerdown', -500, -500); // hit-test miss
+    press(ico, 'pointerup', -500, -500);
+    fireEvent.click(ico);
+    await act(async () => {});
+    expect(osNow().windows.some((w) => w.appId === 'calc')).toBe(true);
+  });
+});
+
+/* Remaining one-line seams: the start-menu row menu, titlebar Properties and
+   Open-in-new-tab, the taskbar menu's plain Settings item, the tray's
+   settings/widgets buttons (Sidebar mount through App), the unmenuable
+   surface, custom-app creation (Add app through the desktop menu), pinning
+   by dropping an icon exactly on a taskbar slot, and dragging a group tile. */
+describe('shell remainder 2', () => {
+  it('a start-menu app row offers Open + both pin surfaces', async () => {
+    const os = mountApp();
+    const openRow = async () => {
+      act(() => { fireEvent.click(document.querySelector('#start-btn')); });
+      await act(async () => {});
+      return document.querySelector('[data-cm^="smapp:"]');
+    };
+    const row = await openRow();
+    const appId = row.dataset.cm.split(':')[1];
+    await ctx(row);
+    await clickItem(`Open ${os.findApp(appId).name}`);
+    expect(osNow().windows.some((w) => w.appId === appId)).toBe(true);
+
+    await ctx(document.querySelector('#desktop'));
+    await closeMenu();
+    const row2 = await openRow();
+    const pinId = row2.dataset.cm.split(':')[1];
+    await ctx(row2);
+    expect(item('Unpin from Start')).toBeTruthy(); // start rows are start-pinned by definition
+    await clickItem('Pin to taskbar');
+    expect(osNow().taskbar.pinned).toContain(pinId);
+  });
+
+  it('the titlebar menu opens Properties through App state', async () => {
+    mountApp();
+    act(() => { osNow().launch('calc'); });
+    await act(async () => {});
+    const win = osNow().windows.find((w) => w.appId === 'calc');
+    await ctx(document.querySelector(`[data-cm="titlebar:${win.id}"]`));
+    await clickItem('Properties');
+    expect(document.querySelector('[aria-label="Calculator properties"]')).toBeTruthy();
+    act(() => { fireEvent.click(document.querySelector('.props .tb-btn.close')); });
+    await act(async () => {});
+    expect(document.querySelector('[aria-label="Calculator properties"]')).toBeNull();
+  });
+
+  it('the taskbar menu has a plain Settings item and the tray buttons wire through', async () => {
+    mountApp();
+    await ctx(document.querySelector('#taskbar'));
+    await clickItem('Settings…');
+    expect(osNow().windows.some((w) => w.appId === 'settings')).toBe(true);
+
+    act(() => { fireEvent.click(document.querySelector('[data-tray="widgets"]')); });
+    await act(async () => {});
+    expect(document.querySelector('#sidebar, .sidebar, [class*="sidebar"]')).toBeTruthy();
+    // closing hands off through App state, not just unmounting locally
+    act(() => { fireEvent.click(document.querySelector('[title="Close widgets"]')); });
+    await act(async () => {});
+    expect(document.querySelector('#sidebar')).toBeNull();
+
+    // tray settings gear launches Settings as a singleton (already open)
+    const before = osNow().windows.length;
+    act(() => { fireEvent.click(document.querySelector('[title="Settings"]')); });
+    await act(async () => {});
+    expect(osNow().windows.some((w) => w.appId === 'settings')).toBe(true);
+    expect(osNow().windows.length).toBe(before);
+  });
+
+  it('an unknown data-cm surface builds no menu at all', async () => {
+    mountApp();
+    const stray = document.createElement('span');
+    stray.dataset.cm = 'zzz:nowhere';
+    document.querySelector('#desktop').appendChild(stray);
+    await ctx(stray);
+    expect(document.querySelector('.ctx-item')).toBeNull();
+  });
+
+  it('Add app… creates a PWA: embedded launches a window, bare link stays a tab', async () => {
+    mountApp();
+    const open = vi.spyOn(window, 'open').mockReturnValue(null);
+
+    await ctx(document.querySelector('#desktop'));
+    await clickItem('Add app…');
+    const dlg = document.querySelector('[aria-label="Add app"]');
+    expect(dlg).toBeTruthy();
+    act(() => { fireEvent.change(dlg.querySelector('input[placeholder="My app"]'), { target: { value: 'Kestrel' } }); });
+    act(() => { fireEvent.change(dlg.querySelector('input[placeholder="https://example.com"]'), { target: { value: 'https://kestrel.example' } }); });
+    act(() => { fireEvent.click([...dlg.querySelectorAll('input[type="checkbox"]')][0]); }); // embed
+    act(() => { fireEvent.click([...dlg.querySelectorAll('button')].find((b) => b.textContent === 'Add app')); });
+    await act(async () => {});
+    const embedded = osNow().userApps.find((a) => a.name === 'Kestrel');
+    expect(embedded?.url).toBe('https://kestrel.example');
+    expect(embedded?.embed).toBe(true);
+    act(() => { osNow().launch(embedded.id); });
+    await act(async () => {});
+    const win = osNow().windows.find((w) => w.appId === embedded.id);
+    expect(win).toBeTruthy();
+    await ctx(document.querySelector(`[data-cm="titlebar:${win.id}"]`));
+    await clickItem('Open in new tab');
+    expect(open).toHaveBeenCalledWith('https://kestrel.example', '_blank', 'noopener');
+
+    // a bare (non-embed) link app never gets a window — its desktop tile says so
+    await ctx(document.querySelector('#desktop'));
+    await clickItem('Add app…');
+    const dlg2 = document.querySelector('[aria-label="Add app"]');
+    act(() => { fireEvent.change(dlg2.querySelector('input[placeholder="My app"]'), { target: { value: 'Barelink' } }); });
+    act(() => { fireEvent.change(dlg2.querySelector('input[placeholder="https://example.com"]'), { target: { value: 'https://bare.example' } }); });
+    act(() => { fireEvent.click([...dlg2.querySelectorAll('button')].find((b) => b.textContent === 'Add app')); });
+    await act(async () => {});
+    const bare = osNow().userApps.find((a) => a.name === 'Barelink');
+    const tile = document.querySelector(`#icon-grid [data-cm="icon:${bare.id}"]`);
+    expect(tile.title).toContain('opens in new tab');
+    open.mockRestore();
+  });
+
+  it('dropping an unpinned icon exactly on a taskbar slot splices it in there', async () => {
+    mountApp();
+    act(() => { osNow().setTaskbar({ pinned: ['calc', 'files'] }); });
+    await act(async () => {});
+    expect(osNow().taskbar.pinned).not.toContain('editor');
+    const ico = iconOf('editor');
+    press(ico, 'pointerdown', 30, 1040);
+    press(ico, 'pointermove', 0, 2005); // taskbar band; slot rects are 0-width → only x=0 hits
+    press(ico, 'pointerup', 0, 2005);
+    await act(async () => {});
+    expect(osNow().taskbar.pinned).toContain('editor');
+  });
+
+  it('a group tile takes the drag machine (pointer down → move → up)', async () => {
+    const os = mountApp();
+    act(() => { os.addGroup({ id: 'grp-drag', name: 'Draggable', appIds: ['calc'] }); });
+    await act(async () => {});
+    const group = document.querySelector('#icon-grid [data-gid="grp-drag"]');
+    expect(group).toBeTruthy();
+    const before = osNow().groups.length;
+    press(group, 'pointerdown', 38, 45);
+    press(group, 'pointermove', 300, 1145);
+    press(group, 'pointerup', 300, 1145);
+    await act(async () => {});
+    expect(osNow().groups.length).toBe(before); // drag ends cleanly, group intact
+  });
+});

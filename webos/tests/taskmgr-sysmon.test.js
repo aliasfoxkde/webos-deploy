@@ -192,3 +192,18 @@ describe('storageShare', () => {
     expect(storageShare([])).toEqual([]);
   });
 });
+
+describe('default nameOf', () => {
+  it('sort ties break by id; filter matches appId without a nameOf', () => {
+    const rows = [
+      { id: 3, appId: 'zed', uptime: 10 },
+      { id: 1, appId: 'calc', uptime: 10 },
+      { id: 2, appId: 'art', uptime: 40 },
+    ];
+    expect(sortRows(rows, 'name').map((r) => r.appId)).toEqual(['art', 'calc', 'zed']);
+    expect(sortRows(rows, 'name', -1)[0].appId).toBe('zed');
+    expect(sortRows(rows, 'uptime')[0].appId).toBe('calc'); // tie(10) breaks by lowest id
+    expect(filterRows(rows, 'AL').map((r) => r.appId)).toEqual(['calc']);
+    expect(filterRows(rows, '  ')).toHaveLength(3); // blank query: no filtering
+  });
+});

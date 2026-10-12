@@ -34,10 +34,9 @@ export default function Properties({ appId, onClose }) {
   const isPlugin = !app.url;
   const isStore = STORE_APPS.some((a) => a.id === app.id);
   const isCustom = os.isCustom(app.id);
-  const installed = isStore ? os.installed.includes(app.id) : true;
   const kind = isCustom ? 'Your app (custom link)'
     : isPlugin ? 'System plugin'
-    : isStore ? (installed ? 'Store app (installed)' : 'Store app')
+    : isStore ? 'Store app (installed)' // findApp only resolves installed rows
     : 'External app';
 
   return (
@@ -78,15 +77,14 @@ export default function Properties({ appId, onClose }) {
         <p className="props-desc">{app.description || app.tagline}</p>
 
         <footer className="props-actions">
-          {installed ? (
-            <button className="btn accent" onClick={() => { onClose(); os.launch(app.id); }}>Open</button>
-          ) : (
-            <button className="btn accent" onClick={() => os.install(app.id)}>Install</button>
-          )}
+          {/* findApp only resolves desktop-visible rows (plugins + installed
+              store apps + user apps), so everything here is installed — an
+              install action would be unreachable */}
+          <button className="btn accent" onClick={() => { onClose(); os.launch(app.id); }}>Open</button>
           {app.url ? (
             <button className="btn" onClick={() => window.open(app.url, '_blank', 'noopener')}>Open in new tab</button>
           ) : null}
-          {isStore && installed ? (
+          {isStore ? (
             <button className="btn danger" onClick={() => { os.uninstall(app.id); onClose(); }}>Uninstall</button>
           ) : null}
           {isCustom ? (

@@ -206,3 +206,14 @@ describe('WasiHost (no wasm — state machine only)', () => {
     expect(host.resolveDir(8)).toBeUndefined(); // files are not dir bases
   });
 });
+
+describe('WasiHost path helpers at the root', () => {
+  it('base and parent are total on "/" and split real paths', () => {
+    const fs = new MemFS();
+    expect(fs.base('/')).toBe(''); // the root has no name
+    expect(fs.parent('/')).toBeNull(); // and no parent
+    expect(fs.base('/Home/notes.txt')).toBe('notes.txt');
+    expect(fs.parent('/Home/notes.txt')).toBe('/Home');
+    expect(fs.parent('/a')).toBe('/'); // top-level parent is the root itself
+  });
+});

@@ -97,8 +97,6 @@ export async function handleBridge(files, app, event) {
         await files.del(path);
         return ack(msg, { path: msg.path });
       }
-      default:
-        return null;
     }
   } catch (e) {
     return nack(msg, e?.message ?? 'storage error');

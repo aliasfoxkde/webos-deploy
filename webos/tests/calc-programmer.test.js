@@ -75,3 +75,12 @@ describe('toBaseString', () => {
     expect(toBaseString(9n, 16, 32)).toBe('9');
   });
 });
+
+describe('programmer parse guards', () => {
+  it('integer division and modulo with BigInt operands', () => {
+    expect(evalProgrammer('17 / 5', 10, 64)).toBe(3n);
+    expect(evalProgrammer('17 % 5', 10, 64)).toBe(2n);
+    expect(() => evalProgrammer('17 % 0', 10, 64)).toThrow('Division by zero');
+    expect(() => evalProgrammer(') 3', 10, 64)).toThrow("Unexpected ')'");
+  });
+});

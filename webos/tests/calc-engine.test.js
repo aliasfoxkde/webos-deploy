@@ -139,3 +139,23 @@ describe('formatNumber', () => {
     expect(formatNumber(1 / 3, { precision: 99 })).toBe('0.333333333333333');
   });
 });
+
+describe('evaluation edge branches', () => {
+  it('mod: happy path, zero divisor, and the malformed/unknown guards', () => {
+    expect(evaluateExpression('7 mod 3')).toBe(1);
+    expect(() => evaluate(parse('7 mod 0'))).toThrow('Division by zero');
+    expect(evaluate(parse('7 mod 0'), { relaxed: true })).toBeNaN();
+    // unknown operator guard: binary node with an operator the table lacks
+    expect(evaluate({ type: 'binary', op: '**', left: { type: 'num', value: 2 }, right: { type: 'num', value: 3 } }, { relaxed: true }))
+      .toBeNaN();
+    expect(() => evaluate({ type: 'binary', op: '**', left: { type: 'num', value: 2 }, right: { type: 'num', value: 3 } }))
+      .toThrow("Unknown operator '**'");
+    // malformed node shape lands in the default arm
+    expect(evaluate({ type: 'wat' }, { relaxed: true })).toBeNaN();
+  });
+
+  it('min/max helpers and unknown-operator strict mode', () => {
+    expect(evaluateExpression('min(3, 5)')).toBe(3);
+    expect(evaluateExpression('max(3, 5)')).toBe(5);
+  });
+});

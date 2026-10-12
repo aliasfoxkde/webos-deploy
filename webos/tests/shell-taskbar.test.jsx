@@ -170,6 +170,27 @@ describe('Taskbar', () => {
     expect(cur.windows).toHaveLength(1);
   });
 
+  it('pin drag onto another slot reorders the pinned list', () => {
+    const c = setup();
+    act(() => cur.setTaskbar({ pinned: ['calc', 'files'] }));
+    const btns = [...c.container.querySelectorAll('#task-apps .task-app')];
+    expect(btns.map((b) => b.title)).toEqual(['Calculator', 'Files']);
+    // slot rects are zero-width in happy-dom, so only clientX=0 lands — on slot 0
+    fireEvent.pointerDown(btns[1], { button: 0, clientX: 10, clientY: 10, pointerId: 1 });
+    fireEvent.pointerMove(window, { clientX: 0, clientY: 12, pointerId: 1 });
+    fireEvent.pointerUp(window, { pointerId: 1 });
+    expect(cur.taskbar.pinned).toEqual(['files', 'calc']);
+  });
+
+  it('the volume panel Reset returns to 0.7 unmuted', () => {
+    const c = setup();
+    act(() => cur.setVolume({ level: 0.2, muted: true }));
+    fireEvent.click(c.container.querySelector('[data-tray="vol"]'));
+    const pop = document.querySelector('.vol-pop');
+    act(() => { fireEvent.click([...pop.querySelectorAll('button')].find((b) => b.textContent === 'Reset')); });
+    expect(cur.volume).toMatchObject({ level: 0.7, muted: false });
+  });
+
   it('a pin drag under the threshold stays a click', () => {
     const c = setup();
     act(() => cur.setTaskbar({ pinned: ['calc'] }));

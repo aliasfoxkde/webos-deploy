@@ -156,6 +156,15 @@ describe('Scientific mode', () => {
     expect(key('GRAD')).toBeTruthy();
   });
 
+  it('a fractional answer re-enters as a formatted decimal via ans', () => {
+    toSci();
+    const entry = () => q('input[aria-label="Expression"]');
+    act(() => { fireEvent.change(entry(), { target: { value: '1÷3' } }); });
+    press('=');
+    press('ans');
+    expect(entry().value).toBe('0.3333333333333'); // toPrecision(13) rounding
+  });
+
   it('2nd flips the trig/power rows to their inverses', () => {
     toSci();
     expect(key('sin')).toBeTruthy();
@@ -289,6 +298,19 @@ describe('Programmer mode', () => {
     expect(padKey('F').disabled).toBe(true);
     act(() => { fireEvent.click(key('HEX', '.seg-btn')); }); // base 16
     expect(padKey('F').disabled).toBe(false);
+  });
+
+  it('the keypad digit keys insert (wide zero included) and base-row minis switch base', () => {
+    toProg();
+    const padKey = (label) => qa('.prog-pad .key').find((b) => b.textContent === label);
+    act(() => { fireEvent.click(padKey('5')); });
+    act(() => { fireEvent.click(padKey('0')); });
+    expect(entry().value).toBe('50'); // inserted via the pad, not typed
+
+    act(() => { fireEvent.click(qa('.prog-base-row .seg-btn.mini').find((b) => b.textContent === 'HEX')); });
+    expect(padKey('F').disabled).toBe(false); // base 16 active
+    expect(qa('.prog-base-row').find((r) => r.querySelector('.prog-val').className.includes('active')).textContent)
+      .toMatch(/HEX/); // the active base row highlights
   });
 
   it('word size buttons update the width indicator and wraparound', () => {

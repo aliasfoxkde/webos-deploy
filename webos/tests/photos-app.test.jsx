@@ -8,7 +8,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, act, fireEvent, cleanup } from '@testing-library/react';
 import { OSProvider, useOS } from '../src/os/state.jsx';
 
-const h = vi.hoisted(() => ({ files: [] }));
+const h = vi.hoisted(() => ({ files: [], failPut: false }));
 
 vi.mock('../src/os/db.js', () => ({
   fileList: async () => h.files,
@@ -17,6 +17,7 @@ vi.mock('../src/os/db.js', () => ({
     return r ? { blob: r.blob, type: r.type } : null;
   },
   filePut: async (path, blob) => {
+    if (h.failPut) throw new Error('disk full');
     h.files = h.files.filter((f) => f.path !== path);
     h.files.push({ path, dir: false, type: blob.type || 'image/png', size: blob.size, mtime: 1, blob });
   },
@@ -48,6 +49,7 @@ beforeEach(() => {
   cleanup();
   document.body.innerHTML = '';
   seed(['a.png', 'b.png']);
+  h.failPut = false;
   vi.stubGlobal('Image', FakeImage);
   vi.stubGlobal('fetch', () => new Promise(() => {}));
   vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:ph');
@@ -385,5 +387,69 @@ describe('Photos', () => {
     expect(screen.getByLabelText('Undo last annotation').disabled).toBe(false);
     fireEvent.keyDown(stage(), { key: 'z', ctrlKey: true });
     expect(screen.getByLabelText('Undo last annotation').disabled).toBe(true);
+  });
+});
+
+describe('Photos remainder', () => {
+  it('a failed write surfaces as "save failed" and keeps the file untouched', async () => {
+    mountPhotos({ path: '/Home/a.png' });
+    await settle();
+    h.failPut = true;
+    fireEvent.click(screen.getByText('Save'));
+    await settle();
+    expect(screen.getByRole('status').textContent).toBe('save failed: disk full');
+    expect(h.files.find((f) => f.path === '/Home/a.png').size).toBe(4); // original intact
+  });
+
+  it('the strip arrows walk prev/next; the zoom buttons scale around 100%', async () => {
+    mountPhotos({ path: '/Home/b.png' });
+    await settle();
+    fireEvent.click(screen.getByLabelText('Previous image'));
+    expect(screen.getByText('1 / 2')).toBeTruthy();
+    expect(screen.getByText('a.png')).toBeTruthy();
+    fireEvent.click(screen.getByLabelText('Next image'));
+    expect(screen.getByText('2 / 2')).toBeTruthy();
+
+    fireEvent.click(screen.getByLabelText('Zoom in'));
+    expect(screen.getByText('125%')).toBeTruthy();
+    fireEvent.click(screen.getByLabelText('Zoom out'));
+    expect(screen.getByText('100%')).toBeTruthy();
+    fireEvent.click(screen.getByText('Fit')); // back to fit = 100% readout
+    expect(screen.getByText('100%')).toBeTruthy();
+  });
+
+  it('markup stroke-width chips select; flip-vertical toggles its state and the edited badge', async () => {
+    mountPhotos({ path: '/Home/a.png' });
+    await settle();
+    expect(screen.queryByText('edited')).toBeNull();
+    fireEvent.click(screen.getByLabelText('Flip vertical'));
+    expect(screen.getByLabelText('Flip vertical').className).toContain('on');
+    expect(screen.getByText('edited')).toBeTruthy();
+    fireEvent.click(screen.getByLabelText('Flip vertical'));
+    expect(screen.getByLabelText('Flip vertical').className).not.toContain('on');
+
+    fireEvent.click(screen.getByTitle('Markup — draw on the image'));
+    const sizes = [...document.querySelectorAll('.ph-size')];
+    expect(sizes.length).toBeGreaterThan(2);
+    const on = sizes.findIndex((b) => b.getAttribute('aria-pressed') === 'true');
+    expect(on).toBeGreaterThan(-1); // exactly one width starts selected
+    const other = (on + 2) % sizes.length;
+    fireEvent.click(sizes[other]);
+    expect(sizes[other].getAttribute('aria-pressed')).toBe('true');
+    expect(sizes[on].getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it('Clear crop drops the crop without leaving crop mode', async () => {
+    mountPhotos({ path: '/Home/a.png' });
+    await settle();
+    fireEvent.click(screen.getByText('Crop'));
+    const pad = screen.getByLabelText(/Crop area/);
+    pad.getBoundingClientRect = () => ({ left: 0, top: 0, width: 100, height: 100, x: 0, y: 0, right: 100, bottom: 100, toJSON: () => {} });
+    fireEvent.pointerDown(pad, { clientX: 10, clientY: 10, pointerId: 1 });
+    fireEvent.pointerMove(pad, { clientX: 60, clientY: 50, pointerId: 1 });
+    fireEvent.pointerUp(pad, { pointerId: 1 });
+    fireEvent.click(screen.getByText('Clear crop'));
+    expect(screen.queryByText('Clear crop')).toBeNull();
+    expect(screen.getByRole('status').textContent).toContain('Crop: drag'); // still in crop mode
   });
 });

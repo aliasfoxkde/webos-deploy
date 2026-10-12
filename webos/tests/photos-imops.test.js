@@ -5,7 +5,7 @@ import {
   IMAGE_EXT, isImageName, folderOf, baseName, mimeFor, normRot, rotDims, editedName,
   normCrop, ptToDisplay, ptFromDisplay, cropToDisplay, cropFromDisplay,
   wrapIndex, ADJUST_DEFAULTS, isAdjusted, adjustFilter, adjustLuts,
-  hexA, shapeFromDisplay, drawAnnotations,
+  hexA, shapeFromDisplay, drawAnnotations, applyAdjust,
 } from '../src/apps/photos/imops.js';
 
 describe('image triage', () => {
@@ -323,5 +323,38 @@ describe('annotation drawing', () => {
     const { ctx, calls } = recCtx();
     drawAnnotations(ctx, [], 200, 100);
     expect(calls).toHaveLength(0);
+  });
+});
+
+describe('applyAdjust baking', () => {
+  // canvas double: getImageData hands back the fixture pixels; putImageData
+  // copies the result out so the baked values are assertable
+  const bake = (a, pixels) => {
+    const px = new Uint8ClampedArray(pixels);
+    let out = null;
+    const canvas = {
+      width: px.length / 4, height: 1,
+      getContext: () => ({
+        getImageData: () => ({ data: px, width: px.length / 4, height: 1 }),
+        putImageData: (d) => { out = new Uint8ClampedArray(d.data); },
+      }),
+    };
+    applyAdjust(canvas, a);
+    return out;
+  };
+
+  it('exposure alone bakes through the LUT (saturation pass skipped at sat=1)', () => {
+    // identity LUT when exposure/contrast are 0; 2^0.2 gain on exposure 0.2
+    const out = bake({ exposure: 0.2, contrast: 0, saturation: 0 }, [100, 100, 100, 255]);
+    expect(out[0]).toBe(Math.round((100 / 255) * 2 ** 0.2 * 255)); // 115
+    expect(out[3]).toBe(255); // alpha untouched
+  });
+
+  it('the saturation pass mixes each channel toward Rec.701 luma', () => {
+    // luma(200,100,100) ≈ 121.26 → r′ = 121.26 + 78.74·1.5 ≈ 239, g′/b′ ≈ 89
+    const out = bake({ exposure: 0, contrast: 0, saturation: 0.5 }, [200, 100, 100, 255, 10, 20, 30, 255]);
+    expect([out[0], out[1], out[2], out[3]]).toEqual([239, 89, 89, 255]);
+    // luma(10,20,30) ≈ 18.60 → 6/21/36 — dark pixels spread the same way
+    expect([out[4], out[5], out[6]]).toEqual([6, 21, 36]);
   });
 });

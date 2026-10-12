@@ -5,9 +5,23 @@
 // renders a recovery card, sibling subtrees keep running, the root never
 // blanks, and soft (window-tier) boundaries can close just the broken app.
 import React, { Suspense, lazy } from 'react';
-import { describe, it, expect, afterEach, vi } from 'vitest';
+import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import { render, cleanup, fireEvent, act } from '@testing-library/react';
 import ErrorBoundary, { HardBoundary } from '../src/shell/ErrorBoundary.jsx';
+import { OSProvider, useOS } from '../src/os/state.jsx';
+import Window from '../src/shell/Window.jsx';
+
+// A plugin chunk that renders broken — the window-tier boundary must contain
+// it inside <Window/>, and Close must dismiss just that window.
+vi.mock('../src/apps/components.js', async (importOriginal) => {
+  const real = await importOriginal();
+  const Boom = () => { throw new Error('kaboom in render'); };
+  return { ...real, APP_COMPONENTS: { ...real.APP_COMPONENTS, calc: Boom } };
+});
+
+beforeEach(() => {
+  localStorage.clear();
+});
 
 afterEach(cleanup);
 
@@ -74,5 +88,43 @@ describe('ErrorBoundary', () => {
     expect(alert.textContent).toContain('Browser can’t start');
     expect(alert.textContent).toContain('stale cached page'); // chunk-specific guidance
     expect(c.getByTestId('sibling')).toBeTruthy(); // the desktop survives
+  });
+});
+
+describe('window-tier boundary through the real Window', () => {
+  const WinHost = () => {
+    const os = useOS();
+    // window.__os is reassigned on every state change — read fresh
+    return os.windows.map((win) => <Window key={win.id} win={win} />);
+  };
+
+  it('a crashing plugin renders its labelled card inside the window; Close removes just that window', async () => {
+    let cur;
+    const Probe = () => {
+      // eslint-disable-next-line react-hooks/globals
+      cur = useOS();
+      return null;
+    };
+    const c = render(<OSProvider><Probe /><WinHost /></OSProvider>);
+    act(() => { cur.launch('calc'); }); // the probe's os api is live
+    await act(async () => {});
+    expect(cur.windows).toHaveLength(1);
+    const alert = c.getByRole('alert');
+    expect(alert.textContent).toContain('Calculator can’t start');
+    expect(alert.textContent).toContain('kaboom in render');
+    expect(c.queryByText('Close')).toBeTruthy();
+    act(() => { fireEvent.click(c.getByText('Close')); });
+    await act(async () => {});
+    expect(cur.windows).toHaveLength(0); // the soft close removed the window
+  });
+
+  it('the recovery card Reload button reloads the document', () => {
+    const reload = vi.fn();
+    Reflect.defineProperty(window.location, 'reload', { value: reload, configurable: true });
+    const Boom = () => { throw new Error('kaboom in render'); };
+    const c = render(<ErrorBoundary soft label="Calc"><Boom /></ErrorBoundary>);
+    fireEvent.click(c.getByRole('button', { name: 'Reload' }));
+    expect(reload).toHaveBeenCalledOnce();
+    Reflect.deleteProperty(window.location, 'reload');
   });
 });

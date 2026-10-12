@@ -578,7 +578,6 @@ export default function App() {
         openStart={(e) => { e?.stopPropagation(); setStartOpen((v) => !v); }}
         startOpen={startOpen}
         openSettings={() => os.launch('settings')}
-        openStore={() => os.launch('store')}
         toggleWidgets={() => setWidgetsOpen((v) => !v)}
         widgetsOpen={widgetsOpen}
       />

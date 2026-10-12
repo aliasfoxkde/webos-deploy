@@ -1,7 +1,7 @@
 // BrowserApp shell: tab strip lifecycle, address-bar navigation, per-host
 // mode overrides, and the Chromium keyboard model (capture-phase shortcuts).
 import React from 'react';
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, act, cleanup, fireEvent } from '@testing-library/react';
 import BrowserApp from '../src/apps/browser/BrowserApp.jsx';
 
@@ -136,5 +136,99 @@ describe('keyboard model', () => {
       key(root, { altKey: true, key: 'ArrowRight' });
       key(root, { ctrlKey: true, shiftKey: true, key: 'Tab' });
     }).not.toThrow();
+  });
+});
+
+
+describe('toolbar + new-tab page remainder', () => {
+  it('Ctrl+R, the reload button and tab Enter-activation all work', () => {
+    const c = mount({ url: 'https://example.com/' });
+    const frame = () => c.container.querySelector('iframe.bw-frame');
+    let f1 = frame();
+    key(c.container.querySelector('.bw'), { ctrlKey: true, key: 'r' });
+    expect(frame()).not.toBe(f1); // reloadKey bumped → the iframe remounts
+    f1 = frame();
+    fireEvent.click(c.container.querySelector('[aria-label="Reload"]'));
+    expect(frame()).not.toBe(f1);
+
+    fireEvent.click(c.container.querySelector('.bw-newtab'));
+    const second = tabs(c)[1];
+    fireEvent.keyDown(second, { key: 'Enter' });
+    expect(second.className).toContain('active');
+    fireEvent.keyDown(tabs(c)[0], { key: ' ' });
+    expect(tabs(c)[0].className).toContain('active');
+  });
+
+  it('a broken favicon degrades to the letter chip', () => {
+    const c = mount({ url: 'https://example.com/page' });
+    const fav = c.container.querySelector('img.bw-fav');
+    expect(fav).toBeTruthy();
+    fireEvent.error(fav);
+    expect(c.container.querySelector('.bw-fav-chip').textContent).toBe('E');
+  });
+
+  it('forward navigates the stack and Escape restores the raw entry text', () => {
+    const c = mount();
+    const input = c.container.querySelector('.bw-address input');
+    const fwd = () => c.container.querySelector('[aria-label="Forward"]');
+    expect(fwd().disabled).toBe(true); // nothing ahead yet
+    fireEvent.change(input, { target: { value: 'a.example' } });
+    fireEvent.submit(c.container.querySelector('.bw-address-form'));
+    fireEvent.change(input, { target: { value: 'b.example' } });
+    fireEvent.submit(c.container.querySelector('.bw-address-form'));
+    fireEvent.click(c.container.querySelector('[aria-label="Back"]'));
+    expect(activeTab(c)).toBe('a.example');
+    expect(fwd().disabled).toBe(false);
+    fireEvent.click(fwd());
+    expect(activeTab(c)).toBe('b.example');
+
+    fireEvent.change(input, { target: { value: 'half-typed' } });
+    expect(input.value).toBe('half-typed');
+    fireEvent.keyDown(input, { key: 'Escape' });
+    expect(input.value).toBe('b.example'); // the raw typed entry, not the resolved URL
+  });
+
+  it('"Open in a system tab" hands the URL to window.open', () => {
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+    const c = mount({ url: 'https://example.com/page' });
+    fireEvent.click(c.container.querySelector('[aria-label="Open in a system tab"]'));
+    expect(openSpy).toHaveBeenCalledWith('https://example.com/page', '_blank', 'noopener');
+    openSpy.mockRestore();
+  });
+
+  it('the external hand-off button opens the blocked site externally', () => {
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+    const c = mount({ url: 'https://discord.com/app' });
+    const btn = [...c.container.querySelectorAll('.bw-external button')]
+      .find((b) => b.textContent.includes('system tab'));
+    fireEvent.click(btn);
+    expect(openSpy).toHaveBeenCalledWith('https://discord.com/app', '_blank', 'noopener');
+    openSpy.mockRestore();
+  });
+});
+
+describe('new-tab page', () => {
+  it('its own search box navigates the tab through go()', () => {
+    const c = mount();
+    const q = c.container.querySelector('.bw-home input');
+    expect(q).toBeTruthy();
+    fireEvent.change(q, { target: { value: 'rust crates' } });
+    fireEvent.submit(q.closest('form'));
+    expect(activeTab(c)).toBe('bing.com'); // search resolves through the engine URL
+    expect(c.container.querySelector('.bw-home')).toBeNull();
+  });
+
+  it('tiles navigate to their sites; the favicon fallback covers them too', () => {
+    const c = mount();
+    const tile = [...c.container.querySelectorAll('.bw-tile')]
+      .find((b) => b.textContent.includes('Hacker News'));
+    fireEvent.click(tile);
+    expect(activeTab(c)).toBe('news.ycombinator.com');
+    // the second tab still shows the new-tab page with tile favicons
+    fireEvent.click(c.container.querySelector('.bw-newtab'));
+    const fav = c.container.querySelector('.bw-home img.bw-fav');
+    expect(fav).toBeTruthy();
+    fireEvent.error(fav);
+    expect(c.container.querySelector('.bw-home .bw-fav-chip')).toBeTruthy();
   });
 });

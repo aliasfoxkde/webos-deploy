@@ -63,6 +63,15 @@ describe('DesktopPanel', () => {
     expect(cur.desktop.gap).toBe('compact');
   });
 
+  it('"Free drag" switches the arrangement to custom ordering', () => {
+    const c = mount(<DesktopPanel />);
+    click(radios(c, 'Desktop arrangement')[1]); // start from name-sorted
+    expect(cur.desktop.sort).toBe('name');
+    click(radios(c, 'Desktop arrangement')[0]); // Free drag
+    expect(cur.desktop.sort).toBe('custom');
+    expect(JSON.parse(localStorage.getItem('webos.desktop')).sort).toBe('custom');
+  });
+
   it('focus-follows-mouse toggles the ui flag', () => {
     const c = mount(<DesktopPanel />);
     const box = c.container.querySelector('input[type="checkbox"]');
@@ -212,6 +221,31 @@ describe('StoragePanel', () => {
     expect(localStorage.getItem('webos.test.big')).toBeNull();
     expect(localStorage.getItem('unrelated')).toBe('keep me');
     expect([...c.container.querySelectorAll('code')].map((el) => el.textContent)).toEqual(['webos.test.small']);
+  });
+
+  it('Clear rescans with comparisons left (3 keys), and a throwing store degrades to empty', () => {
+    localStorage.setItem('webos.t1', 'x'.repeat(300));
+    localStorage.setItem('webos.t2', 'y'.repeat(200));
+    localStorage.setItem('webos.t3', 'z');
+    const c = mount(<StoragePanel />);
+    const clear = [...c.container.querySelectorAll('button')].find((b) => b.textContent === 'Clear');
+    click(clear); // removes webos.t3 (first row? no — list is size-sorted; Clear is per-key)
+    const codes = [...c.container.querySelectorAll('code')].map((el) => el.textContent);
+    expect(codes.length).toBe(2); // two keys left → the rescan sort compares them
+
+    // now the store itself fails during a rescan — the panel degrades honestly
+    const boom = () => { throw new Error('denied'); };
+    const getSpy = vi.spyOn(localStorage, 'getItem').mockImplementation(boom);
+    click([...c.container.querySelectorAll('button')].find((b) => b.textContent === 'Clear'));
+    expect(c.container.textContent).toContain('Nothing stored yet.');
+    getSpy.mockRestore();
+  });
+
+  it('a store that throws at mount time renders the empty state', () => {
+    const getSpy = vi.spyOn(localStorage, 'getItem').mockImplementation(() => { throw new Error('denied'); });
+    const c = mount(<StoragePanel />);
+    expect(c.container.textContent).toContain('Nothing stored yet.');
+    getSpy.mockRestore();
   });
 
   it('shows the storage estimate when the manager is available', async () => {

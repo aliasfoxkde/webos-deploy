@@ -1,7 +1,7 @@
 // Lens displacement-map math (LG4 refraction). The module is pure so the
 // geometry is testable without a browser: sign conventions, band neutrality,
 // profile shape, and the stable ids CSS references.
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   LENS_BAND, LENS_MAX_DISP, LENS_TB_ID, LENS_MENU_ID,
   lensProfile, edgeDistance, edgeNormal, lensMap, lensScale, lensKey,
@@ -99,5 +99,16 @@ describe('lens wiring helpers', () => {
 
   it('lensSupported returns a boolean without throwing in any engine', () => {
     expect(typeof lensSupported()).toBe('boolean');
+  });
+});
+
+describe('lensSupported', () => {
+  it('CSS.supports throwing is an honest "unsupported", not a crash', () => {
+    // happy-dom's CSS namespace is frozen — an own-property shadow silently
+    // no-ops, so the whole global has to go (vi.stubGlobal restores it).
+    vi.stubGlobal('CSS', { supports: () => { throw new Error('boom'); } });
+    expect(lensSupported()).toBe(false);
+    vi.unstubAllGlobals();
+    expect(lensSupported()).toBe(true); // engine back: the probe URL is "supported"
   });
 });

@@ -7,10 +7,13 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, act, fireEvent, cleanup } from '@testing-library/react';
 import { EditorView } from 'codemirror';
 
-const h = vi.hoisted(() => ({ files: new Map() }));
+const h = vi.hoisted(() => ({ files: new Map(), failGet: false }));
 
 vi.mock('../src/os/db.js', () => ({
-  fileGet: async (path) => (h.files.has(path) ? { blob: h.files.get(path) } : null),
+  fileGet: async (path) => {
+    if (h.failGet) throw new Error('disk gone');
+    return h.files.has(path) ? { blob: h.files.get(path) } : null;
+  },
   filePut: async (path, blob) => { h.files.set(path, blob); },
 }));
 
@@ -22,6 +25,7 @@ beforeEach(() => {
   cleanup();
   document.body.innerHTML = '';
   h.files.clear();
+  h.failGet = false;
   vi.stubGlobal('fetch', () => new Promise(() => {})); // markdown <img> must stay hermetic
   vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:save');
   vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
@@ -167,6 +171,85 @@ describe('Editor', () => {
     expect(screen.queryByText(/picked\.md •/)).toBeNull(); // dirty cleared by the save
   });
 
+  it('an open error surfaces as an honest status line', async () => {
+    window.showOpenFilePicker = vi.fn(async () => { throw new Error('no handler'); });
+    render(<Editor />);
+    fireEvent.click(screen.getByText('Open'));
+    await act(async () => {});
+    expect(await screen.findByText('open failed: no handler')).toBeTruthy();
+  });
+
+  it('a user-cancelled picker is silent (no error status)', async () => {
+    const abort = Object.assign(new Error('aborted'), { name: 'AbortError' });
+    window.showOpenFilePicker = vi.fn(async () => { throw abort; });
+    render(<Editor />);
+    fireEvent.click(screen.getByText('Open'));
+    await act(async () => {});
+    expect(screen.queryByText(/open failed/)).toBeNull();
+    expect(screen.getByText('276 chars')).toBeTruthy(); // seed buffer untouched
+  });
+
+  it('without the FSA the open dialog falls back to a plain file input', async () => {
+    delete window.showOpenFilePicker;
+    let created = null;
+    const clickSpy = vi.spyOn(HTMLInputElement.prototype, 'click').mockImplementation(function () { created = this; });
+    render(<Editor />);
+    fireEvent.click(screen.getByText('Open'));
+    expect(created?.accept).toContain('.md');
+    Reflect.defineProperty(created, 'files', { configurable: true, value: [new File(['fallback text'], 'notes.txt')] });
+    await act(async () => { await created.onchange(); });
+    clickSpy.mockRestore();
+    expect(screen.getByText('fallback text')).toBeTruthy();
+    expect(screen.getByText('13 chars')).toBeTruthy();
+    expect(screen.getByText('TEXT')).toBeTruthy(); // .txt has no language group
+  });
+
+  it('a handle-less buffer saves through showSaveFilePicker', async () => {
+    const writable = { write: vi.fn(), close: vi.fn(async () => {}) };
+    const saveHandle = { createWritable: vi.fn(async () => writable) };
+    window.showSaveFilePicker = vi.fn(async () => saveHandle);
+    delete window.showOpenFilePicker;
+    let created = null;
+    const clickSpy = vi.spyOn(HTMLInputElement.prototype, 'click').mockImplementation(function () { created = this; });
+    render(<Editor />);
+    fireEvent.click(screen.getByText('Open'));
+    Reflect.defineProperty(created, 'files', { configurable: true, value: [new File(['to save'], 'memo.txt')] });
+    await act(async () => { await created.onchange(); });
+    clickSpy.mockRestore();
+    type('!'); // dirty the buffer so the save has content to write
+    fireEvent.click(screen.getByText('Save'));
+    await act(async () => {});
+    expect(window.showSaveFilePicker).toHaveBeenCalledWith({ suggestedName: 'memo.txt' });
+    expect(writable.write).toHaveBeenCalledWith('!to save'); // CM insert lands at 0
+    expect(screen.getByText('saved memo.txt')).toBeTruthy();
+  });
+
+  it('a failing save surfaces "save failed" instead of throwing', async () => {
+    window.showSaveFilePicker = vi.fn(async () => { throw new Error('disk full'); });
+    delete window.showOpenFilePicker;
+    let created = null;
+    const clickSpy = vi.spyOn(HTMLInputElement.prototype, 'click').mockImplementation(function () { created = this; });
+    render(<Editor />);
+    fireEvent.click(screen.getByText('Open'));
+    Reflect.defineProperty(created, 'files', { configurable: true, value: [new File(['x'], 'doom.txt')] });
+    await act(async () => { await created.onchange(); });
+    clickSpy.mockRestore();
+    fireEvent.click(screen.getByText('Save'));
+    await act(async () => {});
+    expect(await screen.findByText('save failed: disk full')).toBeTruthy();
+  });
+
+  it('Mod-S saves through the CodeMirror keymap', async () => {
+    h.files.set('/Home/km.md', new Blob(['# km'], { type: 'text/markdown' }));
+    render(<Editor args={{ path: '/Home/km.md' }} />);
+    await act(async () => {});
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    type('!');
+    fireEvent.keyDown(document.querySelector('.cm-content'), { key: 's', ctrlKey: true, bubbles: true });
+    await act(async () => {});
+    expect(await screen.findByText('saved km.md → Files')).toBeTruthy();
+  });
+
   it('a Files-disk file opens into a storePath buffer with live preview', async () => {
     h.files.set('/Home/readme.md', new Blob(['# Title\n\nbody'], { type: 'text/markdown' }));
     render(<Editor args={{ path: '/Home/readme.md' }} />);
@@ -266,5 +349,13 @@ describe('MarkdownView', () => {
     const view = show('');
     expect(view.children).toHaveLength(0);
     expect(show(null).children).toHaveLength(0);
+  });
+});
+
+describe('Editor — boot failure', () => {
+  it('a failing disk surfaces "open failed" from the args.path boot', async () => {
+    h.failGet = true;
+    render(<Editor args={{ path: '/Home/lost.md' }} />);
+    expect(await screen.findByText('open failed: disk gone')).toBeTruthy();
   });
 });

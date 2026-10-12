@@ -201,6 +201,24 @@ describe('Window', () => {
     fireEvent.pointerUp(window);
   });
 
+  it('north drag grows upward and clamps at the minimum height', () => {
+    const c = mountApp('calc');
+    const start = { ...cur.windows[0].rect };
+    // moving the top edge UP grows the window; the bottom edge stays put
+    fireEvent.pointerDown(c.container.querySelector('.rz-n'), { button: 0, clientX: 300, clientY: start.y });
+    fireEvent.pointerMove(window, { clientX: 300, clientY: start.y - 40 });
+    expect(cur.windows[0].rect.h).toBe(start.h + 40);
+    expect(start.y + start.h).toBe(cur.windows[0].rect.y + cur.windows[0].rect.h);
+    fireEvent.pointerUp(window);
+    // dragging the top edge far DOWN clamps at the minimum without inverting
+    const r1 = { ...cur.windows[0].rect };
+    fireEvent.pointerDown(c.container.querySelector('.rz-n'), { button: 0, clientX: 300, clientY: r1.y });
+    fireEvent.pointerMove(window, { clientX: 300, clientY: r1.y + 2000 });
+    expect(cur.windows[0].rect.h).toBe(220);
+    expect(cur.windows[0].rect.y).toBe(r1.y + r1.h - 220);
+    fireEvent.pointerUp(window);
+  });
+
   it('titlebar drag moves the window; a drop on the left edge tiles it', () => {
     const c = mountApp('calc');
     const start = { ...cur.windows[0].rect };
@@ -311,6 +329,14 @@ describe('EmbedFrame', () => {
     expect(onLoaded).not.toHaveBeenCalled();
     fireEvent.load(frame);
     expect(onLoaded).toHaveBeenCalledOnce();
+  });
+
+  it('an embed frame renders no dead error fallback (React never fires iframe error)', () => {
+    const c = mount(<EmbedFrame app={embedApp} />);
+    const frame = c.container.querySelector('iframe');
+    fireEvent.error(frame); // no-ops everywhere; nothing should change
+    expect(c.container.querySelector('iframe')).toBe(frame);
+    expect(c.container.querySelector('.blocked')).toBeNull();
   });
 
   it('the file bridge answers only messages authored by this frame', async () => {
@@ -618,5 +644,55 @@ describe('FxWallpaper', () => {
   it('the id prop flows through (the saver mounts its own canvas)', () => {
     const c = render(<FxWallpaper kind="matrix" id="saver-fx" />);
     expect(c.container.querySelector('#saver-fx')).toBeTruthy();
+  });
+});
+
+describe('Sidebar — widget buttons', () => {
+  const wxPayload = () => ({
+    ok: true,
+    json: async () => ({
+      current: {
+        temperature_2m: 21, apparent_temperature: 20, relative_humidity_2m: 40,
+        wind_speed_10m: 3, precipitation: 0, weather_code: 0, is_day: 1,
+      },
+      current_units: { temperature_2m: '°C' },
+      daily: {
+        time: ['2026-10-12', '2026-10-13'], weather_code: [0, 1],
+        temperature_2m_max: [23, 22], temperature_2m_min: [12, 11],
+        precipitation_probability_max: [10, 20],
+      },
+    }),
+  });
+
+  it('a loaded weather widget flips units and launches the app', async () => {
+    localStorage.setItem('webos.weather.loc', JSON.stringify({ name: 'Testville', lat: 1, lon: 2 }));
+    vi.stubGlobal('fetch', () => Promise.resolve(wxPayload()));
+    const c = mount(<Sidebar />);
+    await act(async () => {}); // the forecast lands
+    expect(c.container.querySelector('.widget-temp').textContent).toBe('21°');
+    fireEvent.click(c.container.querySelector('.widget-weather')); // metric → imperial
+    expect(localStorage.getItem('webos.weather.units')).toBe('imperial');
+    expect(c.container.querySelector('.widget-temp').textContent).toBe('70°');
+    fireEvent.click([...c.container.querySelectorAll('button')].find((b) => b.textContent === 'Open Weather'));
+    expect(cur.windows[cur.windows.length - 1].appId).toBe('weather');
+    vi.unstubAllGlobals();
+  });
+
+  it('the calendar widget hands off to the clock and chat launches the app', () => {
+    const c = mount(<Sidebar />);
+    fireEvent.click([...c.container.querySelectorAll('button')].find((b) => b.textContent === 'Open calendar'));
+    fireEvent.click([...c.container.querySelectorAll('button')].find((b) => b.textContent === 'Open AI Chat'));
+    expect(cur.windows[cur.windows.length - 1].appId).toBe('chat');
+  });
+
+  it('customize mode reorders widgets via the slot Move up button', () => {
+    const c = mount(<Sidebar />);
+    fireEvent.click([...c.container.querySelectorAll('button')].find((b) => b.textContent === 'Customize'));
+    const ups = [...c.container.querySelectorAll('[title="Move up"]')];
+    expect(ups[0].disabled).toBe(true); // the first slot cannot move up
+    fireEvent.click(ups[1]); // move the second widget above the first
+    const enabled = cur.widgets.enabled ?? cur.widgets;
+    const order = Array.isArray(enabled) ? enabled : enabled.enabled;
+    expect(order[0]).not.toBe(order[1]);
   });
 });

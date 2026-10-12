@@ -121,3 +121,10 @@ describe('per-tab history', () => {
     expect(s.tabs[0].entries).toHaveLength(1); // no history pollution
   });
 });
+
+describe('reducer guard', () => {
+  it('unknown actions pass state through untouched', () => {
+    const s = tabsReducer(initialTabs(), { type: 'new' });
+    expect(tabsReducer(s, { type: 'zzz' })).toBe(s);
+  });
+});

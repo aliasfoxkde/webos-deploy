@@ -139,10 +139,21 @@ describe('interactions', () => {
     fire(wrap, 'pointermove', { clientX: 100, clientY: 50 }); // prime a draw
     expect(labels()).toEqual([]); // reset view: only the unlabeled 0 tick
     click(wrap.querySelector('button[title="Zoom in"]'));
-    expect(labels()).toEqual(['-2', '2']); // step drops 10 → 2
+    expect(labels()).toEqual(['-2', '2']); // step drops 5 → 2
+    click(wrap.querySelector('button[title="Zoom in"]'));
+    calls.length = 0; // labels() reads the draw buffer — reset between phases
+    click(wrap.querySelector('button[title="Zoom in"]'));
+    click(wrap.querySelector('button[title="Zoom in"]'));
+    expect(labels()).toContain('-1'); // deep enough that the ladder reaches step 1
+    calls.length = 0;
+    click(wrap.querySelector('button[title="Zoom out"]'));
+    expect(labels().length).toBeGreaterThan(0); // − redraws; the wheel test pins exact rescaling
+    calls.length = 0;
+    click(wrap.querySelector('button[title="Reset view"]')); // ⌂ returns to the default
+    expect(labels()).toEqual([]); // reset view: only the unlabeled 0 tick
     calls.length = 0;
     act(() => { wrap.dispatchEvent(new MouseEvent('dblclick', { bubbles: true })); });
-    expect(labels()).toEqual([]); // back to the reset view
+    expect(labels()).toEqual([]); // double-click reset is idempotent
   });
 
   it('wheel zooms about the cursor without navigating', () => {
