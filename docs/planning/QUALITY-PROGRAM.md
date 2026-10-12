@@ -145,7 +145,11 @@ fixes: ocean dim, desktop label scrim); E ✅ (`fcba20d` — 99.92% lines /
 tests; the 4 uncovered lines are documented unreachable arms + one V8
 attribution quirk); F ✅ (`Module index` in ARCHITECTURE.md — one row per src/ file, 110 rows —
    enforced by tests/docs-coverage.test.js, two-way set equality + real-
-   description checks); G remains (final e2e + release 3.14.0 + deploy).
+   description checks); G ✅ — release build swept in real headless Chromium
+   (24/24 phases, 0 page errors), version bumped ×3 to 3.14.0, full gate
+   green locally + on Actions (be1137c), `gh release create v3.14.0`,
+   wrangler deploy, production verified (sw.js = webos-v3.14.0, served
+   bundle hash matches local dist). Program complete.
 
 **Phase A — hygiene.** ci.yml dedup (done); drop unused
 `@testing-library/user-event`; this section.
