@@ -132,8 +132,13 @@ for 99%). Honest scale: ~1,370 statements must gain real tests.
 
 ### Phases (each ends with a commit + push; gates stay green throughout)
 
-**Status 2026-10-12:** A ✅ (commit history + this section); B partially —
-GitHub Actions side done, GitForge local container run pending (task #104);
+**Status 2026-10-12:** A ✅ (commit history + this section); B ✅ — GitHub
+Actions green on every push, and the exact `.gitforce.yml` job ran clean in a
+fresh `node:24-trixie-slim` container (all five steps; 67 files / 1015 tests;
+96.82 stmts / 88.82 branches / 96.23 funcs / 99.92 lines — identical to CI;
+the `startTask()` stderr lines are the deliberate ErrorBoundary crash tests,
+not failures). Registration of the pipeline with a deployed GitForge stays an
+operator action;
 C ✅ (`fcba20d` lineage); D ✅ (`6fa53a5` — full enumeration + two real token
 fixes: ocean dim, desktop label scrim); E ✅ (`fcba20d` — 99.92% lines /
 96.76 stmts / 88.78 branches / 96.02 funcs, floors 96.5/88.5/95.8/99.8, 1015
