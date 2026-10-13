@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <!-- FireCraft app mark (original, code-drawn for the WebOS registry).
+       A flame — the name — shown mid-edit as a vector path: visible anchor
+       nodes and one bezier handle, for the hybrid vector+bitmap tool. -->
+  <rect width="256" height="256" rx="56" fill="#f97316"/>
+  <g fill="none" stroke="#1c1917" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M128 34 C 150 66 176 92 176 142 C 176 180 155 206 128 206 C 101 206 80 180 80 142 C 80 92 106 66 128 34 Z"/>
+    <path d="M128 96 C 140 112 152 124 152 148 C 152 169 142 184 128 184 C 114 184 104 169 104 148 C 104 124 116 112 128 96 Z"/>
+    <path d="M128 34 C 146 52 162 62 178 66"/>
+  </g>
+  <g fill="#1c1917">
+    <circle cx="128" cy="34" r="10"/>
+    <circle cx="80" cy="142" r="10"/>
+    <circle cx="128" cy="206" r="10"/>
+    <circle cx="176" cy="142" r="10"/>
+  </g>
+  <circle cx="178" cy="66" r="8" fill="#f97316" stroke="#1c1917" stroke-width="8"/>
+</svg>

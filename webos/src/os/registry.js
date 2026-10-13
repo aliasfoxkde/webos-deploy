@@ -15,9 +15,11 @@
 import { PLUGIN_APPS } from '../apps/manifests.js';
 
 export const DEFAULT_APPS = [
-  // -- the 11 craft apps (most deployed on Cloudflare Pages from upstream
+  // -- the 12 craft apps (most deployed on Cloudflare Pages from upstream
   //    release zips; deckcraft/soundcraft/effectcraft deploy from their
-  //    apps/<name> source checkouts — see packaging/fetch-apps.sh) --
+  //    apps/<name> source checkouts and firecraft from its own checkout at
+  //    /nas/Temp/repos/FireCraft — these four have no upstream release zips,
+  //    so none of them is in packaging/fetch-apps.sh's list) --
   {
     id: 'cadcraft', name: 'CADCraft', tagline: 'CAD & drafting', version: '0.3.0',
     url: 'https://cadcraft-web.pages.dev/', icon: 'icons/craft/cadcraft.png', accent: '#22d3ee', embed: true,
@@ -83,6 +85,12 @@ export const DEFAULT_APPS = [
     url: 'https://effectcraft-web.pages.dev/', icon: 'icons/craft/effectcraft.png', accent: '#fb7185', embed: true,
     developer: 'ArtCraft', category: 'Media', rating: 4.7, reviews: 91,
     description: 'Layer-based motion graphics and visual effects: keyframes, effects, masks, trackers, and a GPU compositor with a render queue — a clean-room reimagining of the classic motion suite in Rust/WebAssembly.',
+  },
+  {
+    id: 'firecraft', name: 'FireCraft', tagline: 'Web & screen design', version: '0.1.0',
+    url: 'https://firecraft-web.pages.dev/', icon: 'icons/craft/firecraft.png', accent: '#f97316', embed: true,
+    developer: 'ArtCraft', category: 'Design', rating: 4.4, reviews: 37,
+    description: 'Hybrid vector + bitmap canvas for web and screen design: pages, layers, vectors, live filters, slicing and smart guides, with read/write Fireworks PNG (.fw.png) documents — a clean-room reimagining of the classic web-design suite in Rust/WebAssembly.',
   },
 
   // -- extra default apps --

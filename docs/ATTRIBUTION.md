@@ -26,6 +26,12 @@ apps they identify.
 | `webos/public/icons/craft/vectorcraft.png` | aliasfoxkde/vectorcraft `assets/app-icon/vectorcraft-1024.png` | Apache-2.0 OR MIT |
 | `webos/public/icons/craft/wordcraft.png` | aliasfoxkde/wordcraft `assets/app-icon/wordcraft-1024.png` | Apache-2.0 OR MIT |
 
+(`firecraft.png` has no upstream source — FireCraft ships no app mark yet.
+It is original art drawn in code at `packaging/icons-src/firecraft.svg`,
+rasterized to 256 px with the same headless-Chromium technique as
+`packaging/icons-render.sh`; original, code-drawn assets need no license
+row, this note only records where it came from.)
+
 ## Wallpaper photos (`webos/public/wallpapers/photos/`)
 
 Photographs from Wikimedia Commons, each under a Creative Commons license.
