@@ -1,6 +1,6 @@
 # ArtCraft WebOS
 
-A browser desktop ("WebOS") for the 11 ArtCraft craft apps, plus bundled
+A browser desktop ("WebOS") for the 12 ArtCraft craft apps, plus bundled
 first-party apps, an App Store of curated external web apps, and a
 customizable widget sidebar. Everything is **100% client-side rendered** —
 the shell is a Vite + React SPA, app builds are static WASM sites, and no
@@ -8,7 +8,10 @@ Cloudflare Workers compute runs on the main path.
 
 The craft app builds are **never committed to this repo** — they are synced
 from upstream GitHub releases (`storytold/<app>`, asset
-`{app}-web-<version>.zip`) by `packaging/fetch-apps.sh`.
+`{app}-web-<version>.zip`) by `packaging/fetch-apps.sh`. Exceptions:
+deckcraft/soundcraft/effectcraft deploy from their `apps/<name>/` source
+checkouts, and firecraft from its own repository checkout — none of the
+four has upstream release zips (see `CLAUDE.md`).
 
 ## Layout
 

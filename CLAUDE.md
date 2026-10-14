@@ -28,6 +28,13 @@ A checkout area holding 8 sibling **ArtCraft "craft" apps** — clean-room, pure
 
 DeckCraft, SoundCraft and EffectCraft checkouts live at `apps/<name>/` (inside the gitignored apps/ dir, not siblings) and their web builds deploy from those checkouts to `<name>-web.pages.dev` — they have no upstream release zips yet, so they are NOT in `packaging/fetch-apps.sh`'s list (`--force` would `rm -rf` the checkouts). DeckCraft builds with `trunk build --release`; EffectCraft builds with `cargo xtask web` (its own PWA glue, not trunk). **FireCraft** (`github.com/aliasfoxkde/firecraft`, checkout at `/nas/Temp/repos/FireCraft`) is a twelfth craft app with no upstream zips and no checkout here: its web bundle deploys from that checkout (`cargo run -p xtask -- dist --web`, then `wrangler pages deploy dist/web --project-name firecraft-web`), and WebOS registers it as a default app (`firecraft`, firecraft-web.pages.dev). (`filmcraft` is referenced in docs as a sibling but is not checked out here. Docs reference `storytold/<app>` repos; the actual remotes use the `aliasfoxkde` org.)
 
+## Continue from the handoff
+
+For ongoing work, start from `docs/planning/HANDOFF.md` (phased plan with
+atomic tasks, pitfalls, release checklist) and `docs/planning/PROGRESS.md`
+(live status board); session records live in `docs/planning/SESSIONS.md`,
+release/deploy history in `docs/planning/HISTORY.md`.
+
 ## Read the per-repo agent doc first
 
 Before working in any app, read that repo's `CLAUDE.md` (`photocraft/` uses `AGENTS.md` — it is the equivalent). Those files are **authoritative** and carry the deep, per-app detail: crate layering tables, command registries, clean-room boundaries specific to the parity target, MCP/control-channel protocol, and roadmap/parity status. This file only covers what's common and what's specific to this checkout.
