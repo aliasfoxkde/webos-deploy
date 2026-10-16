@@ -99,6 +99,13 @@ Phases of [QUALITY-PROGRAM.md](QUALITY-PROGRAM.md), all committed and pushed:
   very log.)
 - HANDOFF.md finalized as the sole continuation context: cold-start
   checklist, docs-gate ground rule, H2.0 verify-or-redeploy task.
+- The first remote CI run on the gate failed: 12 refs resolve only inside
+  sibling repos or gitignored trees, which CI's single-repo checkout does
+  not have. The gate is now environment-aware (verified against a
+  git-archive sim of the CI tree): root paths and webos/ refs must exist
+  everywhere; sibling/gitignored refs are verified wherever those
+  checkouts exist and skipped where they don't. Negative control: a dead
+  webos-scoped ref still fails.
 
 ## 2026-10-13 — documentation + handoff + cleanup
 

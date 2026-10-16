@@ -1,9 +1,13 @@
 // Documentation-reference gate: every repo-relative path cited in this
-// repo's markdown must exist on disk. Docs drift silently otherwise —
-// this turns stale references into a red test (same spirit as
-// docs-coverage.test.js pinning the Module index). Scope: README.md,
-// CLAUDE.md, docs/**/*.md at the repo root. Sibling repos and fetched
-// builds are not scanned and refs are not resolved into them.
+// repo's markdown must exist on disk wherever it can be checked. Docs
+// drift silently otherwise — this turns stale references into a red test
+// (same spirit as docs-coverage.test.js pinning the Module index).
+// Scope: README.md, CLAUDE.md, docs/**/*.md at the repo root. Refs
+// resolve first against this repo (root paths and webos/), then against
+// the craft-sibling checkouts. CI checks out this repo alone, so refs
+// that live only in a sibling (e.g. docs/control-protocol.md) or a
+// gitignored tree (apps/<craft>/, zips/) are unverifiable there and are
+// skipped — a full checkout with siblings present still verifies them.
 import { describe, it, expect } from 'vitest';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -36,7 +40,8 @@ const indexTree = (root, rel = '', top = false) => {
   }
 };
 const SIBLINGS = readdirSync(REPO, { withFileTypes: true })
-  .filter((e) => e.isDirectory() && !SIBLING_EXCLUDED.has(e.name))
+  .filter((e) => e.isDirectory() && !e.name.startsWith('.')
+    && !SIBLING_EXCLUDED.has(e.name))
   .map((e) => e.name);
 indexTree(REPO, '', true);
 for (const e of readdirSync(REPO, { withFileTypes: true })) {
@@ -70,15 +75,23 @@ for (const file of mdFiles) {
   for (const m of text.matchAll(RE)) {
     const ref = m[1];
     if (/[<*>\s…]|\bX\.Y\.Z|<name>|<app>/.test(ref)) continue;
-    // refs resolving under webos/ keep their prefix; bare refs may cite the
-    // repo root or be craft-repo-relative (CLAUDE.md documents the shared
-    // repo shape: docs/control-protocol.md, packaging/web/, docs/parity.md)
     const bare = ref.replace(/\/+$/, '');
-    const rel = bare.startsWith('webos/')
-      ? [bare, bare.slice('webos/'.length)]
-      : [bare, `webos/${bare}`,
-         ...SIBLINGS.map((s) => `${s}/${bare}`)];
-    if (!rel.some((r) => existing.has(r))) {
+    const webosAlt = `webos/${bare}`;
+    if (existing.has(bare) || existing.has(webosAlt)) continue;
+    // webos-scoped refs — webos/... itself, or src|tests|public meaning
+    // webos/<ref> (the repo root has no such dirs) — are checkable in
+    // every environment, so a miss is stale, period
+    const webosOnly = bare.startsWith('webos/')
+      || ['src', 'tests', 'public'].includes(bare.split('/')[0]);
+    if (webosOnly) {
+      stale.push(`${ref}  (cited in ${file.replace(REPO + '/', '')})`);
+      continue;
+    }
+    // anything else is craft-repo-relative (CLAUDE.md documents the shared
+    // repo shape: docs/control-protocol.md, packaging/web/, docs/parity.md)
+    // or a gitignored tree — checkable only where those checkouts exist
+    if (SIBLINGS.length > 0
+      && !SIBLINGS.some((s) => existing.has(`${s}/${bare}`))) {
       stale.push(`${ref}  (cited in ${file.replace(REPO + '/', '')})`);
     }
   }

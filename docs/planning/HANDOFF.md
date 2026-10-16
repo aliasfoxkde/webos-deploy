@@ -62,8 +62,10 @@ you complete them.
 - **Docs are gated**: `tests/docs-coverage.test.js` pins the ARCHITECTURE
   Module index to the src/ tree; `tests/docs-references.test.js` asserts
   every repo path cited in README/CLAUDE.md/docs/** exists (craft-repo-
-  relative refs resolve against the sibling checkouts). A red docs test is
-  fixed by correcting the DOC or the PATH — never by loosening the gate.
+  relative refs resolve against the sibling checkouts; where those are not
+  checked out — CI has this repo alone — such refs are skipped, while
+  webos-scoped refs are always verified). A red docs test is fixed by
+  correcting the DOC or the PATH — never by loosening the gate.
 - **Never commit**: fetched builds (`apps/`, `zips/`, `r2-blobs/` are
   gitignored), sibling repos (`cadcraft/` … `zed/`, `BrowserInBrowser/`),
   or anything under `/nas/Temp/repos/FireCraft` (independent repo).
