@@ -66,7 +66,7 @@ oversized blob with `wrangler r2 object put craftweb/<file>.wasm --file <f>
 
 ```bash
 cd webos
-npm run test            # vitest suite (600+ tests, happy-dom + RTL)
+npm run test            # vitest suite (1000+ specs, happy-dom + RTL)
 npm run coverage        # suite + v8 coverage, enforced ratchet floors
 npm run lint            # eslint, --max-warnings 0 in CI
 npm run build           # production bundle → dist/

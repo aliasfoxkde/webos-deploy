@@ -26,8 +26,8 @@ missing and ratchets it, it does not claim 99% on day one. Gates enter in
 warn-then-fail order so CI is green at every commit.
 
 1. **Unit coverage (vitest + v8)**: ≥90% lines on `webos/src` overall,
-   ≥99% lines on the pure logic modules (`os/`, `apps/terminal/wasi.js`,
-   `apps/terminal/coreutils-commands.js`, `apps/editor/buffers.js`,
+   ≥99% lines on the pure logic modules (`os/`, `src/apps/terminal/wasi.js`,
+   `src/apps/terminal/coreutils-commands.js`, `src/apps/editor/buffers.js`,
    `apps/calculator/engine|calcState`, `shell/winDrag.js`, `os/snap.js`).
    Browser-only glue (canvas loops, wasm instantiation) is covered through
    unit seams where practical and documented as excluded otherwise.
@@ -176,7 +176,7 @@ away silently.
 **Phase E — coverage to 99, ratcheted batches.** Order = testability × gap
 size; after each batch the floors move to the measured number:
 E1 `wasi.js` (269) — in-repo Node shim suite (the /var/tmp prototype is gone;
-rewrite it as `tests/wasi-shim.test.js`).
+rewrite it as `tests/wasi-syscalls.test.js`).
 E2 `coreutils.js` (60) — command surface against the bundled wasm contract.
 E3 `Terminal.jsx` (157) — testing-library over PTY reducer + render.
 E4 `App.jsx` (208) — OSProvider dispatch flows through the probe pattern

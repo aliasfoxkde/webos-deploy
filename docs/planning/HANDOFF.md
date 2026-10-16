@@ -2,9 +2,29 @@
 
 Everything a future agent (or human) needs to continue this work
 systematically. Written 2026-10-13 after the quality program (v3.14.0) and
-the FireCraft integration (v3.15.0). Read this top to bottom before
-touching anything; then work the phases in [PROGRESS.md](PROGRESS.md)
-order, ticking tasks as you complete them.
+the FireCraft integration (v3.15.0); last updated 2026-10-15, when it
+became the **sole continuation context** — the previous operator's
+assistance window ended, so nothing outside this repo (no conversation
+memory) can be assumed. Read this top to bottom before touching anything;
+then work the phases in [PROGRESS.md](PROGRESS.md) order, ticking tasks as
+you complete them.
+
+## First 30 minutes (cold start)
+
+1. `git -C /nas/Temp/repos/webos-deploy log --oneline -5` and
+   `git status` — see what (if anything) moved since this doc was written;
+   if commits exist that POST-date 2026-10-15, read them before trusting
+   this file's numbers.
+2. `cd webos && npm run ci` — if this is not green, fixing it outranks
+   everything else in this document.
+3. Skim `docs/planning/PROGRESS.md` (status board) and the phase list
+   below; update PROGRESS.md's snapshot date as soon as you touch anything.
+4. Skim `docs/planning/SESSIONS.md` (last two entries) for how the
+   previous sessions actually ran — commands, verification habits, and the
+   failure modes already hit.
+5. Check outward state: `curl -s https://artcraft-webos.pages.dev/sw.js`
+   (expect the released cache name) and FireCraft's repo state
+   (`git -C /nas/Temp/repos/FireCraft log --oneline -3`) — see task H2.0.
 
 ## Read these first (in order)
 
@@ -39,8 +59,13 @@ order, ticking tasks as you complete them.
 - **Version bumps are ×3**: `webos/package.json`, `webos/src/version.js`,
   `webos/public/sw.js` (`webos-vX.Y.Z`). A test enforces package.json ⇄
   version.js; production verification relies on the sw.js cache name.
+- **Docs are gated**: `tests/docs-coverage.test.js` pins the ARCHITECTURE
+  Module index to the src/ tree; `tests/docs-references.test.js` asserts
+  every repo path cited in README/CLAUDE.md/docs/** exists (craft-repo-
+  relative refs resolve against the sibling checkouts). A red docs test is
+  fixed by correcting the DOC or the PATH — never by loosening the gate.
 - **Never commit**: fetched builds (`apps/`, `zips/`, `r2-blobs/` are
-  gitignored), sibling repos (`cadcraft/` … `zed/`, `webos/public/BrowserInBrowser/`),
+  gitignored), sibling repos (`cadcraft/` … `zed/`, `BrowserInBrowser/`),
   or anything under `/nas/Temp/repos/FireCraft` (independent repo).
 - **This shell gotcha**: cwd resets between Bash commands — re-anchor
   `cd /nas/Temp/repos/webos-deploy[...]/webos` every time; use
@@ -92,8 +117,26 @@ order, ticking tasks as you complete them.
 The app is embedded and alive; the documented bridge
 (`/nas/Temp/repos/FireCraft/docs/WEBOS.md`) is only used for liveness.
 Each task is atomic and independently shippable; do them in order.
+**Upstream moved after the integration**: FireCraft HEAD is v0.2.0
+(`4029f1e`, includes `fix(web): bridge downcast` and `fix(web): repaint
+after bridge mutations` — both directly relevant to H2), while the
+deployed bundle at firecraft-web.pages.dev was pushed by the operator
+during that work (asset hash `firecraft-web-a7c2fc5b38107fce`, exact
+source commit unverified — the bundle carries no version string).
 
-- [ ] H2.1 **Read the contract**: FireCraft `docs/WEBOS.md` — inbound
+- [ ] H2.0 **Verify-or-redeploy FireCraft**: in
+      `/nas/Temp/repos/FireCraft` (independent repo — check `git status`
+      first, it had uncommitted `xtask/src/main.rs` changes on 2026-10-15),
+      run `cargo run -p xtask -- dist --web`, then
+      `sha256sum -c MANIFEST.sha256` and compare the wasm hash against the
+      deployed `https://firecraft-web.pages.dev/` asset. Same → only bump
+      the registry row version to the repo's `Cargo.toml` version and
+      release. Different → `npx wrangler pages deploy dist/web --project-name
+      firecraft-web --branch main`, re-run
+      `node packaging/e2e/firecraft-embed-probe.mjs` (local and with
+      `FC_BASE_URL=https://artcraft-webos.pages.dev/`), update the
+      registry `version` row + WebOS `npm run ci` + release + deploy.
+- [ ] H2.1 **Read the contract** (`/nas/Temp/repos/FireCraft/docs/WEBOS.md`) — inbound
       `openDocument{bytes}` / `apply{name,payload}` / `exportPng` /
       `exportDocument` / `ping`; outbound replies all carry
       `source:'firecraft'`; host must validate `event.origin` against

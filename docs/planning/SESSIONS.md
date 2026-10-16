@@ -77,6 +77,29 @@ Phases of [QUALITY-PROGRAM.md](QUALITY-PROGRAM.md), all committed and pushed:
   screenshot.
 - Release: v3.15.0 (`50ed137`), deployed, production-verified.
 
+## 2026-10-15 — docs audit + handoff finalization (continuation boundary)
+
+- Drift check: this repo unchanged since `30cc6c6` (CI green, production
+  `webos-v3.15.0`); sibling craft repos clean on `main` and their versions
+  match the CLAUDE.md table. **FireCraft upstream moved to v0.2.0**
+  (`4029f1e`, web-bridge fixes) — the deployed `firecraft-web` bundle
+  predates it; captured as handoff task H2.0 rather than redeploying
+  unasked at the session boundary.
+- All-repo docs audit via a new gate, `tests/docs-references.test.js`:
+  every repo path cited in README/CLAUDE.md/docs/** must exist (craft-
+  repo-relative refs resolve against sibling checkouts; heavy trees are
+  indexed one level). First run flagged 18+ stale references — all fixed:
+  wrong app paths (apps/… → src/apps/…), a removed terminal test name, an
+  ATTRIBUTION.md cited under public/ instead of docs/, a HOSTING.md that
+  never existed (README/HISTORY hold that content now), FireCraft doc
+  paths made absolute, README's "600+ tests" refreshed, and superseded
+  plans bannered (PROGRAM-3 → complete, QUALITY-PLAN → QUALITY-PROGRAM).
+  (The old wrong paths are deliberately NOT backticked here — this gate
+  fails on any backticked path that does not exist, including in this
+  very log.)
+- HANDOFF.md finalized as the sole continuation context: cold-start
+  checklist, docs-gate ground rule, H2.0 verify-or-redeploy task.
+
 ## 2026-10-13 — documentation + handoff + cleanup
 
 - This document set: HANDOFF / SESSIONS / PROGRESS / HISTORY under

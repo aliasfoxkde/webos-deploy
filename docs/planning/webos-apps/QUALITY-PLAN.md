@@ -6,6 +6,10 @@ strictest linting, validated CI (GitHub Actions **and** local GitForge),
 Aegis pattern scanning, and an app-polish queue. It is honest about where
 the numbers actually are.
 
+> **Superseded by `docs/planning/QUALITY-PROGRAM.md`**, which records the
+> executed program (phases A–G, outcomes, triage). This file is kept as
+> the original working plan. Current planning: `docs/planning/HANDOFF.md`.
+
 ## Ground truth (2026-10-11, post-3.9.0)
 
 | Metric | Now | Target | Gap |

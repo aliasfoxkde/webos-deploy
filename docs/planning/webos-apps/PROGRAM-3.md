@@ -1,9 +1,13 @@
 # WebOS 3.0 Program — Personas, Real Terminal, AI, Assets
 
-Status: in progress · owner: webos-deploy · created 2026-10-09
+Status: **complete** — the 3.0 wave shipped (personas, terminal 2.9/3.x,
+AI chat, real assets; see ARCHITECTURE.md version sections). Kept as the
+historical plan; current planning lives in `docs/planning/HANDOFF.md`.
+
+owner: webos-deploy · created 2026-10-09
 
 Research-informed plan for the 3.0 wave. Sources at bottom; every third-party
-asset must land with a license row in `webos/public/ATTRIBUTION.md`.
+asset must land with a license row in `docs/ATTRIBUTION.md`.
 
 ## 1. OS personas (layout/style/type)
 
@@ -73,7 +77,7 @@ welcome reopen. Every control persists under `webos.*` (no session-only toggles)
 
 ## 6. AI chat (integration-ready shell)
 
-`apps/chat/` plugin + sidebar widget + Start "Ask AI": message list, persisted
+`src/apps/chat/` plugin + sidebar widget + Start "Ask AI": message list, persisted
 history (`webos.chat.*`), streaming-ready adapter interface
 (`adapters/` local echo → future provider). Honest state: "No model configured
 yet — the adapter API is wired for a later integration." No fake answers.

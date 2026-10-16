@@ -397,8 +397,8 @@ export default {
 2. **A React component** (default export) rendered inside the window body.
 
 3. **Registration, two lines:**
-   - `apps/manifests.js`: add the manifest to `PLUGIN_APPS` (registry data).
-   - `apps/components.js`: map `id → component` in `APP_COMPONENTS`.
+   - `src/apps/manifests.js`: add the manifest to `PLUGIN_APPS` (registry data).
+   - `src/apps/components.js`: map `id → component` in `APP_COMPONENTS`.
 
 The two-barrel split is deliberate: `os/registry.js` imports *data* only
 (`manifests.js`), so the OS core never pulls the component graph; the window
@@ -471,7 +471,7 @@ apps without a manifest fall back to the 1120×700 default.
   tree (every file under `src/` needs a row, and vice versa).
 - Build: `npm run build` in `webos/` → `dist/` (static, base `./`).
 - Deploy: `npx wrangler pages deploy dist --project-name artcraft-webos --branch main`
-  (see `packaging/HOSTING.md` and the root `README.md` for the full procedure and live URLs).
+  (see the root `README.md` and the deployment map in `docs/planning/HISTORY.md` for the full procedure and live URLs).
 - Preview locally: `npm run preview` (port 5180).
 - Icons: hand-written SVGs in `webos/public/icons/`, rasterized via
   `packaging/icons-render.sh` (headless Chromium; ImageMagick cannot stroke SVG).
@@ -485,7 +485,7 @@ apps without a manifest fall back to the 1120×700 default.
 ## Adding the next app — checklist
 
 1. `mkdir -p src/apps/<name>` + `manifest.js` + `<Name>.jsx`
-2. Register in `apps/manifests.js` + `apps/components.js`
+2. Register in `src/apps/manifests.js` + `src/apps/components.js`
 3. Icon at `public/icons/<name>.svg` (rounded square + accent glyph family)
 4. `npm run build`, screenshot-verify in `vite preview`, deploy
 
@@ -858,7 +858,8 @@ default (`embed: true`); embedding needs no special casing because the
 bundle ships no frame-hostile headers and Pages serves the wasm as
 `application/wasm`.
 
-The bundle carries a documented postMessage bridge (its `docs/WEBOS.md`):
+The bundle carries a documented postMessage bridge
+(`/nas/Temp/repos/FireCraft/docs/WEBOS.md`):
 inbound `openDocument{bytes}` / `apply{name,payload}` / `exportPng` /
 `exportDocument` / `ping`, outbound replies filtered on
 `source: "firecraft"`. WebOS currently uses only the `ready` liveness
