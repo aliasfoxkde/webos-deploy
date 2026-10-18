@@ -125,3 +125,28 @@ export function bridgeRequest(win, request, timeoutMs = 10000) {
     win.postMessage({ source: 'webos-app', requestId, ...request }, '*');
   });
 }
+
+/* Post a message to an app iframe and resolve on the matching reply.
+   Used by firecraft-style apps: shell drives the app via openDocument,
+   apply, exportPng, exportDocument and resolves each call individually.
+   The matching reply carries the same `source` string the app sets.
+   Returns the reply payload on ok, throws on timeout or error reply. */
+export function postToApp(frame, request, source, timeoutMs = 15000) {
+  const requestId = `req-${Math.random().toString(36).slice(2)}`;
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      frame.contentWindow.removeEventListener('message', onMsg);
+      reject(new Error(`postToApp timeout (${source})`));
+    }, timeoutMs);
+    const onMsg = (event) => {
+      const r = event.data;
+      if (!r || r.source !== source || r.requestId !== requestId) return;
+      clearTimeout(timer);
+      frame.contentWindow.removeEventListener('message', onMsg);
+      if (r.ok === false) reject(new Error(r.error ?? `${source} error`));
+      else resolve(r);
+    };
+    frame.contentWindow.addEventListener('message', onMsg);
+    frame.contentWindow.postMessage({ source: 'webos-host', requestId, ...request }, '*');
+  });
+}
