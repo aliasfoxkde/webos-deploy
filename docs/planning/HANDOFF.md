@@ -155,11 +155,6 @@ source commit unverified — the bundle carries no version string).
       `exportDocument` / `ping`; outbound replies all carry
       `source:'firecraft'`; host must validate `event.origin` against
       `https://firecraft-web.pages.dev`.
-- [ ] H2.1 **Read the contract** (`/nas/Temp/repos/FireCraft/docs/WEBOS.md`) — inbound
-      `openDocument{bytes}` / `apply{name,payload}` / `exportPng` /
-      `exportDocument` / `ping`; outbound replies all carry
-      `source:'firecraft'`; host must validate `event.origin` against
-      `https://firecraft-web.pages.dev`.
 - [ ] H2.2 **Bridge plumbing in EmbedFrame**: extend the existing app
       bridge (`webos/src/os/bridge.js`, EmbedFrame wiring) with a
       request/reply correlate for firecraft-style apps (tag requests,
