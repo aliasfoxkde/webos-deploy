@@ -87,7 +87,7 @@ export const DEFAULT_APPS = [
     description: 'Layer-based motion graphics and visual effects: keyframes, effects, masks, trackers, and a GPU compositor with a render queue — a clean-room reimagining of the classic motion suite in Rust/WebAssembly.',
   },
   {
-    id: 'firecraft', name: 'FireCraft', tagline: 'Web & screen design', version: '0.1.0',
+    id: 'firecraft', name: 'FireCraft', tagline: 'Web & screen design', version: '0.2.1',
     url: 'https://firecraft-web.pages.dev/', icon: 'icons/craft/firecraft.png', accent: '#f97316', embed: true,
     developer: 'ArtCraft', category: 'Design', rating: 4.4, reviews: 37,
     description: 'Hybrid vector + bitmap canvas for web and screen design: pages, layers, vectors, live filters, slicing and smart guides, with read/write Fireworks PNG (.fw.png) documents — a clean-room reimagining of the classic web-design suite in Rust/WebAssembly.',
