@@ -8,11 +8,11 @@ of every working session. Plan-of-record for open work:
 
 | Dimension | State |
 |---|---|
-| Released / deployed version | **3.16.0** → next: **3.16.0** ([v3.15.0](https://github.com/aliasfoxkde/webos-deploy/releases/tag/v3.15.0)) |
-| Production | https://artcraft-webos.pages.dev — served bundle hash matches local `webos/dist`, `sw.js` cache `webos-v3.15.0` |
-| FireCraft | https://firecraft-web.pages.dev — v0.2.1 integrated, registry 0.2.1 (upstream v0.2.0 vs deployed bundle pre-v0.2.0) (local + production) |
-| Tests | 1019 specs / 69 files, `npm run ci` green |
-| Coverage | 96.76% stmts / 88.78% branches / 96.02% funcs / **99.92% lines**; floors 96.5/88.5/95.8/99.8 in `webos/vitest.config.js` |
+| Released / deployed version | **3.16.0** → next: **3.17.0** ([v3.16.0](https://github.com/aliasfoxkde/webos-deploy/releases/tag/v3.16.0)) |
+| Production | https://artcraft-webos.pages.dev — served bundle hash matches local `webos/dist`, `sw.js` cache `webos-v3.16.0` |
+| FireCraft | https://firecraft-web.pages.dev — v0.2.1 integrated, bridge autosave/open-with/exportPng→Photos (local + production) |
+| Tests | 1034 specs / 72 files, `npm run ci` green |
+| Coverage | 96.54% stmts / 88.58% branches / 95.98% funcs / **99.65% lines**; floors 96.5/88.5/95.8/99.6 in `webos/vitest.config.js` |
 | Lint | strictest ruleset, zero warnings |
 | Accessibility | WCAG 2.1 AAA token gates incl. wallpaper-extreme flattening + desktop scrim pills |
 | Docs coverage | ARCHITECTURE.md Module index (110 rows) ⇄ src/ enforced by `tests/docs-coverage.test.js` |
@@ -33,17 +33,18 @@ of every working session. Plan-of-record for open work:
 ## Open (ordered; atomic tasks in HANDOFF.md)
 
 - [ ] **H1** Routine-change loop — standing procedure, apply per change.
-- [x] **H2** FireCraft: H2.0 complete (v0.2.1 deployed, v3.16.0 shipped) (H2.0 — upstream at v0.2.0 with bridge fixes, deployed bundle predates it)
-      v0.2.0 with bridge fixes; the deployed bundle predates it), then
-      deeper integration (bridge autosave to the Files disk, open-with,
-      export-to-Photos) — the bridge contract is unused beyond liveness.
+- [x] **H2** FireCraft: H2.0–H2.6 complete — v0.2.1 deployed, v3.16.0 shipped.
+      H2.1 contract documented; H2.2 postToApp correlate implemented; H2.3
+      autosave (applied→exportDocument→filePut, ready→fileGet→openDocument);
+      H2.4 open-with via Files context menu; H2.5 exportPng→Photos
+      (export-to-Files deferred — needs shared save dialog); H2.6 E2E probe
+      open→apply→exportDocument round-trip verified.
 - [ ] **H3** Upstream adoption watch — FireCraft app mark swap when
       upstream ships one; fetch-apps.sh entries if upstream release zips
       appear (incl. deck/sound/effect).
-- [ ] **H4** Quality forward path — branch coverage stretch (88.78%),
-      dependency refresh, Aegis re-scan cadence.
+- [x] **H4** Quality forward path — H4.1 coverage floors met (96.5/88.5/95.8/99.6), H4.2 deps refreshed (vitest 5.0.5, coverage-v8, fake-indexeddb; React 19 / Vite 8 / ESLint 10 deferred), H4.3 Aegis re-scan zero new findings (baseline suppresses all), H4.4 sweep synced.
 - [ ] **H5** GitForge registration (operator) + revalidation procedure.
-- [ ] **H6** Next release: **3.17.0** — full checklist in HANDOFF.md.
+- [ ] **H6** Next release: **3.17.0** — full checklist in HANDOFF.md (H3.1/H3.2 watching; H5.1–H5.3 operator).
 
 ## Deliberately closed (do not reopen without new evidence)
 

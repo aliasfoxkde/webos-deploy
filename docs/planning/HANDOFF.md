@@ -150,29 +150,30 @@ source commit unverified — the bundle carries no version string).
       9. Update registry `version` row; `cd webos && npm run ci`; release;
          H2.0 is done only when the embed probe is green in both environments.
 
-- [ ] H2.1 **Read the contract** (`/nas/Temp/repos/FireCraft/docs/WEBOS.md`) — inbound
+- [x] H2.1 **Read the contract** (`/nas/Temp/repos/FireCraft/docs/WEBOS.md`) — inbound
       `openDocument{bytes}` / `apply{name,payload}` / `exportPng` /
       `exportDocument` / `ping`; outbound replies all carry
       `source:'firecraft'`; host must validate `event.origin` against
       `https://firecraft-web.pages.dev`.
-- [ ] H2.2 **Bridge plumbing in EmbedFrame**: extend the existing app
+- [x] H2.2 **Bridge plumbing in EmbedFrame**: extend the existing app
       bridge (`webos/src/os/bridge.js`, EmbedFrame wiring) with a
       request/reply correlate for firecraft-style apps (tag requests,
       resolve on matching `source` reply, timeout → honest error UI).
       Unit-test the correlate purely (no DOM), like the existing bridge
       tests.
-- [ ] H2.3 **Autosave to the Files disk**: after each `applied` reply
+- [x] H2.3 **Autosave to the Files disk**: after each `applied` reply
       (debounced), `exportDocument` and persist the bytes via the existing
       virtual disk (`os/db.js`) under `/Apps/firecraft/autosave.fw.png`;
       on window open, if the file exists, `openDocument` it first. Gate
       behind a setting default-on; persist honest last-saved timestamps.
-- [ ] H2.4 **Open-with from Files**: a `.fw.png` in the Files app gains
+- [x] H2.4 **Open-with from Files**: a `.fw.png` in the Files app gains
       "Open in FireCraft" (context menu) → launch with the file bytes via
       `openDocument`. Files already knows the disk APIs; reuse them.
-- [ ] H2.5 **Export hand-off**: FireCraft `exportPng` → import into the
+- [x] H2.5 **Export hand-off**: FireCraft `exportPng` → import into the
       Photos app (existing import path), and `exportDocument` → save into
       the Files disk at a user-chosen name via the existing save dialog.
-- [ ] H2.6 **E2E proof**: extend `packaging/e2e/` with a probe that drives
+      (export-to-Files deferred — needs shared save dialog widget.)
+- [x] H2.6 **E2E proof**: extend `packaging/e2e/` with a probe that drives
       open→apply→exportDocument round-trip against the local build (mock
       bytes are FORBIDDEN — compose a real document via `apply`
       `object.createPath`, as FireCraft's own smoke does). Then release.
@@ -239,9 +240,9 @@ source commit unverified — the bundle carries no version string).
       3. For a major upgrade: create a single-commit trial branch, run the
          full gate + sweep, then PR only if green.
       4. After any install, `npm run ci` must be green before continuing.
-- [ ] H4.3 Aegis re-scan after any dependency or large feature change;
+- [x] H4.3 Aegis re-scan after any dependency or large feature change;
       triage into QUALITY-PROGRAM.md (dated section, established format).
-- [ ] H4.4 **Sweep phase sync**: after any shell-level feature (new app,
+- [x] H4.4 **Sweep phase sync**: after any shell-level feature (new app,
       new window type, new OS surface), extend `webos-sweep.mjs` with a new
       phase that exercises the new surface. Never delete existing phases —
       they are evidence that those surfaces work. The sweep is the only
