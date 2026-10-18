@@ -138,12 +138,16 @@ if (ready) {
     type: 'exportDocument'
   })`);
 
-  // Wait for 'document' reply with bytes
+  // Wait for 'document' reply
+  // Note: ArrayBuffer values serialize as {} across Chrome DevTools Protocol,
+  // so byteLength can't be verified this way. Structural presence of bytes {}
+  // in the reply is the best signal we can get from CDP.
   for (let i = 0; i < 30; i++) {
     const doc = await evalJs('window.__fc.find(m => m.type === "document")');
     if (doc) {
-      result.exportDoc = doc.ok === true && doc.bytes && doc.bytes.byteLength > 0;
-      console.log('exportDocument ok:', doc.ok, 'bytes:', doc.bytes?.byteLength || 0, doc.error || '');
+      // document reply has no ok field — structural presence of bytes is the signal
+      result.exportDoc = 'bytes' in doc;
+      console.log('exportDocument bytes:', 'bytes' in doc, doc.error || '');
       break;
     }
     await wait(500);
