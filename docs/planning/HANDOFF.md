@@ -198,7 +198,7 @@ source commit unverified — the bundle carries no version string).
       | gridcraft | `fb82389` | 0.3.0 | 0.3.0 ✓ |
       | lightcraft | `a6bc63a` | 0.4.0 | 0.4.0 ✓ |
       | pdfcraft | `f4d489e` | 0.4.0 | 0.4.0 ✓ |
-      | photocraft | `7584b9b` | 0.3.0 | 0.5.0 ⚠ |
+      | photocraft | `f4d489e` (v0.5.0 tag) | 0.5.0 | 0.5.0 ✓ |
       | vectorcraft | `eec150e2` | 0.7.0 | 0.7.0 ✓ |
       | wordcraft | `7584b9b` | 0.3.0 | 0.3.0 ✓ |
       | deckcraft | `84acb49` | 0.4.0 | 0.4.0 ✓ |
@@ -206,9 +206,8 @@ source commit unverified — the bundle carries no version string).
       | effectcraft | `67434e9` | 0.8.0 | 0.8.0 ✓ |
       | firecraft | `/nas/Temp/repos/FireCraft` | (verify per H2.0) | 0.1.0 ⚠ |
 
-      photocraft's registry says 0.5.0 but the sibling HEAD is at 0.3.0 —
-      the 0.5.0 row was added during the 3.12.0 wave before the sibling
-      was re-bumped. Either bump the sibling or revert the registry row.
+      photocraft's registry (0.5.0) and sibling (v0.5.0 tag, `f4d489e`) are
+      aligned. No action needed.
       firecraft's row stays at 0.1.0 until H2.0 resolves (the upstream
       Cargo.toml version is the source of truth).
 
