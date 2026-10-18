@@ -300,6 +300,9 @@ export default function FilesApp() {
         ? [{ label: 'Open', run: () => setCwd(arg) }]
         : [
           { label: 'Open', run: () => openFile(rec) },
+          ...(rec.path.endsWith('.fw.png')
+            ? [{ label: 'Open in FireCraft', run: () => os.launch('firecraft', { path: rec.path }) }]
+            : []),
           ...(TEXT_EXT.test(rec.name || base(rec.path)) || (rec.type || '').startsWith('text/')
             ? [{ label: 'Open in Editor', run: () => os.launch('editor', { path: rec.path }) }]
             : []),

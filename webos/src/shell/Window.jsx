@@ -90,7 +90,7 @@ export default function Window({ win }) {
         </Suspense>
       );
     }
-    return <EmbedFrame app={app} onLoaded={() => setLoaded(true)} onMessage={win.onMessage} slow={slow} />;
+    return <EmbedFrame app={app} onLoaded={() => setLoaded(true)} onMessage={win.onMessage} args={win.args} slow={slow} />;
   })();
 
   return (

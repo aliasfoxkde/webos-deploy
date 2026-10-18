@@ -25,10 +25,11 @@ export function firecraftAutosave(frame) {
   }, 1200);
 }
 
-export async function firecraftRestore(frame) {
+export async function firecraftRestore(frame, path) {
   if (localStorage.getItem(AUTOSAVE_KEY) === 'false') return;
   try {
-    const rec = await fileGet(AUTOSAVE_PATH);
+    const filePath = path ?? AUTOSAVE_PATH;
+    const rec = await fileGet(filePath);
     if (rec?.blob) {
       await postToApp(frame, { type: 'openDocument', bytes: await rec.blob.arrayBuffer() }, 'firecraft');
     }
@@ -42,7 +43,7 @@ export async function firecraftRestore(frame) {
    serves webos:file-* requests from this app's private /Apps/<id>/ folder.
    handleBridge checks the message itself; here we additionally pin the event
    to THIS iframe's window so sibling frames can't impersonate each other. */
-export default function EmbedFrame({ app, onLoaded, onMessage }) {
+export default function EmbedFrame({ app, onLoaded, onMessage, args }) {
   // NB: no onError/failed fallback here — React never dispatches `error` for
   // iframes (it traps only `load`), so such a handler would be dead code.
   // Embed failures are handled by the honest blocked panel for non-embed apps.
@@ -57,7 +58,7 @@ export default function EmbedFrame({ app, onLoaded, onMessage }) {
       // FireCraft: autosave on 'applied', restore on 'ready'.
       if (event.data?.source === 'firecraft') {
         if (event.data.type === 'applied') firecraftAutosave(frame.current);
-        if (event.data.type === 'ready') firecraftRestore(frame.current);
+        if (event.data.type === 'ready') firecraftRestore(frame.current, args?.path);
         if (onMessage) onMessage(event.data, frame.current);
         return;
       }
@@ -66,7 +67,7 @@ export default function EmbedFrame({ app, onLoaded, onMessage }) {
     };
     window.addEventListener('message', onMsg);
     return () => window.removeEventListener('message', onMsg);
-  }, [embed, app, onMessage]);
+  }, [embed, app, onMessage, args]);
 
   if (!embed) {
     return (
