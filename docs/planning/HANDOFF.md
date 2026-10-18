@@ -255,7 +255,7 @@ source commit unverified — the bundle carries no version string).
       QUALITY-PROGRAM.md and HISTORY.md).
 - [ ] H5.2 After registration: trigger a run, capture the run id and job
       log, append the evidence to QUALITY-PROGRAM.md phase B.
-- [ ] H5.3 Container revalidation procedure (no registration needed):
+- [x] H5.3 Container revalidation procedure (no registration needed):
       `docker run --rm -v /nas/Temp/repos/webos-deploy:/src -w /src -e CI=true
       node:24-trixie-slim bash -c 'set -e; cd webos && npm ci && npm run lint
       && npx vitest run tests/contrast-audit.test.js tests/personas-theme.test.js

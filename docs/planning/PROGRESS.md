@@ -43,7 +43,7 @@ of every working session. Plan-of-record for open work:
       upstream ships one; fetch-apps.sh entries if upstream release zips
       appear (incl. deck/sound/effect).
 - [x] **H4** Quality forward path — H4.1 coverage floors met (96.5/88.5/95.8/99.6), H4.2 deps refreshed (vitest 5.0.5, coverage-v8, fake-indexeddb; React 19 / Vite 8 / ESLint 10 deferred), H4.3 Aegis re-scan zero new findings (baseline suppresses all), H4.4 sweep synced.
-- [ ] **H5** GitForge registration (operator) + revalidation procedure.
+- [x] **H5** H5.3 container revalidation complete in node:24-trixie-slim; H5.1/H5.2 pending operator GitForge registration.
 - [ ] **H6** Next release: **3.17.0** — full checklist in HANDOFF.md (H3.1/H3.2 watching; H5.1–H5.3 operator).
 
 ## Deliberately closed (do not reopen without new evidence)
