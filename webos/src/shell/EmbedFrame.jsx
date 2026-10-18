@@ -9,6 +9,7 @@ import { useOS } from '../os/state.jsx';
    Toggle: localStorage key 'webos.firecraft.autosave' (default true). */
 const AUTOSAVE_KEY = 'webos.firecraft.autosave';
 const AUTOSAVE_PATH = '/Apps/firecraft/autosave.fw.png';
+const EXPORT_PATH_PREFIX = '/Apps/firecraft/export-';
 let _debounceTimer = null;
 
 export function firecraftAutosave(frame) {
@@ -49,17 +50,31 @@ export default function EmbedFrame({ app, onLoaded, onMessage, args }) {
   // Embed failures are handled by the honest blocked panel for non-embed apps.
   const frame = useRef(null);
   const os = useOS();
-
   const embed = Boolean(app.embed && app.url);
   useEffect(() => {
     if (!embed) return undefined;
     const onMsg = async (event) => {
       if (event.source !== frame.current?.contentWindow) return;
+      const fd = event.data;
       // FireCraft: autosave on 'applied', restore on 'ready'.
-      if (event.data?.source === 'firecraft') {
-        if (event.data.type === 'applied') firecraftAutosave(frame.current);
-        if (event.data.type === 'ready') firecraftRestore(frame.current, args?.path);
-        if (onMessage) onMessage(event.data, frame.current);
+      if (fd?.source === 'firecraft') {
+        if (fd.type === 'applied') firecraftAutosave(frame.current);
+        if (fd.type === 'ready') firecraftRestore(frame.current, args?.path);
+        // exportPng: export PNG and open in Photos.
+        if (fd.type === 'exportPng') {
+          const os = await import('../os/state.jsx').then((m) => m.useOS());
+          try {
+            const result = await postToApp(frame.current, { type: 'exportPng' }, 'firecraft');
+            if (result.bytes) {
+              const blob = new Blob([result.bytes], { type: 'image/png' });
+              const ts = Date.now();
+              const path = `${EXPORT_PATH_PREFIX}${ts}.png`;
+              await filePut(path, blob, 'image/png');
+              os.launch('photos', { path });
+            }
+          } catch { /* export failures are silent */ }
+        }
+        if (onMessage) onMessage(fd, frame.current);
         return;
       }
       const reply = await handleBridge({ get: fileGet, put: filePut }, app, event);
