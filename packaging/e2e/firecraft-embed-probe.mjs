@@ -1,13 +1,14 @@
-// FireCraft embed probe: boots the built WebOS dist in real Chromium, clicks
-// the FireCraft desktop icon (the real user path), and waits for the
-// FireCraft bridge contract to fire — the bundle posts
-// { source: "firecraft", type: "ready" } to its parent once the wasm shell
-// is up (FireCraft docs/WEBOS.md). Proof = ready received + iframe live.
+// FireCraft embed + round-trip probe: boots the built WebOS dist in real
+// Chromium, clicks the FireCraft desktop icon, waits for bridge 'ready',
+// then drives open→apply→exportDocument against the live wasm shell.
 //
-// Lives in packaging/e2e/ so it survives scratch GC. From the repo root:
+// From the repo root:
 //   node packaging/e2e/firecraft-embed-probe.mjs              # local dist
 //   FC_BASE_URL=https://artcraft-webos.pages.dev/ node ...    # production
 // Env overrides: WEBOS_DIR (shell checkout), CHROME, SWEEP_SHOTS.
+//
+// H2.6 gate: the round-trip must complete with non-zero document bytes.
+// Mock bytes are FORBIDDEN — we compose a real document via apply object.createPath.
 import { mkdtempSync, rmSync, mkdirSync } from 'node:fs';
 import { spawn } from 'node:child_process';
 import { tmpdir } from 'node:os';
@@ -59,12 +60,21 @@ const evalJs = async (expr) => {
   return r.result.value;
 };
 
-// record every firecraft bridge message from before any page script runs
+// Capture ALL firecraft postMessages (full data, not just types)
 await send('Page.addScriptToEvaluateOnNewDocument', { source: `
   window.__fc = [];
+  window.__fcLog = [];
   window.addEventListener('message', (e) => {
-    if (e.data && e.data.source === 'firecraft') window.__fc.push(e.data.type);
-  });` });
+    if (e.data && e.data.source === 'firecraft') {
+      window.__fc.push(e.data);
+      window.__fcLog.push(JSON.stringify(e.data));
+    }
+  });
+  // Expose postMessage so the probe can send commands to the iframe
+  window.__sendToFirecraft = (msg) => {
+    const f = document.querySelector('.win iframe');
+    if (f && f.contentWindow) f.contentWindow.postMessage(msg, '*');
+  };` });
 
 await send('Page.navigate', { url: BASE || `http://127.0.0.1:${PORT}/` });
 await evalJs(`new Promise((res) => {
@@ -88,20 +98,65 @@ const clickIcon = await evalJs(`(() => {
 })()`);
 console.log('icon:', clickIcon);
 
-// wait for the bridge ready signal (wasm boot takes a few seconds)
+// --- H2.6: open→apply→exportDocument round-trip ---
+// Wait for bridge ready signal (wasm boot takes a few seconds)
 let ready = false;
 for (let i = 0; i < 60; i++) {
-  const types = await evalJs('window.__fc');
+  const types = await evalJs('window.__fc.map(m => m.type)');
   if (types.includes('ready')) { ready = true; break; }
   await wait(1000);
 }
+console.log('ready:', ready);
+
+let result = { ready, apply: false, exportDoc: false };
+if (ready) {
+  // Step 1: apply object.createPath — a real rect on page 0
+  // (FireCraft WEBOS.md contract: postMessage apply → firecraft applied)
+  await evalJs(`window.__sendToFirecraft({
+    source: 'webos-host',
+    requestId: 'req-apply-test',
+    type: 'apply',
+    name: 'object.createPath',
+    payload: { kind: 'rect', x: 1, y: 1, width: 4, height: 4, page: 0, layer: 0, cell: 0 }
+  })`);
+
+  // Wait for 'applied' reply
+  for (let i = 0; i < 30; i++) {
+    const applied = await evalJs('window.__fc.find(m => m.type === "applied")');
+    if (applied) {
+      result.apply = applied.ok === true;
+      console.log('apply ok:', applied.ok, applied.error || '');
+      break;
+    }
+    await wait(500);
+  }
+
+  // Step 2: exportDocument — save the document and get .fw.png bytes
+  await evalJs(`window.__sendToFirecraft({
+    source: 'webos-host',
+    requestId: 'req-export-test',
+    type: 'exportDocument'
+  })`);
+
+  // Wait for 'document' reply with bytes
+  for (let i = 0; i < 30; i++) {
+    const doc = await evalJs('window.__fc.find(m => m.type === "document")');
+    if (doc) {
+      result.exportDoc = doc.ok === true && doc.bytes && doc.bytes.byteLength > 0;
+      console.log('exportDocument ok:', doc.ok, 'bytes:', doc.bytes?.byteLength || 0, doc.error || '');
+      break;
+    }
+    await wait(500);
+  }
+}
+
+const bridge = await evalJs('window.__fcLog');
 const iframe = await evalJs(`(() => {
   const f = document.querySelector('.win iframe');
   return f ? { src: f.src, w: f.clientWidth, h: f.clientHeight } : null;
 })()`);
-const bridge = await evalJs('window.__fc');
 
-console.log('bridge messages:', JSON.stringify(bridge));
+console.log('bridge messages:', bridge);
 console.log('iframe:', JSON.stringify(iframe));
 
 const shot = await send('Page.captureScreenshot', { format: 'png' });
@@ -109,9 +164,13 @@ const { writeFileSync } = await import('node:fs');
 writeFileSync(`${SHOTS}/firecraft-embed.png`, Buffer.from(shot.data, 'base64'));
 
 chr.kill(); if (srv) process.kill(-srv.pid, 'SIGTERM');
-await wait(1500); // let chromium flush its profile before removing it
+await wait(1500);
 try { rmSync(profile, { recursive: true, force: true }); } catch {}
 
-const ok = ready && iframe && iframe.src.includes('firecraft-web.pages.dev') && iframe.w > 100 && iframe.h > 100;
-console.log(ok ? 'FIRECRAFT EMBED: PASS (bridge ready + iframe live)' : 'FIRECRAFT EMBED: FAIL');
+const ok = result.ready && result.apply && result.exportDoc
+  && iframe && iframe.src.includes('firecraft-web.pages.dev')
+  && iframe.w > 100 && iframe.h > 100;
+console.log(ok
+  ? 'FIRECRAFT ROUND-TRIP: PASS (ready + apply + exportDocument with bytes)'
+  : `FIRECRAFT ROUND-TRIP: FAIL — ${JSON.stringify(result)}`);
 process.exit(ok ? 0 : 1);
