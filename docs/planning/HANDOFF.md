@@ -126,18 +126,35 @@ deployed bundle at firecraft-web.pages.dev was pushed by the operator
 during that work (asset hash `firecraft-web-a7c2fc5b38107fce`, exact
 source commit unverified — the bundle carries no version string).
 
-- [ ] H2.0 **Verify-or-redeploy FireCraft**: in
-      `/nas/Temp/repos/FireCraft` (independent repo — check `git status`
-      first, it had uncommitted `xtask/src/main.rs` changes on 2026-10-15),
-      run `cargo run -p xtask -- dist --web`, then
-      `sha256sum -c MANIFEST.sha256` and compare the wasm hash against the
-      deployed `https://firecraft-web.pages.dev/` asset. Same → only bump
-      the registry row version to the repo's `Cargo.toml` version and
-      release. Different → `npx wrangler pages deploy dist/web --project-name
-      firecraft-web --branch main`, re-run
-      `node packaging/e2e/firecraft-embed-probe.mjs` (local and with
-      `FC_BASE_URL=https://artcraft-webos.pages.dev/`), update the
-      registry `version` row + WebOS `npm run ci` + release + deploy.
+- [ ] H2.0 **Verify-or-redeploy FireCraft** (independent repo):
+
+      1. `cd /nas/Temp/repos/FireCraft && git status` — commit or stash
+         any changes before touching anything.
+      2. `git log --oneline -3` — record the upstream commit; compare against
+         the `version` field in `Cargo.toml` (workspace.package).
+      3. `cargo run -p xtask -- dist --web` — rebuild (takes ~2 min; wasm
+         size budget enforced, MANIFEST.sha256 written).
+      4. `sha256sum -c MANIFEST.sha256` — confirm the new build is intact.
+      5. `git rev-parse HEAD` and note the new wasm asset hash
+         (`firecraft-web-<hash>.js` in `dist/web/`).
+      6. Compare wasm hash against the deployed
+         `https://firecraft-web.pages.dev/firecraft-web-<hash>.js` asset
+         (Cloudflare dashboard → R2 → craftweb bucket, or curl the ETag).
+         **Same** → bump the WebOS registry `version` row to match the
+         upstream `Cargo.toml`, run `npm run ci` in WebOS, release 3.16.0.
+         **Different** → proceed to step 7.
+      7. `npx wrangler pages deploy dist/web --project-name firecraft-web
+         --branch main` — deploy the new bundle.
+      8. `node packaging/e2e/firecraft-embed-probe.mjs` locally; then with
+         `FC_BASE_URL=https://artcraft-webos.pages.dev/` against production.
+      9. Update registry `version` row; `cd webos && npm run ci`; release;
+         H2.0 is done only when the embed probe is green in both environments.
+
+- [ ] H2.1 **Read the contract** (`/nas/Temp/repos/FireCraft/docs/WEBOS.md`) — inbound
+      `openDocument{bytes}` / `apply{name,payload}` / `exportPng` /
+      `exportDocument` / `ping`; outbound replies all carry
+      `source:'firecraft'`; host must validate `event.origin` against
+      `https://firecraft-web.pages.dev`.
 - [ ] H2.1 **Read the contract** (`/nas/Temp/repos/FireCraft/docs/WEBOS.md`) — inbound
       `openDocument{bytes}` / `apply{name,payload}` / `exportPng` /
       `exportDocument` / `ping`; outbound replies all carry
@@ -176,22 +193,65 @@ source commit unverified — the bundle carries no version string).
       deployment to the fetched build, and update CLAUDE.md/PROGRESS.md —
       NEVER run fetch-apps.sh with `--force` while a checkout still lives
       in the target path (it `rm -rf`s).
-- [ ] H3.3 Keep the registry `version` fields in sync with the deployed
-      app versions (currently firecraft 0.1.0 per its Cargo.toml).
+- [ ] H3.3 **Keep registry `version` fields in sync with deployed app versions**.
+      The current version table (verified 2026-10-18 from sibling checkouts):
+
+      | App | Sibling commit | Deployed version | Registry row |
+      |---|---|---|---|
+      | cadcraft | `59631c8` | 0.3.0 | 0.3.0 ✓ |
+      | designcraft | `14e677b` | 0.4.0 | 0.4.0 ✓ |
+      | gridcraft | `fb82389` | 0.3.0 | 0.3.0 ✓ |
+      | lightcraft | `a6bc63a` | 0.4.0 | 0.4.0 ✓ |
+      | pdfcraft | `f4d489e` | 0.4.0 | 0.4.0 ✓ |
+      | photocraft | `7584b9b` | 0.3.0 | 0.5.0 ⚠ |
+      | vectorcraft | `eec150e2` | 0.7.0 | 0.7.0 ✓ |
+      | wordcraft | `7584b9b` | 0.3.0 | 0.3.0 ✓ |
+      | deckcraft | `84acb49` | 0.4.0 | 0.4.0 ✓ |
+      | soundcraft | `240aa84` | 0.5.0 | 0.5.0 ✓ |
+      | effectcraft | `67434e9` | 0.8.0 | 0.8.0 ✓ |
+      | firecraft | `/nas/Temp/repos/FireCraft` | (verify per H2.0) | 0.1.0 ⚠ |
+
+      photocraft's registry says 0.5.0 but the sibling HEAD is at 0.3.0 —
+      the 0.5.0 row was added during the 3.12.0 wave before the sibling
+      was re-bumped. Either bump the sibling or revert the registry row.
+      firecraft's row stays at 0.1.0 until H2.0 resolves (the upstream
+      Cargo.toml version is the source of truth).
 
 ## Phase H4 — quality forward path
 
-- [ ] H4.1 Branch coverage 88.78% is the farthest gate from target.
-      Stretch goals: `src/shell/Settings.jsx` and `src/App.jsx` edge
-      branches. Every bump of `vitest.config.js` floors must cite the
-      measured numbers in a comment (established pattern).
-- [ ] H4.2 Dependency refresh: `npm outdated` inside `webos/`, upgrade
-      patch/minor first, run the full gate + sweep; pin only on evidence.
+- [ ] H4.1 **Branch coverage stretch to 90%+** (currently 88.78%, the
+      primary gap). Specific files to analyse and cover:
+
+      1. `src/shell/Settings.jsx` (57 lines) — a small component with one
+         early-exit `if` (line 31: `lastInitial !== args.initial`) that is
+         not exercised by the current test suite. Cover by rendering with a
+         non-default `initial` prop in a new `Settings.edge-cases.test.jsx`.
+      2. `src/App.jsx` (612 lines) — the root reducer; examine every
+         `switch`/`case` arm and every conditional branch (grep for `if`,
+         `else`, `catch`). Identify which arms are never dispatched by the
+         test harness. Add one spec per uncovered arm. `Panels.jsx`'s
+         `catch{}` block (proven V8 blind spot, 0% attributed) is
+         deliberate — do not chase it.
+      3. After any new spec, re-run `npm run coverage` and update the
+         floors in `vitest.config.js` with the measured numbers in a
+         comment: `// branch: X.XX% (measured Y.YY%, date)`.
+- [ ] H4.2 **Dependency refresh** (patch/minor first, major only on
+      evidence). From `webos/`:
+
+      1. `npm outdated --depth=0` — current layer only.
+      2. For each patch/minor: `npm install pkg@latest --save-exact`, run
+         `npm run ci`, sweep. If a new version is skipped (major), note the
+         reason in a SESSIONS entry.
+      3. For a major upgrade: create a single-commit trial branch, run the
+         full gate + sweep, then PR only if green.
+      4. After any install, `npm run ci` must be green before continuing.
 - [ ] H4.3 Aegis re-scan after any dependency or large feature change;
       triage into QUALITY-PROGRAM.md (dated section, established format).
-- [ ] H4.4 Re-run `packaging/e2e/webos-sweep.mjs` after any shell-level
-      feature; keep phase list in sync with new surfaces (add phases, do
-      not delete evidence lines).
+- [ ] H4.4 **Sweep phase sync**: after any shell-level feature (new app,
+      new window type, new OS surface), extend `webos-sweep.mjs` with a new
+      phase that exercises the new surface. Never delete existing phases —
+      they are evidence that those surfaces work. The sweep is the only
+      regression detector for rendering interactions that unit tests miss.
 
 ## Phase H5 — GitForge (operator-assisted)
 
@@ -246,7 +306,10 @@ source commit unverified — the bundle carries no version string).
 
 ## Do NOT (each has a reason)
 
-- Do not chase the 4 uncovered lines (unreachable / V8 quirk — proven).
+- Do not chase the 4 uncovered lines (unreachable default arms in
+  `calcState.jsx:126`, `MarkdownView.jsx:81`, `state.jsx:483` + V8
+  attribution quirk `Panels.jsx:336` — proven, documented in
+  QUALITY-PROGRAM.md; ratchets only go up).
 - Do not add `firecraft` to `packaging/fetch-apps.sh` (no upstream zips;
   `--force` would delete its checkout if paths ever collide).
 - Do not commit sibling repos' contents or fetched builds.
@@ -268,3 +331,5 @@ source commit unverified — the bundle carries no version string).
 | E2E proof | `packaging/e2e/*.mjs` run output + `$SWEEP_SHOTS` screenshots |
 | CI green | `gh run list` (Actions); GitForge container record in QUALITY-PROGRAM.md |
 | Production truth | `curl https://artcraft-webos.pages.dev/sw.js`; served bundle hash ⇄ local `webos/dist/index.html` |
+| Module index | `sed -n '/^## Module index$/,/^##/p' docs/planning/webos-apps/ARCHITECTURE.md | /usr/bin/grep -c '^- \`' → 110 rows (gated by `tests/docs-coverage.test.js`) |
+| Docs-ref gate | `npx vitest run tests/docs-references.test.js` — every cited repo path must exist (root + webos/ always; sibling refs skipped where siblings are absent) |

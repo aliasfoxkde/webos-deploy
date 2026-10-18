@@ -77,6 +77,26 @@ Phases of [QUALITY-PROGRAM.md](QUALITY-PROGRAM.md), all committed and pushed:
   screenshot.
 - Release: v3.15.0 (`50ed137`), deployed, production-verified.
 
+## 2026-10-18 — systematic handoff expansion
+
+- `npm run ci` green: 69 files / 1019 specs, coverage 96.76/88.78/96.02/99.92.
+- Cold-start: no new commits since `954eb09`; sibling repos unchanged.
+- Expanded HANDOFF.md:
+  - H2.0: 9 explicit sub-steps for verify-or-redeploy (was 1 dense para).
+  - H3.3: full version table from sibling checkouts — photocraft ⚠ mismatch
+    found (registry 0.5.0, sibling HEAD 0.3.0); firecraft ⚠ flagged pending
+    H2.0 resolution.
+  - H4.1: concrete file targets for branch coverage (Settings.jsx early-exit,
+    App.jsx reducer arms); rule: floors updated with measured numbers + date.
+  - H4.2: explicit patch/minor/major upgrade procedure.
+  - H4.4: sweep phase sync rule (never delete, only add).
+  - Do NOT: the 4 settled uncovered lines named explicitly.
+  - Evidence map: module-index row count command, docs-ref gate command.
+- Updated PROGRESS snapshot to 2026-10-18; ⚠ flags for firecraft H2.0 and
+  photocraft registry mismatch.
+- **photocraft** action required: either bump sibling to 0.5.0 or revert
+  WebOS registry to 0.3.0; check `git -C photocraft log --oneline -3`.
+
 ## 2026-10-15 — docs audit + handoff finalization (continuation boundary)
 
 - Drift check: this repo unchanged since `30cc6c6` (CI green, production
