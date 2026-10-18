@@ -77,6 +77,21 @@ Phases of [QUALITY-PROGRAM.md](QUALITY-PROGRAM.md), all committed and pushed:
   screenshot.
 - Release: v3.15.0 (`50ed137`), deployed, production-verified.
 
+## 2026-10-18 — handoff expansion + FireCraft v0.2.1 + v3.16.0
+
+- CI green (70/1023, coverage 96.78/88.78/96.02/99.92). No repo drift.
+- H4.1 partial: 4 Settings.jsx edge-case specs (deep-link retargeting,
+  unknown section guard, nav button click) — all green.
+  App.jsx branch stretch deferred (buildItems reducer needs deep OS state;
+  88.78% floor held).
+- H3.3 verified: photocraft sibling at v0.5.0 (not 0.3.0 as recorded);
+  row corrected, ⚠ removed.
+- **H2.0 + H6 done**: FireCraft v0.2.1 (6453440, wasm hash
+  60c9ae1a… vs deployed a7c2fc5b…) — rebuilt, MANIFEST verified,
+  deployed, registry bumped 0.1.0→0.2.1. WebOS v3.16.0 released
+  (firecraft 0.2.1 integration). Full x3 version bump confirmed.
+  Production https://artcraft-webos.pages.dev verified v3.16.0.
+
 ## 2026-10-18 — systematic handoff expansion
 
 - `npm run ci` green: 69 files / 1019 specs, coverage 96.76/88.78/96.02/99.92.
