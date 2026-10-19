@@ -1,3 +1,21 @@
+## 2026-10-19 — FireCraft H2/H4 complete; 3.17.0 shipped
+
+- **H2 FireCraft integration** all complete (H2.1–H2.6): bridge contract
+  documented; postToApp request/reply correlate; autosave (applied→exportDocument
+  →filePut, ready→fileGet→openDocument); open-with via Files context menu;
+  exportPng→Photos hand-off; E2E probe open→apply→exportDocument passes.
+- **H4 quality forward path** all complete: coverage floors maintained
+  (96.52% stmts / 88.58% branches / 95.93% funcs / 99.65% lines);
+  deps refreshed (vitest 5.0.5, coverage-v8, fake-indexeddb); Aegis
+  zero new findings; docs synced (HANDOFF, PROGRESS).
+- **Container revalidation** (H5.3): ran clean in node:24-trixie-slim.
+- **3.17.0 shipped**: version ×3 bumped, CI green, deployed to
+  https://artcraft-webos.pages.dev, hash verified.
+- **Audits done**: lint CLEAN (zero warnings), SCA 0 vulnerabilities,
+  Aegis zero new findings, registry verified (all icons exist), ATTRIBUTION
+  adequate (third-party apps use WebOS-drawn icons, craft/wallpapers covered).
+- **GitForge pipeline**: H5.1/H5.2 still pending operator registration.
+
 # Session log — ArtCraft WebOS
 
 Per-session work log, newest last. One entry per working session: scope,
