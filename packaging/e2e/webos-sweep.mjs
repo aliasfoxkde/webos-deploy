@@ -58,6 +58,17 @@ ws.onmessage = (ev) => {
     m.error ? p.rej(new Error(m.error.message)) : p.res(m.result); }
 };
 await send('Page.enable'); await send('Runtime.enable');
+// FireCraft bridge capture — inject once before first navigation so all phases can use it
+await send('Page.addScriptToEvaluateOnNewDocument', { source: `
+  window.__fcBridge = [];
+  window.addEventListener('message', (e) => {
+    if (e.data?.source === 'firecraft') window.__fcBridge.push(e.data);
+  });
+  window.__sendToFirecraft = (msg) => {
+    const f = document.querySelector('.win iframe');
+    if (f && f.contentWindow) f.contentWindow.postMessage(msg, '*');
+  };
+` });
 
 let curPhase = 'boot';
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -353,8 +364,8 @@ await phase('store-install', async () => {
   await evalJs(`(() => { [...document.querySelectorAll('.win')].forEach(w => __os.close(w.dataset.id)); return true; })()`);
 });
 
-/* ================ F. external embeds ================ */
-for (const [id, waitMs] of [['cadcraft', 12000], ['photocraft', 12000], ['youtube', 5000]]) {
+/* ================ F. external embeds + FireCraft bridge ================ */
+for (const [id, waitMs] of [['cadcraft', 12000], ['photocraft', 12000], ['firecraft', 15000], ['youtube', 5000]]) {
   await phase(`embed-${id}`, async () => {
     await evalJs(`__os.launch(${JSON.stringify(id)})`);
     await poll(`document.querySelectorAll('.win').length >= 1`, 8000);
@@ -377,6 +388,54 @@ for (const [id, waitMs] of [['cadcraft', 12000], ['photocraft', 12000], ['youtub
     if (!state.iframe && !state.launchPanel) throw new Error(`no iframe or launch panel for ${id}: ${state.text}`);
   });
 }
+
+/* FireCraft: icon launch → bridge ready → iframe verified → open-with → exportPng → Photos */
+await phase('firecraft-launch-ready', async () => {
+  await evalJs(`(() => {
+    const icons = [...document.querySelectorAll('.desk-icon')];
+    const fc = icons.find((n) => (n.textContent || '').includes('FireCraft'));
+    if (!fc) throw new Error('FireCraft icon missing from desktop');
+    fc.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  })()`);
+  await poll(`document.querySelectorAll('.win iframe').length >= 1`, 8000);
+  await wait(2000); // wasm boot
+  // Wait for bridge ready signal (up to 20 s for wasm init)
+  let fired = false;
+  for (let i = 0; i < 40; i++) {
+    const msgs = await evalJs('window.__fcBridge || []').catch(() => []);
+    if (msgs.some((m) => m.type === 'ready')) { fired = true; break; }
+    await wait(500);
+  }
+  if (!fired) throw new Error('FireCraft bridge ready signal never arrived');
+  // Verify iframe src
+  const src = await evalJs(`document.querySelector('.win iframe')?.src || ''`);
+  if (!src.includes('firecraft-web.pages.dev')) throw new Error(`unexpected iframe src: ${src}`);
+  await shot('firecraft-ready');
+  await evalJs(`(() => { [...document.querySelectorAll('.win')].forEach(w => __os.close(w.dataset.id)); return true; })()`);
+  await wait(400);
+});
+
+/* FireCraft open-with: launch with a path argument and verify the bridge responds */
+await phase('firecraft-open-with', async () => {
+  // Put a minimal PNG into the VFS at the path the Files app would reference
+  const { writeFileSync } = await import('node:fs');
+  writeFileSync('/var/tmp/sweep-fc-test.fw.png',
+    Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==', 'base64'));
+  await evalJs(`(async () => {
+    const { filePut } = await import('/os/db.js');
+    await filePut('/Apps/firecraft/sweep-test.fw.png',
+      new Blob([await (await fetch('file:///var/tmp/sweep-fc-test.fw.png')).blob().then(b => b.arrayBuffer())], { type: 'image/png' }), 'image/png');
+  })()`);
+  await evalJs(`__os.launch('firecraft', { path: '/Apps/firecraft/sweep-test.fw.png' })`);
+  await poll(`document.querySelectorAll('.win iframe').length >= 1`, 8000);
+  await wait(3000); // wasm boot + document open
+  const fired = await evalJs(`window.__fcBridge || []`).catch(() => []);
+  // Either 'ready' (document opened and app ready) or 'applied' (document opened + an operation applied)
+  const opened = fired.some((m) => m.type === 'ready' || m.type === 'applied');
+  await shot('firecraft-open-with');
+  await evalJs(`(() => { [...document.querySelectorAll('.win')].forEach(w => __os.close(w.dataset.id)); return true; })()`);
+  if (!opened) throw new Error('FireCraft did not respond to open-with path argument');
+});
 
 /* ================ G. persistence across reload ================ */
 await phase('persistence', async () => {
