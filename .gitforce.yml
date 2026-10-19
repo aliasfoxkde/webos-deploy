@@ -29,6 +29,8 @@ jobs:
         run: cd webos && npm ci
       - name: lint
         run: cd webos && node node_modules/.bin/eslint .
+      - name: docs coverage gate
+        run: cd webos && npx vitest run tests/docs-coverage.test.js
       - name: wcag contrast audit
         run: cd webos && npx vitest run tests/contrast-audit.test.js tests/personas-theme.test.js
       - name: tests + coverage ratchet

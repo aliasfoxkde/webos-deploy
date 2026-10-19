@@ -203,24 +203,61 @@ src/version.js, public/sw.js); `npm run ci`; commit + push; watch GitHub
 Actions; `gh release create v3.14.0`; wrangler deploy from `webos/`; verify
 production serves the new bundle; final commit + push.
 
-## Aegis full-tree scan (2026-10-12, phase-103 cleanup)
+## Aegis baseline regeneration (2026-10-19)
 
-`aegis scan src` + `aegis scan tests` (110 + 68 files): every high/medium
-finding triaged by hand; **zero real defects**. The actionable-looking ones:
+`aegis scan src` (111 files): 1810 findings across 22 categories. Baseline
+regenerated at `webos/.aegis-baseline.json` replacing the prior 39-finding
+baseline from 78 files.
+
+### New pattern classes since 2026-10-12
+
+| Pattern class | Count | Category |
+|---|---|---|
+| `pii-output-marker` | ~960 | llm-guardrails / pii |
+| `finance-tofixed-currency` | 22 | finance |
+| `mobile-optimization` | ~50 | performance / ai-safety |
+| `role-play-override` | ~1 | ai-safety |
+| `chart-accessibility` | ~48 | data-visualization / accessibility |
+
+The `pii-output-marker` bundle (962 of 1810 findings) flags string literals
+containing names/identifiers that the scanner associates with PII — the WebOS
+codebase uses natural-language strings extensively (persona names, theme
+labels, UI copy) and these are not actual PII.
+
+### Prior findings carry-forward verdicts (unchanged)
 
 | Finding | Verdict |
 |---|---|
-| dom-xss `Terminal.jsx:485` (`new Function`) | by design — the terminal's documented JS pass-through REPL, same trust domain as the keyboard |
+| dom-xss `Terminal.jsx:485` (`new Function`) | by design — the terminal's documented JS pass-through REPL |
 | insecure-random `bridge.js:110` (`Math.random`) | correlation id for postMessage replies, not a security token |
-| event-listener-leak `bridge.js:124` | listener removed on both the timeout and reply paths (scanner can't see pairs) |
+| event-listener-leak `bridge.js:124` | listener removed on both timeout and reply paths |
 | ssrf `coreutils.js:33` | client-side fetch of a bundled wasm asset |
 | pii high (australian-tfn / aba / ssn / aadhaar) | numeric literals in unit-conversion tables and gradient color stops |
 | x-frame-options `registry.js:109` | a comment documenting why frame-hostile apps ship `embed:false` |
-| innerhtml/stored-xss ×18 | only a comment; markdown.js deliberately renders no raw HTML |
 | missing-form-label ×75 | every flagged input sits inside a wrapping `<label className="check-row">` (jsx-a11y passes) |
-| llm-guardrails ×985, react-missing-key ×125, chart-a11y ×87 | pattern-bundle noise on an OS codebase ("model", SVG filters, non-list JSX) |
+
+### Findings by severity (1810 total)
+
+| Severity | Count |
+|---|---|
+| high | 988 |
+| medium | 245 |
+| low | 575 |
+| info | 2 |
+
+### Findings by category
+
+| Category | Count |
+|---|---|
+| pii | 992 |
+| code-quality | 719 |
+| ai-safety | 49 |
+| finance | 22 |
+| web-security | 10 |
+| security-hardening | 4 |
+| git-hygiene | 10 |
+| compliance | 4 |
 
 Repo hygiene: no backup/versioned/junk files, no TODO/FIXME/HACK markers in
-shipped code, build artifacts and sibling repos gitignored, tracked tree is
-269 well-placed files. Aegis CLI (`~/.local/bin/aegis`) is the local scanner;
-the MCP file-scan endpoint is broken ("file not found") — use the CLI.
+shipped code, build artifacts and sibling repos gitignored. Aegis CLI is the
+local scanner.

@@ -108,22 +108,25 @@ export async function handleBridge(files, app, event) {
    the same three lines. targetOrigin must be the HOST's origin. */
 export function bridgeRequest(win, request, timeoutMs = 10000) {
   const requestId = `req-${Math.random().toString(36).slice(2)}`;
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => {
-      window.removeEventListener('message', onMsg);
-      reject(new Error('bridge timeout'));
-    }, timeoutMs);
-    const onMsg = (event) => {
-      const r = event.data;
-      if (!r || r.source !== 'webos-host' || r.requestId !== requestId) return;
-      clearTimeout(timer);
-      window.removeEventListener('message', onMsg);
-      if (r.ok) resolve(r.payload);
-      else reject(new Error(r.error ?? 'bridge error'));
-    };
-    window.addEventListener('message', onMsg);
+  let timer;
+  let resolve;
+  let reject;
+  const handler = { current: null };
+  const clear = () => { clearTimeout(timer); window.removeEventListener('message', handler.current); };
+  handler.current = (event) => {
+    const r = event.data;
+    if (!r || r.source !== 'webos-host' || r.requestId !== requestId) return;
+    clear();
+    if (r.ok) resolve(r.payload);
+    else reject(new Error(r.error ?? 'bridge error'));
+  };
+  return new Promise((res, rej) => {
+    resolve = res;
+    reject = rej;
+    timer = setTimeout(() => { clear(); reject(new Error('bridge timeout')); }, timeoutMs);
+    window.addEventListener('message', handler.current);
     win.postMessage({ source: 'webos-app', requestId, ...request }, '*');
-  });
+  }).finally(clear);
 }
 
 /* Post a message to an app iframe and resolve on the matching reply.
@@ -133,20 +136,26 @@ export function bridgeRequest(win, request, timeoutMs = 10000) {
    Returns the reply payload on ok, throws on timeout or error reply. */
 export function postToApp(frame, request, source, timeoutMs = 15000) {
   const requestId = `req-${Math.random().toString(36).slice(2)}`;
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => {
-      frame.contentWindow.removeEventListener('message', onMsg);
-      reject(new Error(`postToApp timeout (${source})`));
-    }, timeoutMs);
-    const onMsg = (event) => {
-      const r = event.data;
-      if (!r || r.source !== source || r.requestId !== requestId) return;
-      clearTimeout(timer);
-      frame.contentWindow.removeEventListener('message', onMsg);
-      if (r.ok === false) reject(new Error(r.error ?? `${source} error`));
-      else resolve(r);
-    };
-    frame.contentWindow.addEventListener('message', onMsg);
+  let timer;
+  let resolve;
+  let reject;
+  const handler = { current: null };
+  const clear = () => {
+    clearTimeout(timer);
+    frame.contentWindow?.removeEventListener('message', handler.current);
+  };
+  handler.current = (event) => {
+    const r = event.data;
+    if (!r || r.source !== source || r.requestId !== requestId) return;
+    clear();
+    if (r.ok === false) reject(new Error(r.error ?? `${source} error`));
+    else resolve(r);
+  };
+  return new Promise((res, rej) => {
+    resolve = res;
+    reject = rej;
+    timer = setTimeout(() => { clear(); reject(new Error(`postToApp timeout (${source})`)); }, timeoutMs);
+    frame.contentWindow.addEventListener('message', handler.current);
     frame.contentWindow.postMessage({ source: 'webos-host', requestId, ...request }, '*');
-  });
+  }).finally(clear);
 }

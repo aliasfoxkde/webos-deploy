@@ -12,12 +12,12 @@ of every working session. Plan-of-record for open work:
 | Production | https://artcraft-webos.pages.dev — served bundle hash matches local `webos/dist`, `sw.js` cache `webos-v3.17.0` |
 | FireCraft | https://firecraft-web.pages.dev — v0.2.1 integrated, bridge autosave/open-with/exportPng→Photos; save-as dialog for export-to-Files (2026-10-19) |
 | Tests | 1052 specs / 73 files, `npm run ci` green |
-| Coverage | 96.5% stmts / 88.5% branches / 95.87% funcs / **99.58% lines**; floors 96.5/88.5/95.8/99.6 in `webos/vitest.config.js` |
+| Coverage | 96.65% stmts / 88.69% branches / 96.02% funcs / **99.78% lines**; floors 96.5/88.5/95.8/99.6 in `webos/vitest.config.js` |
 | Lint | strictest ruleset, zero warnings |
 | Accessibility | WCAG 2.1 AAA token gates incl. wallpaper-extreme flattening + desktop scrim pills |
-| Docs coverage | ARCHITECTURE.md Module index (110 rows) ⇄ src/ enforced by `tests/docs-coverage.test.js` |
-| CI | GitHub Actions green on `main`; GitForge job validated in a clean `node:24-trixie-slim` container (registration = operator action) |
-| Aegis | full-tree scans triaged — zero real defects (record in QUALITY-PROGRAM.md) |
+| Docs coverage | ARCHITECTURE.md Module index (110 rows) ⇄ src/ enforced by `tests/docs-coverage.test.js` — now in GitForge CI pipeline |
+| CI | GitHub Actions green on `main`; GitForge pipeline includes docs-coverage gate (added 2026-10-19) |
+| Aegis | baseline regeneration in progress (2026-10-19; new patterns: pii-output-marker, finance-tofixed-currency, mobile-optimization, role-play-override, chart-accessibility) |
 
 ## Done (evidence in HISTORY.md / SESSIONS.md)
 
