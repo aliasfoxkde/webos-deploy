@@ -629,6 +629,17 @@ body[data-mode="mobile"] #icon-grid { overflow-y: auto; }
 .props-desc { font-size: 0.85rem; line-height: 1.55; margin: 14px 0 0; }
 .props-actions { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; align-items: center; }
 
+/* ---- shared save-as dialog ---- */
+.save-dialog { width: min(420px, calc(100vw - 32px)); }
+.save-dialog-body { margin-top: 14px; }
+.save-dialog-filename { display: flex; flex-direction: column; gap: 5px; font-size: 0.83rem; }
+.save-dialog-filename input {
+  font-size: 0.9rem; padding: 7px 10px; border-radius: 8px;
+  background: var(--paper); border: 1px solid var(--line); color: var(--text);
+  outline: none; transition: border-color 0.15s;
+}
+.save-dialog-filename input:focus { border-color: var(--focus); }
+
 /* ---- widget sidebar ---- */
 #sidebar {
   position: fixed; top: 0; right: 0; bottom: 52px; width: 320px; z-index: 480;

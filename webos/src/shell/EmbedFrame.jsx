@@ -9,7 +9,6 @@ import { useOS } from '../os/state.jsx';
    Toggle: localStorage key 'webos.firecraft.autosave' (default true). */
 const AUTOSAVE_KEY = 'webos.firecraft.autosave';
 const AUTOSAVE_PATH = '/Apps/firecraft/autosave.fw.png';
-const EXPORT_PATH_PREFIX = '/Apps/firecraft/export-';
 let _debounceTimer = null;
 
 export function firecraftAutosave(frame) {
@@ -44,7 +43,7 @@ export async function firecraftRestore(frame, path) {
    serves webos:file-* requests from this app's private /Apps/<id>/ folder.
    handleBridge checks the message itself; here we additionally pin the event
    to THIS iframe's window so sibling frames can't impersonate each other. */
-export default function EmbedFrame({ app, onLoaded, onMessage, args }) {
+export default function EmbedFrame({ app, onLoaded, onMessage, args, onExportRequest }) {
   // NB: no onError/failed fallback here — React never dispatches `error` for
   // iframes (it traps only `load`), so such a handler would be dead code.
   // Embed failures are handled by the honest blocked panel for non-embed apps.
@@ -60,17 +59,13 @@ export default function EmbedFrame({ app, onLoaded, onMessage, args }) {
       if (fd?.source === 'firecraft') {
         if (fd.type === 'applied') firecraftAutosave(frame.current);
         if (fd.type === 'ready') firecraftRestore(frame.current, args?.path);
-        // exportPng: export PNG and open in Photos.
+        // exportPng: delegate to the onExportRequest callback so the window layer
+        // can show a save-dialog before writing to the Files disk.
         if (fd.type === 'exportPng') {
-          const os = await import('../os/state.jsx').then((m) => m.useOS());
           try {
             const result = await postToApp(frame.current, { type: 'exportPng' }, 'firecraft');
-            if (result.bytes) {
-              const blob = new Blob([result.bytes], { type: 'image/png' });
-              const ts = Date.now();
-              const path = `${EXPORT_PATH_PREFIX}${ts}.png`;
-              await filePut(path, blob, 'image/png');
-              os.launch('photos', { path });
+            if (result.bytes && onExportRequest) {
+              onExportRequest(result.bytes);
             }
           } catch { /* export failures are silent */ }
         }
@@ -82,7 +77,7 @@ export default function EmbedFrame({ app, onLoaded, onMessage, args }) {
     };
     window.addEventListener('message', onMsg);
     return () => window.removeEventListener('message', onMsg);
-  }, [embed, app, onMessage, args]);
+  }, [embed, app, onMessage, args, onExportRequest]);
 
   if (!embed) {
     return (

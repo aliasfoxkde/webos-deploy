@@ -308,6 +308,7 @@ sections above and below; this index is the complete file-level map.
 - `src/shell/MobileDrawer.jsx` — full-screen app grid for mobile mode
 - `src/shell/Properties.jsx` — app property sheet (registry row, stars, actions) opened from any icon/taskbar/titlebar menu
 - `src/shell/SaverPreview.jsx` — Settings mini-preview of the selected screen-saver kind (reuses the fullscreen implementations)
+- `src/shell/SaveDialog.jsx` — shared save-as dialog for export handoffs: filename input over a blurred backdrop, calls onSave with the chosen name; rendered through a portal into document.body
 - `src/shell/Screensaver.jsx` — idle screen saver (clock/photos/wireframe modes)
 - `src/shell/Settings.jsx` — Settings window: section navigation over the Panels + Appearance views
 - `src/shell/Sidebar.jsx` — widget sidebar (weather/clock/battery/events/notes/storage; enable + reorder persisted)

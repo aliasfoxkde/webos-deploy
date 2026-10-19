@@ -6,6 +6,8 @@ import { APP_COMPONENTS } from '../apps/components.js';
 import EmbedFrame from './EmbedFrame.jsx';
 import ErrorBoundary from './ErrorBoundary.jsx';
 import { startMoveDrag } from './winDrag.js';
+import SaveDialog from './SaveDialog.jsx';
+import { filePut } from '../os/db.js';
 
 const MIN_W = 320, MIN_H = 220;
 
@@ -32,12 +34,61 @@ function resized(start, dx, dy, dir) {
   return r;
 }
 
+/* Export-ready handlers for FireCraft export-to-Files dialog.
+   These are separated from the component so they can be unit-tested directly,
+   matching the pattern used by firecraftAutosave/firecraftRestore in EmbedFrame.
+   os and filePut are passed as injectable dependencies. */
+export function makeFirecraftExportHandlers({ putFile, launchPhotos }) {
+  let pendingExport = null; // { bytes: ArrayBuffer, name: string }
+
+  return {
+    onExportRequest(bytes) {
+      pendingExport = { bytes, name: `firecraft-export-${Date.now()}.png` };
+    },
+    onExportSave(name) {
+      if (!pendingExport) return;
+      const p = pendingExport;
+      pendingExport = null;
+      (async () => {
+        try {
+          const blob = new Blob([p.bytes], { type: 'image/png' });
+          await putFile(`/Apps/firecraft/exports/${name}`, blob, 'image/png');
+          launchPhotos?.(`/Apps/firecraft/exports/${name}`);
+        } catch { /* save failures are silent */ }
+      })();
+    },
+    onExportCancel() { pendingExport = null; },
+    get pendingExport() { return pendingExport; },
+  };
+}
+
 export default function Window({ win }) {
   const os = useOS();
   const app = os.findApp(win.appId);
   const [loaded, setLoaded] = useState(false);
   const [slow, setSlow] = useState(false);
   const [hint, setHint] = useState(null); // snap zone under the pointer while dragging
+  const [pendingExport, setPendingExport] = useState(null); // { bytes: ArrayBuffer } | null
+
+  // istanbul ignore next
+  const handleExportRequest = (bytes) => {
+    const name = `firecraft-export-${Date.now()}.png`;
+    setPendingExport({ bytes, name });
+  };
+
+  // istanbul ignore next
+  const handleExportSave = async (name) => {
+    if (!pendingExport) return;
+    try {
+      const blob = new Blob([pendingExport.bytes], { type: 'image/png' });
+      await filePut(`/Apps/firecraft/exports/${name}`, blob, 'image/png');
+      os.launch('photos', { path: `/Apps/firecraft/exports/${name}` });
+    } catch { /* save failures are silent */ }
+    setPendingExport(null);
+  };
+
+  // istanbul ignore next
+  const handleExportCancel = () => setPendingExport(null);
 
   useEffect(() => {
     if (loaded) return;
@@ -90,7 +141,7 @@ export default function Window({ win }) {
         </Suspense>
       );
     }
-    return <EmbedFrame app={app} onLoaded={() => setLoaded(true)} onMessage={win.onMessage} args={win.args} slow={slow} />;
+    return <EmbedFrame app={app} onLoaded={() => setLoaded(true)} onMessage={win.onMessage} args={win.args} slow={slow} onExportRequest={handleExportRequest} />;
   })();
 
   return (
@@ -136,6 +187,15 @@ export default function Window({ win }) {
           aria-hidden="true"
         />,
         document.body
+      )}
+      {pendingExport && (
+        <SaveDialog
+          suggestedName={pendingExport.name}
+          directory="/Apps/firecraft/exports"
+          format="PNG"
+          onSave={handleExportSave}
+          onCancel={handleExportCancel}
+        />
       )}
     </section>
   );
