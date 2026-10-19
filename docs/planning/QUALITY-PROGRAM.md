@@ -108,7 +108,7 @@ scan of `src` = 0 findings, contrast gate 15/15, repo clean at `914257b`):
 | Lint | ESLint 9 flat: recommended + react-hooks + jsx-a11y + react; `no-console: error` in src; zero-warning gate | not yet "strictest sensible" (equality, coercion, var/let) |
 | A11y | auditor enforces AAA on danger/paper + accent-ink + text/dim, AA for danger over flattened chrome, 1.4.11 ring | not every ink/surface token pair is enumerated |
 | CI (GitHub) | one job: lint → contrast → coverage → build → artifact | duplicate artifact step (fixed 2026-10-12); no concurrency/timeout/least-privilege/SHA pinning |
-| CI (GitForge) | `.gitforce.yml` mirrors the gates; **repo not registered** (needs operator credentials) | validate the exact steps in a clean container locally |
+| CI (GitForge) | `.gitforce.yml` mirrors the gates; pipeline registered (push, 4e1079cd…ccc957); GitHub Actions green on every push as primary gate | runner dispatch pending — NAS workspace bind mount causes `npm shim: Operation not permitted`; workaround: invoke `node node_modules/.bin/eslint .` directly |
 | Docs | ARCHITECTURE.md documents state/layout/browser/liquid-glass | **no per-module index** for the 110 files under `src/` (the phase-7 claim above was overstated on this point) |
 | Hygiene | markers clean; 0 `console.*` calls in src; deps all referenced | one unused devDep: `@testing-library/user-event` |
 
