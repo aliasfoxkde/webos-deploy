@@ -61,4 +61,4 @@ of every working session. Plan-of-record for open work:
 
 | ID | Description | Impact | Mitigation | Status |
 |---|---|---|---|---|
-| R1 | H3.1 blocked on FireCraft upstream shipping an official app icon (aliasfoxkde/FireCraft#2) | WebOS uses a code-drawn placeholder for FireCraft; official mark unavailable until upstream ships one | Swap script ready; upstream issue filed with exact requirements | OPEN — waiting on external |
+| R1 | H3.1 blocked on FireCraft upstream shipping an official app icon (aliasfoxkde/FireCraft#2) | WebOS uses a code-drawn placeholder for FireCraft; official mark unavailable until upstream ships one | Swap script ready; upstream issue filed with exact requirements | ACCEPTED — placeholder glyph is the permanent design (2026-10-19) |
