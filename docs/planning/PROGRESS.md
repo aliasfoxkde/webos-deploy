@@ -8,7 +8,7 @@ of every working session. Plan-of-record for open work:
 
 | Dimension | State |
 |---|---|
-| Released / deployed version | **3.17.0** → next: **3.18.0** ([v3.17.0](https://github.com/aliasfoxkde/webos-deploy/releases/tag/v3.17.0)) |
+| Released / deployed version | **3.18.0** → next: **3.19.0** ([v3.17.0](https://github.com/aliasfoxkde/webos-deploy/releases/tag/v3.17.0)) |
 | Production | https://artcraft-webos.pages.dev — served bundle hash matches local `webos/dist`, `sw.js` cache `webos-v3.17.0` |
 | FireCraft | https://firecraft-web.pages.dev — v0.2.1 integrated, bridge autosave/open-with/exportPng→Photos; save-as dialog for export-to-Files (2026-10-19) |
 | Tests | 1052 specs / 73 files, `npm run ci` green |
