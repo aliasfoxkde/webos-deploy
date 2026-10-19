@@ -180,10 +180,11 @@ source commit unverified — the bundle carries no version string).
 
 ## Phase H3 — upstream adoption watch
 
-- [ ] H3.1 When FireCraft ships an official app mark: replace
-      `webos/public/icons/craft/firecraft.png` with the upstream 256 px
-      resize, swap the ATTRIBUTION note for a proper sourced row (their
-      `assets/app-icon/`), delete `packaging/icons-src/firecraft.svg`.
+- [x] H3.1 **Prepared** (`packaging/firecraft-swap-mark.sh`):
+      `bash packaging/firecraft-swap-mark.sh` fetches the upstream release
+      zip, extracts the icon, resizes to 256 px, updates ATTRIBUTION.md and
+      the SVG stub. Run it when FireCraft ships an official mark. Dry-run
+      verified clean (`--dry-run` prints the full plan before touching anything).
 - [ ] H3.2 When FireCraft (or deck/sound/effect) publishes upstream
       release zips: add it to `packaging/fetch-apps.sh`'s list, migrate
       deployment to the fetched build, and update CLAUDE.md/PROGRESS.md —
