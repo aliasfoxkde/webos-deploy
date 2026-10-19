@@ -56,3 +56,9 @@ of every working session. Plan-of-record for open work:
   invoking the arrow functions (click the buttons), not refactoring JSX.
 - Cloudflare compute on the rendering path — verified absent; keep it that
   way (static Pages + thin proxy worker only).
+
+## Risk register
+
+| ID | Description | Impact | Mitigation | Status |
+|---|---|---|---|---|
+| R1 | H3.1 blocked on FireCraft upstream shipping an official app icon (aliasfoxkde/FireCraft#2) | WebOS uses a code-drawn placeholder for FireCraft; official mark unavailable until upstream ships one | Swap script ready; upstream issue filed with exact requirements | OPEN — waiting on external |
