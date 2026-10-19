@@ -265,7 +265,7 @@ source commit unverified — the bundle carries no version string).
       EACCES otherwise). Prefer copying the repo to /var/tmp instead of
       mounting the NAS path when practical.
 
-## Phase H6 — release checklist (next: 3.16.0)
+## Phase H6 — release checklist (next: 3.18.0)
 
 1. [ ] Pick the version (user-facing change → minor; fix-only → patch).
 2. [ ] Bump ×3 (`package.json`, `src/version.js`, `public/sw.js`).
