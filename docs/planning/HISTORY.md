@@ -27,6 +27,7 @@ summaries (full notes live on each release page).
 | v3.13.0 | 2026-10-11 | Theme builder + wallpaper compositor/studio |
 | v3.14.0 | 2026-10-12 | WCAG AAA token enumeration + real contrast fixes; 1017-spec suite; coverage floors 96.5/88.5/95.8/99.8 (99.92% lines); docs-coverage gate (Module index ⇄ src/); strict lint; CI hardening; GitForge clean-container validation; full-tree Aegis triage |
 | v3.16.0 | 2026-10-18 | FireCraft v0.2.1 integrated; 4 Settings edge-case specs; H3.3 photocraft corrected |
+| v3.17.0 | 2026-10-19 | FireCraft H2 complete (bridge/autosave/open-with/exportPng→Photos/E2E probe); H4 quality forward path complete (deps refreshed, Aegis clean, docs synced); H5.3 container revalidation clean; 1037 specs, coverage floors maintained |
 | v3.15.0 | 2026-10-13 | FireCraft joins the desktop as the twelfth craft app (default app, own Pages project, original code-drawn mark); Welcome copy → 12 |
 
 ## Deployment map
@@ -54,6 +55,11 @@ Static Pages deployments only — no compute on the rendering path.
   bridge `{source:'firecraft',type:'ready'}` → full window UI: menus,
   Pages/Layers/States/Library/History, status bar `ready`); production
   verified (bundle hash match, `webos-v3.15.0`, FireCraft row + icon live).
+- **2026-10-19 (v3.17.0)**: `npm run ci` green (72 files / 1037 specs);
+  full FireCraft H2/H4 work shipped; container revalidation clean in
+  `node:24-trixie-slim`; Actions green on `376b509`; production verified
+  (bundle hash `index-DT3Qpkrn.js`, `webos-v3.17.0` cache, FireCraft
+  autosave/open-with/exportPng→Photos all wired).
 - E2E tooling (committed, survives scratch GC): `packaging/e2e/webos-sweep.mjs`
   (full-system sweep) and `packaging/e2e/firecraft-embed-probe.mjs`
   (FireCraft bridge probe; `FC_BASE_URL=` for production runs).
