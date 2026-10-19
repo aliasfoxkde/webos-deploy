@@ -27,12 +27,12 @@ export default defineConfig({
       // Raise as tests land; a regression in any metric fails `npm run
       // coverage`.
       thresholds: {
-        // ratchets only ever go up; measured 2026-10-12:
-        // 96.49 / 88.50 / 95.93 / 99.61 (4 uncovered lines, all documented)
-        statements: 96.5,
-        branches: 88.5,
-        functions: 95.8,
-        lines: 99.6,
+        // ratchets only ever go up; measured 2026-10-19:
+        // 96.65 / 88.69 / 96.02 / 99.78 (4 uncovered lines, all documented)
+        statements: 96.6,
+        branches: 88.6,
+        functions: 96.0,
+        lines: 99.7,
       },
     },
   },

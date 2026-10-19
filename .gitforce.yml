@@ -9,7 +9,7 @@
 # The coverage step enforces the ratchet in webos/vitest.config.js and runs
 # the whole suite — including the WCAG contrast auditor
 # (tests/contrast-audit.test.js) and the persona/theme gate
-# (tests/personas-theme.test.js).
+# (tests/personas-theme.test.js tests/docs-references.test.js tests/glass-tokens.test.js).
 #
 # node:24 — matches the version the suite is validated against locally
 # (v24.x); happy-dom 20 + vitest 5 are happy there.
@@ -32,7 +32,7 @@ jobs:
       - name: docs coverage gate
         run: cd webos && npx vitest run tests/docs-coverage.test.js
       - name: wcag contrast audit
-        run: cd webos && npx vitest run tests/contrast-audit.test.js tests/personas-theme.test.js
+        run: cd webos && npx vitest run tests/contrast-audit.test.js tests/personas-theme.test.js tests/docs-references.test.js tests/glass-tokens.test.js
       - name: tests + coverage ratchet
         run: cd webos && npm run coverage
       - name: build
