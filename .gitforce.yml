@@ -28,7 +28,7 @@ jobs:
       - name: install
         run: cd webos && npm ci
       - name: lint
-        run: cd webos && npm run lint
+        run: cd webos && node node_modules/.bin/eslint .
       - name: wcag contrast audit
         run: cd webos && npx vitest run tests/contrast-audit.test.js tests/personas-theme.test.js
       - name: tests + coverage ratchet
