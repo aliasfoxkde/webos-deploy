@@ -37,3 +37,10 @@ jobs:
         run: cd webos && npm run coverage
       - name: build
         run: cd webos && npm run build
+      # E2E sweep: requires chromium in the runner image. Uncomment when the
+      # GitForge image ships with chromium, or install first via an `apt-get`
+      # install step. Build + sweep adds ~2-3 min to the pipeline.
+      # - name: e2e sweep
+      #   run: |
+      #     cd webos && npm run build
+      #     node ../packaging/e2e/webos-sweep.mjs
