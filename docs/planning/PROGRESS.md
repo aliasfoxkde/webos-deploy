@@ -4,14 +4,14 @@ Live status board. Update this (and [SESSIONS.md](SESSIONS.md)) at the end
 of every working session. Plan-of-record for open work:
 [HANDOFF.md](HANDOFF.md).
 
-## Snapshot (verified 2026-10-18)
+## Snapshot (verified 2026-10-19)
 
 | Dimension | State |
 |---|---|
-| Released / deployed version | **3.16.0** → next: **3.17.0** ([v3.16.0](https://github.com/aliasfoxkde/webos-deploy/releases/tag/v3.16.0)) |
-| Production | https://artcraft-webos.pages.dev — served bundle hash matches local `webos/dist`, `sw.js` cache `webos-v3.16.0` |
+| Released / deployed version | **3.17.0** → next: **3.18.0** ([v3.17.0](https://github.com/aliasfoxkde/webos-deploy/releases/tag/v3.17.0)) |
+| Production | https://artcraft-webos.pages.dev — served bundle hash matches local `webos/dist`, `sw.js` cache `webos-v3.17.0` |
 | FireCraft | https://firecraft-web.pages.dev — v0.2.1 integrated, bridge autosave/open-with/exportPng→Photos (local + production) |
-| Tests | 1034 specs / 72 files, `npm run ci` green |
+| Tests | 1037 specs / 72 files, `npm run ci` green |
 | Coverage | 96.54% stmts / 88.58% branches / 95.98% funcs / **99.65% lines**; floors 96.5/88.5/95.8/99.6 in `webos/vitest.config.js` |
 | Lint | strictest ruleset, zero warnings |
 | Accessibility | WCAG 2.1 AAA token gates incl. wallpaper-extreme flattening + desktop scrim pills |
@@ -33,7 +33,7 @@ of every working session. Plan-of-record for open work:
 ## Open (ordered; atomic tasks in HANDOFF.md)
 
 - [ ] **H1** Routine-change loop — standing procedure, apply per change.
-- [x] **H2** FireCraft: H2.0–H2.6 complete — v0.2.1 deployed, v3.16.0 shipped.
+- [x] **H2** FireCraft: H2.0–H2.6 complete — v0.2.1 deployed, v3.17.0 shipped.
       H2.1 contract documented; H2.2 postToApp correlate implemented; H2.3
       autosave (applied→exportDocument→filePut, ready→fileGet→openDocument);
       H2.4 open-with via Files context menu; H2.5 exportPng→Photos
