@@ -28,6 +28,7 @@ summaries (full notes live on each release page).
 | v3.14.0 | 2026-10-12 | WCAG AAA token enumeration + real contrast fixes; 1017-spec suite; coverage floors 96.5/88.5/95.8/99.8 (99.92% lines); docs-coverage gate (Module index ⇄ src/); strict lint; CI hardening; GitForge clean-container validation; full-tree Aegis triage |
 | v3.16.0 | 2026-10-18 | FireCraft v0.2.1 integrated; 4 Settings edge-case specs; H3.3 photocraft corrected |
 | v3.17.0 | 2026-10-19 | FireCraft H2 complete (bridge/autosave/open-with/exportPng→Photos/E2E probe); H4 quality forward path complete (deps refreshed, Aegis clean, docs synced); H5.3 container revalidation clean; 1037 specs, coverage floors maintained |
+| v3.18.0 | 2026-10-19 | fix(bridge): close event-listener-leak in bridgeRequest/postToApp; chore(.gitforce): add docs-coverage gate; chore(aegis): regenerate baseline (1810 findings, 111 files); H3.2 firecraft fetch-apps entry complete; 1052 specs, 99.78% lines |
 | v3.15.0 | 2026-10-13 | FireCraft joins the desktop as the twelfth craft app (default app, own Pages project, original code-drawn mark); Welcome copy → 12 |
 
 ## Deployment map
