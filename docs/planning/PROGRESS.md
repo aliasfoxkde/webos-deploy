@@ -10,9 +10,9 @@ of every working session. Plan-of-record for open work:
 |---|---|
 | Released / deployed version | **3.17.0** → next: **3.18.0** ([v3.17.0](https://github.com/aliasfoxkde/webos-deploy/releases/tag/v3.17.0)) |
 | Production | https://artcraft-webos.pages.dev — served bundle hash matches local `webos/dist`, `sw.js` cache `webos-v3.17.0` |
-| FireCraft | https://firecraft-web.pages.dev — v0.2.1 integrated, bridge autosave/open-with/exportPng→Photos (local + production) |
-| Tests | 1037 specs / 72 files, `npm run ci` green |
-| Coverage | 96.54% stmts / 88.58% branches / 95.98% funcs / **99.65% lines**; floors 96.5/88.5/95.8/99.6 in `webos/vitest.config.js` |
+| FireCraft | https://firecraft-web.pages.dev — v0.2.1 integrated, bridge autosave/open-with/exportPng→Photos; save-as dialog for export-to-Files (2026-10-19) |
+| Tests | 1052 specs / 73 files, `npm run ci` green |
+| Coverage | 96.5% stmts / 88.5% branches / 95.87% funcs / **99.58% lines**; floors 96.5/88.5/95.8/99.6 in `webos/vitest.config.js` |
 | Lint | strictest ruleset, zero warnings |
 | Accessibility | WCAG 2.1 AAA token gates incl. wallpaper-extreme flattening + desktop scrim pills |
 | Docs coverage | ARCHITECTURE.md Module index (110 rows) ⇄ src/ enforced by `tests/docs-coverage.test.js` |
@@ -36,8 +36,8 @@ of every working session. Plan-of-record for open work:
 - [x] **H2** FireCraft: H2.0–H2.6 complete — v0.2.1 deployed, v3.17.0 shipped.
       H2.1 contract documented; H2.2 postToApp correlate implemented; H2.3
       autosave (applied→exportDocument→filePut, ready→fileGet→openDocument);
-      H2.4 open-with via Files context menu; H2.5 exportPng→Photos
-      (export-to-Files deferred — needs shared save dialog); H2.6 E2E probe
+      H2.4 open-with via Files context menu; H2.5 exportPng→Photos and
+      export-to-Files (shared SaveDialog component, 2026-10-19); H2.6 E2E probe
       open→apply→exportDocument round-trip verified.
 - [ ] **H3** Upstream adoption watch — FireCraft app mark swap when
       upstream ships one; fetch-apps.sh entries if upstream release zips
