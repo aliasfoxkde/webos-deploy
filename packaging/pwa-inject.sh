@@ -6,7 +6,7 @@
 # rule forbids vendor iconography); rasterized from SVG with ImageMagick.
 set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-APPS="$HERE/apps"
+APPS="$HERE/../apps"
 
 # app            display        description                                      accent    glyph-svg (512 viewBox)
 inject_app() {
@@ -167,5 +167,9 @@ inject_app vectorcraft "VectorCraft" "Vector illustration"                    "#
 inject_app wordcraft   "WordCraft"   "Word processing"                        "#818cf8" "0.3.0" '
     <path d="M136 80h176l64 64v288H136 Z"/>
     <path d="M184 216h144M184 264h144M184 312h96"/>'
+
+inject_app firecraft   "FireCraft"   "Procedural 3D simulation"               "#f97316" "0.2.1" '
+    <path d="M256 80 C320 160 400 200 400 280 C400 360 320 400 256 440 C192 400 112 360 112 280 C112 200 192 160 256 80 Z"/>
+    <path d="M256 160 C288 200 320 220 320 268 C320 316 288 336 256 356 C224 336 192 316 192 268 C192 220 224 200 256 160 Z" fill="#f97316" stroke="none"/>'
 
 echo "done"

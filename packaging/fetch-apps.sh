@@ -27,9 +27,11 @@ while [ $# -gt 0 ]; do
 done
 
 # app version pairs — keep in sync with webos/src/os/registry.js
+# Each entry: "<name> <ver>" or "<name> <ver> <org>" (default org = storytold)
 APPS_LIST=(
   "cadcraft 0.3.0"
   "designcraft 0.4.0"
+  "firecraft 0.2.1 aliasfoxkde"
   "gridcraft 0.3.0"
   "lightcraft 0.4.0"
   "pdfcraft 0.4.0"
@@ -45,24 +47,25 @@ APPS_LIST=(
 
 mkdir -p "$ZIPS" "$APPS"
 
-fetch_one() { # name version
-  local name=$1 ver=$2 zip="$ZIPS/$1-web-$2.zip" dest="$APPS/$1"
+fetch_one() { # name version [org]
+  local name=$1 ver=$2 org=${3:-storytold}
+  local zip="$ZIPS/$name-web-$ver.zip" dest="$APPS/$name"
   if [ -d "$dest" ] && [ "$FORCE" -eq 0 ]; then
-    echo "== $1 $ver: already present (use --force to refetch)"
+    echo "== $name $ver: already present (use --force to refetch)"
     return 0
   fi
   if [ ! -f "$zip" ]; then
-    echo "== $1 $ver: downloading release zip"
-    gh release download "v$ver" -R "$ORG/$name" -p "$name-web-$ver.zip" -D "$ZIPS" --clobber
+    echo "== $name $ver: downloading release zip"
+    gh release download "v$ver" -R "$org/$name" -p "$name-web-$ver.zip" -D "$ZIPS" --clobber
   fi
   # verify against the release's checksums when published
-  if gh release download "v$ver" -R "$ORG/$name" -p 'SHA256SUMS.txt' -O "$zip.sums" --clobber 2>/dev/null; then
+  if gh release download "v$ver" -R "$org/$name" -p 'SHA256SUMS.txt' -O "$zip.sums" --clobber 2>/dev/null; then
     (cd "$ZIPS" && grep "$name-web-$ver.zip" "$zip.sums" | sed 's|  \*|  |' | sha256sum -c -) \
       || { echo "checksum mismatch for $zip" >&2; exit 1; }
   else
-    echo "   (no SHA256SUMS.txt published for $1 v$ver — skipping verify)"
+    echo "   (no SHA256SUMS.txt published for $name v$ver — skipping verify)"
   fi
-  echo "== $1: unpacking to apps/$1"
+  echo "== $name: unpacking to apps/$name"
   rm -rf "$dest" && mkdir -p "$dest"
   unzip -q "$zip" -d "$dest"          # zips ship with a top-level dir; flatten:
   local inner
@@ -71,12 +74,13 @@ fetch_one() { # name version
     (shopt -s dotglob; /bin/mv "$inner"/* "$dest") && rmdir "$inner"
   fi
   "$HERE/pwa-inject.sh" "$dest"
-  "$HERE/icons-render.sh" "$1"
+  "$HERE/icons-render.sh" "$name"
 }
 
 for entry in "${APPS_LIST[@]}"; do
+  # shellcheck disable=SC2086
   set -- $entry
   [ -n "$APP" ] && [ "$1" != "$APP" ] && continue
-  fetch_one "$1" "$2"
+  fetch_one "$1" "$2" "$3"
 done
 echo "done. builds in apps/ (gitignored — deployed via wrangler, see README)."

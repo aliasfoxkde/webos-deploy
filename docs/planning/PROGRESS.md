@@ -39,12 +39,13 @@ of every working session. Plan-of-record for open work:
       H2.4 open-with via Files context menu; H2.5 exportPng→Photos and
       export-to-Files (shared SaveDialog component, 2026-10-19); H2.6 E2E probe
       open→apply→exportDocument round-trip verified.
-- [ ] **H3** Upstream adoption watch — FireCraft app mark swap when
-      upstream ships one; fetch-apps.sh entries if upstream release zips
-      appear (incl. deck/sound/effect).
+- [ ] **H3** Upstream adoption watch — H3.1 FireCraft app mark swap when
+      upstream ships one (waiting on aliasfoxkde/FireCraft#2); H3.2
+      fetch-apps.sh entry done (firecraft 0.2.1 from aliasfoxkde org,
+      pwa-inject + icons done); watching deck/sound/effect for upstream zips.
 - [x] **H4** Quality forward path — H4.1 coverage floors met (96.5/88.5/95.8/99.6), H4.2 deps refreshed (vitest 5.0.5, coverage-v8, fake-indexeddb; React 19 / Vite 8 / ESLint 10 deferred), H4.3 Aegis re-scan zero new findings (baseline suppresses all), H4.4 sweep synced.
 - [x] **H5** H5.3 container revalidation complete in node:24-trixie-slim; H5.1 pipeline registered (push, 4e1079cd…ccc957); H5.2 GitHub Actions green on every push as primary gate (runner dispatch pending for GitForge).
-- [ ] **H6** Next release: **3.18.0** — full checklist in HANDOFF.md (H3.1/H3.2 watching upstream; H5.2 GitForge runner pending).
+- [ ] **H6** Next release: **3.18.0** — full checklist in HANDOFF.md (H3.1 waiting on upstream; H5.2 GitForge runner pending).
 
 ## Deliberately closed (do not reopen without new evidence)
 
