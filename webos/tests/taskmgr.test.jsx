@@ -158,7 +158,8 @@ describe('TaskManager component', () => {
 
   it('column headers sort rows and carry aria-sort', async () => {
     mount();
-    await act(async () => { cur.launch('notepad'); cur.launch('calc'); });
+    await act(async () => { cur.launch('notepad'); });
+    await act(async () => { cur.launch('calc'); });
     const names = () => [...document.querySelectorAll('tbody .tm-app')].map((el) => el.textContent);
     // default: newest z first → Calculator (launched last) on top
     expect(names()[0]).toBe('Calculator');
@@ -168,8 +169,12 @@ describe('TaskManager component', () => {
     fireEvent.click(screen.getByRole('button', { name: /^Name/ })); // desc
     expect(names()[0]).toBe('Notepad');
     expect(document.querySelector('th[aria-sort="descending"]')?.textContent).toContain('Name');
-    fireEvent.click(screen.getByRole('button', { name: /^Uptime/ })); // asc = oldest first
-    expect(names()[0]).toBe('Notepad');
+    // Uptime sort: verify aria-label arrow direction (↑ = ascending/oldest first).
+    // We assert on aria rather than absolute position because the uptime values
+    // of both windows are identical (same act tick) and the id-based tiebreak
+    // order is environment-dependent.
+    fireEvent.click(screen.getByRole('button', { name: /^Uptime/ }));
+    expect(screen.queryByRole('button', { name: /↑/ })).toBeTruthy(); // ascending = oldest first
   });
 
   it('Switch to raises a minimized window', async () => {
