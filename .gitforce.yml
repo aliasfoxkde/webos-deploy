@@ -28,7 +28,7 @@ jobs:
       - name: install
         run: cd webos && npm ci
       - name: lint
-        run: cd webos && node node_modules/.bin/eslint .
+        run: cd webos && node node_modules/.bin/eslint . --max-warnings 0
       - name: docs coverage gate
         run: cd webos && npx vitest run tests/docs-coverage.test.js
       - name: wcag contrast audit
@@ -37,17 +37,17 @@ jobs:
         run: cd webos && npm run coverage
       - name: build
         run: cd webos && npm run build
-      # The e2e sweep needs a headless browser. On GitHub Actions the
-      # runner image ships Google Chrome, so the sweep is a hard gate there.
-      # This GitForge image does not, and installing chromium needs root, so
-      # here the browser is optional: when it is missing the sweep is skipped
-      # with a note instead of failing the job for an environmental reason.
-      - name: install chromium
-        run: apt-get update && apt-get install -y chromium > /dev/null 2>&1 || echo "chromium unavailable — the e2e sweep will be skipped"
+      # The e2e sweep needs a headless browser. This GitForge image ships
+      # none, and installing one via apt needs root — so the browser is
+      # fetched instead as a self-contained Chrome headless shell, which
+      # needs no privileges. The sweep is therefore a hard gate here too,
+      # exactly as it is on GitHub Actions (where the runner image already
+      # ships Google Chrome).
+      - name: install headless browser
+        run: npx --yes @puppeteer/browsers install chrome-headless-shell@stable --path "$HOME/.cache/webos-browsers"
       - name: e2e sweep
         run: |
-          if command -v chromium >/dev/null 2>&1 || [ -x /usr/bin/google-chrome ] || [ -x /usr/bin/chromium ]; then
-            node packaging/e2e/webos-sweep.mjs
-          else
-            echo "no headless browser on this runner — skipping the e2e sweep (GitHub Actions runs it as a hard gate)"
-          fi
+          CHROME="$(find "$HOME/.cache/webos-browsers" -type f -name 'chrome-headless-shell' -print -quit)"
+          if [ -z "$CHROME" ]; then echo "no headless browser found"; exit 1; fi
+          echo "sweep browser: $CHROME"
+          CHROME="$CHROME" node packaging/e2e/webos-sweep.mjs
