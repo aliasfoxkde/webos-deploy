@@ -8,10 +8,11 @@
 // (cd webos && npm run build), then from the repo root:
 //   node packaging/e2e/webos-sweep.mjs
 // Env overrides: WEBOS_DIR (shell checkout), CHROME, SWEEP_SHOTS, SWEEP_PORT.
-import { mkdtempSync, rmSync, mkdirSync } from 'node:fs';
+import { mkdtempSync, rmSync, mkdirSync, existsSync } from 'node:fs';
 import { spawn } from 'node:child_process';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { once } from 'node:events';
 
 const PORT = Number(process.env.SWEEP_PORT || 4219);
@@ -19,9 +20,19 @@ const SHOTS = process.env.SWEEP_SHOTS || '/var/tmp/sweep-shots';
 mkdirSync(SHOTS, { recursive: true });
 
 /* ---- serve dist/ ---- */
+// WEBOS_DIR defaults to the webos/ checkout that ships next to this script,
+// so the sweep runs in CI (where the checkout path is unknown) as well as
+// locally. Override with WEBOS_DIR=... when pointing at a different tree.
+const REPO_ROOT = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
+const WEBOS_DIR = process.env.WEBOS_DIR || join(REPO_ROOT, 'webos');
+if (!existsSync(join(WEBOS_DIR, 'dist', 'index.html'))) {
+  console.error(`sweep: no build at ${join(WEBOS_DIR, 'dist', 'index.html')} — run "npm run build" in webos/ first`);
+  process.exit(2);
+}
+
 const srv = spawn('npx', ['vite', 'preview', '--host', '127.0.0.1',
   '--port', String(PORT), '--strictPort'],
-  { cwd: process.env.WEBOS_DIR || '/nas/Temp/repos/webos-deploy/webos', detached: true, stdio: 'pipe' });
+  { cwd: WEBOS_DIR, detached: true, stdio: 'pipe' });
 let srvOut = '';
 srv.stdout.on('data', (d) => { srvOut += d; });
 srv.stderr.on('data', (d) => { srvOut += d; });
@@ -30,10 +41,27 @@ for (let i = 0; i < 40; i++) {
 }
 
 /* ---- chromium ---- */
+const CHROME_CANDIDATES = [
+  process.env.CHROME,
+  '/usr/bin/chromium',
+  '/usr/bin/chromium-browser',
+  '/usr/bin/google-chrome',
+  '/usr/bin/google-chrome-stable',
+].filter(Boolean);
+const CHROME = CHROME_CANDIDATES.find((c) => existsSync(c));
+if (!CHROME) {
+  console.error(`sweep: no browser found — looked at ${CHROME_CANDIDATES.join(', ')}. `
+    + 'Set CHROME=/path/to/chromium.');
+  process.exit(2);
+}
+console.log(`sweep: browser ${CHROME}`);
 const profile = mkdtempSync(join(tmpdir(), 'sweep-'));
-const chr = spawn(process.env.CHROME || '/usr/bin/chromium', [
+const chr = spawn(CHROME, [
   '--headless=new', '--remote-debugging-port=0', '--use-angle=swiftshader',
   '--disable-dev-shm-usage', '--no-first-run', '--window-size=1440,900',
+  // CI containers run as root with no user namespaces; the sandbox cannot be
+  // entered there, so disable it explicitly.
+  '--no-sandbox', '--disable-gpu',
   `--user-data-dir=${profile}`, 'about:blank',
 ], { stdio: 'pipe' });
 let stderr = ''; chr.stderr.on('data', (d) => { stderr += d; });
@@ -114,6 +142,19 @@ const phase = async (name, fn) => {
   const newErrs = errors.slice(before).filter((e) => e.phase === name);
   if (newErrs.length) results.push({ phase: name, ok: false, note: `${newErrs.length} page errors: ${newErrs[0].text?.slice(0, 160)}` });
 };
+const skip = (name, why) => results.push({ phase: name, ok: true, note: `SKIPPED — ${why}` });
+
+// The FireCraft phases below drive the DEPLOYED app (firecraft-web.pages.dev),
+// so they need the public internet. On a runner without egress they are
+// skipped rather than failed — a CI gate must not depend on a third party's
+// deploy being up.
+let firecraftReachable = false;
+try {
+  const ctl = AbortSignal.timeout(8000);
+  const r = await fetch('https://firecraft-web.pages.dev/', { signal: ctl, redirect: 'follow' });
+  firecraftReachable = r.ok || r.status < 500;
+} catch { firecraftReachable = false; }
+console.log(`firecraft-web.pages.dev reachable: ${firecraftReachable}`);
 
 await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
 await send('Page.navigate', { url: `http://127.0.0.1:${PORT}/` });
@@ -390,7 +431,8 @@ for (const [id, waitMs] of [['cadcraft', 12000], ['photocraft', 12000], ['firecr
 }
 
 /* FireCraft: icon launch → bridge ready → iframe verified → open-with → exportPng → Photos */
-await phase('firecraft-launch-ready', async () => {
+if (!firecraftReachable) skip('firecraft-launch-ready', 'firecraft-web.pages.dev unreachable');
+else await phase('firecraft-launch-ready', async () => {
   await evalJs(`(() => {
     const icons = [...document.querySelectorAll('.desk-icon')];
     const fc = icons.find((n) => (n.textContent || '').includes('FireCraft'));
@@ -416,15 +458,36 @@ await phase('firecraft-launch-ready', async () => {
 });
 
 /* FireCraft open-with: launch with a path argument and verify the bridge responds */
-await phase('firecraft-open-with', async () => {
-  // Put a minimal PNG into the VFS at the path the Files app would reference
-  const { writeFileSync } = await import('node:fs');
-  writeFileSync('/var/tmp/sweep-fc-test.fw.png',
-    Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==', 'base64'));
+if (!firecraftReachable) skip('firecraft-open-with', 'firecraft-web.pages.dev unreachable');
+else await phase('firecraft-open-with', async () => {
+  // Seed the VFS with a minimal PNG at the path the Files app would
+  // reference. The record is written straight into the 'files' object store
+  // of the 'webos' IndexedDB (see src/os/db.js) — importing the module by
+  // URL is not possible here because the production build bundles it.
   await evalJs(`(async () => {
-    const { filePut } = await import('/os/db.js');
-    await filePut('/Apps/firecraft/sweep-test.fw.png',
-      new Blob([await (await fetch('file:///var/tmp/sweep-fc-test.fw.png')).blob().then(b => b.arrayBuffer())], { type: 'image/png' }), 'image/png');
+    const b64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==';
+    const bin = atob(b64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    const blob = new Blob([bytes], { type: 'image/png' });
+    const db = await new Promise((res, rej) => {
+      const r = indexedDB.open('webos', 1);
+      r.onupgradeneeded = () => {
+        const d = r.result;
+        if (!d.objectStoreNames.contains('kv')) d.createObjectStore('kv');
+        if (!d.objectStoreNames.contains('files')) d.createObjectStore('files', { keyPath: 'path' });
+      };
+      r.onsuccess = () => res(r.result);
+      r.onerror = () => rej(r.error);
+    });
+    await new Promise((res, rej) => {
+      const t = db.transaction('files', 'readwrite');
+      t.objectStore('files').put({ path: '/Apps/firecraft/sweep-test.fw.png', blob, type: 'image/png', size: blob.size, mtime: Date.now() });
+      t.oncomplete = res;
+      t.onerror = () => rej(t.error);
+      t.onabort = () => rej(t.error);
+    });
+    return true;
   })()`);
   await evalJs(`__os.launch('firecraft', { path: '/Apps/firecraft/sweep-test.fw.png' })`);
   await poll(`document.querySelectorAll('.win iframe').length >= 1`, 8000);

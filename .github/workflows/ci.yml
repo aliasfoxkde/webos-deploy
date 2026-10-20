@@ -19,9 +19,9 @@ concurrency:
 
 jobs:
   webos:
-    name: webos — lint, test, coverage gate, contrast audit, build
+    name: webos — lint, test, coverage gate, contrast audit, build, e2e
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     defaults:
       run:
         working-directory: webos
@@ -40,16 +40,25 @@ jobs:
       - name: Lint (zero warnings)
         run: npm run lint
 
-      # Standalone so the WCAG gate is legible in the job summary; the same
+      # Standalone so each gate is legible in the job summary; the same
       # suites also run inside the coverage step.
-      - name: WCAG contrast audit (personas + tokens)
-        run: npx vitest run tests/contrast-audit.test.js tests/personas-theme.test.js
+      - name: Docs coverage gate
+        run: npx vitest run tests/docs-coverage.test.js
+
+      - name: WCAG contrast audit (personas + tokens + doc references)
+        run: npx vitest run tests/contrast-audit.test.js tests/personas-theme.test.js tests/docs-references.test.js tests/glass-tokens.test.js
 
       - name: Tests + coverage ratchet
         run: npm run coverage
 
       - name: Build
         run: npm run build
+
+      # Full-system sweep: boots the built dist in headless Chromium and
+      # drives every first-party surface. github-latest runners ship Google
+      # Chrome; the sweep also accepts /usr/bin/chromium.
+      - name: E2E sweep (headless Chromium)
+        run: node ../packaging/e2e/webos-sweep.mjs
 
       - name: Upload dist artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

@@ -51,6 +51,22 @@ describe('SaveDialog', () => {
     expect(cancel).toHaveBeenCalledOnce();
   });
 
+  it('calls onCancel when the backdrop is clicked', () => {
+    const cancel = vi.fn();
+    render(<SaveDialog suggestedName="export.png" onSave={noop} onCancel={cancel} />);
+    const backdrop = document.querySelector('.modal-backdrop');
+    expect(backdrop).toBeTruthy();
+    fireEvent.pointerDown(backdrop);
+    expect(cancel).toHaveBeenCalledOnce();
+  });
+
+  it('does not cancel when a click lands inside the dialog', () => {
+    const cancel = vi.fn();
+    render(<SaveDialog suggestedName="export.png" onSave={noop} onCancel={cancel} />);
+    fireEvent.pointerDown(screen.getByRole('dialog'));
+    expect(cancel).not.toHaveBeenCalled();
+  });
+
   it('calls onCancel on Escape key', () => {
     const cancel = vi.fn();
     render(<SaveDialog suggestedName="export.png" onSave={noop} onCancel={cancel} />);

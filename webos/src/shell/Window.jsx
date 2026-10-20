@@ -34,34 +34,6 @@ function resized(start, dx, dy, dir) {
   return r;
 }
 
-/* Export-ready handlers for FireCraft export-to-Files dialog.
-   These are separated from the component so they can be unit-tested directly,
-   matching the pattern used by firecraftAutosave/firecraftRestore in EmbedFrame.
-   os and filePut are passed as injectable dependencies. */
-export function makeFirecraftExportHandlers({ putFile, launchPhotos }) {
-  let pendingExport = null; // { bytes: ArrayBuffer, name: string }
-
-  return {
-    onExportRequest(bytes) {
-      pendingExport = { bytes, name: `firecraft-export-${Date.now()}.png` };
-    },
-    onExportSave(name) {
-      if (!pendingExport) return;
-      const p = pendingExport;
-      pendingExport = null;
-      (async () => {
-        try {
-          const blob = new Blob([p.bytes], { type: 'image/png' });
-          await putFile(`/Apps/firecraft/exports/${name}`, blob, 'image/png');
-          launchPhotos?.(`/Apps/firecraft/exports/${name}`);
-        } catch { /* save failures are silent */ }
-      })();
-    },
-    onExportCancel() { pendingExport = null; },
-    get pendingExport() { return pendingExport; },
-  };
-}
-
 export default function Window({ win }) {
   const os = useOS();
   const app = os.findApp(win.appId);
@@ -70,13 +42,11 @@ export default function Window({ win }) {
   const [hint, setHint] = useState(null); // snap zone under the pointer while dragging
   const [pendingExport, setPendingExport] = useState(null); // { bytes: ArrayBuffer } | null
 
-  // istanbul ignore next
   const handleExportRequest = (bytes) => {
     const name = `firecraft-export-${Date.now()}.png`;
     setPendingExport({ bytes, name });
   };
 
-  // istanbul ignore next
   const handleExportSave = async (name) => {
     if (!pendingExport) return;
     try {
@@ -87,7 +57,6 @@ export default function Window({ win }) {
     setPendingExport(null);
   };
 
-  // istanbul ignore next
   const handleExportCancel = () => setPendingExport(null);
 
   useEffect(() => {

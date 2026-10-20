@@ -4,20 +4,20 @@ Live status board. Update this (and [SESSIONS.md](SESSIONS.md)) at the end
 of every working session. Plan-of-record for open work:
 [HANDOFF.md](HANDOFF.md).
 
-## Snapshot (verified 2026-10-19)
+## Snapshot (verified 2026-10-20)
 
 | Dimension | State |
 |---|---|
 | Released / deployed version | **3.18.0** → next: **3.19.0** ([v3.17.0](https://github.com/aliasfoxkde/webos-deploy/releases/tag/v3.17.0)) |
 | Production | https://artcraft-webos.pages.dev — served bundle hash matches local `webos/dist`, `sw.js` cache `webos-v3.17.0` |
 | FireCraft | https://firecraft-web.pages.dev — v0.2.1 integrated, bridge autosave/open-with/exportPng→Photos; save-as dialog for export-to-Files (2026-10-19) |
-| Tests | 1052 specs / 73 files, `npm run ci` green |
-| Coverage | 96.65% stmts / 88.69% branches / 96.02% funcs / **99.78% lines**; floors 96.5/88.5/95.8/99.6 in `webos/vitest.config.js` |
+| Tests | 1058 specs / 75 files, `npm run ci` green |
+| Coverage | 96.79% stmts / 88.83% branches / 96.22% funcs / **99.92% lines**; floors 96.7/88.75/96.05/99.85 in `webos/vitest.config.js` (measured − tolerance) |
 | Lint | strictest ruleset, zero warnings |
 | Accessibility | WCAG 2.1 AAA token gates incl. wallpaper-extreme flattening + desktop scrim pills |
 | Docs coverage | ARCHITECTURE.md Module index (110 rows) ⇄ src/ enforced by `tests/docs-coverage.test.js` — now in GitForge CI pipeline |
-| CI | GitHub Actions green on `main`; GitForge pipeline includes docs-coverage gate (added 2026-10-19) |
-| Aegis | baseline regeneration in progress (2026-10-19; new patterns: pii-output-marker, finance-tofixed-currency, mobile-optimization, role-play-override, chart-accessibility) |
+| CI | GitHub Actions — **was red on every push from 2026-10-19 to 2026-10-20** (coverage ratchet was set from a non-reproducible local measurement); fixed 2026-10-20, re-verified green. GitForge pipeline mirrors the same gates |
+| Aegis | baseline regenerated 2026-10-19 (1810 findings / 111 files / 62 pattern classes; new classes: pii-output-marker, finance-tofixed-currency, mobile-optimization, role-play-override, chart-accessibility) |
 
 ## Done (evidence in HISTORY.md / SESSIONS.md)
 
@@ -44,14 +44,31 @@ of every working session. Plan-of-record for open work:
       fetch-apps.sh entry done (firecraft 0.2.1 from aliasfoxkde org,
       pwa-inject + icons done); watching deck/sound/effect for upstream zips.
 - [x] **H4** Quality forward path — H4.1 coverage floors met (96.5/88.5/95.8/99.6), H4.2 deps refreshed (vitest 5.0.5, coverage-v8, fake-indexeddb; React 19 / Vite 8 / ESLint 10 deferred), H4.3 Aegis re-scan zero new findings (baseline suppresses all), H4.4 sweep synced.
-- [x] **H5** H5.3 container revalidation complete in node:24-trixie-slim; H5.1 pipeline registered (push, 4e1079cd…ccc957); H5.2 GitHub Actions green on every push as primary gate (runner dispatch pending for GitForge).
+- [x] **H5** H5.3 container revalidation complete in node:24-trixie-slim; H5.1 pipeline registered (push, 4e1079cd…ccc957); H5.2 GitHub Actions as primary gate (runner dispatch pending for GitForge).
+- [x] **H7** Coverage determinism + CI repair (2026-10-20) — three one-second
+      clock intervals (Taskbar, Sidebar clock widget, Screensaver big clock)
+      were covered only when the test file outlived the timer, so the same
+      commit measured 95.87% functions on CI and 96.02% locally. The ratchet
+      was set from the local number and turned CI red on every push.
+      `tests/clock-timers.test.jsx` drives all three timers with fake timers;
+      the metric is now reproducible (two consecutive full runs agree exactly)
+      and the floors sit a fixed tolerance below the measured value.
+      Also in this pass: the dead `makeFirecraftExportHandlers` export was
+      removed from `src/shell/Window.jsx` (it duplicated the live
+      state-driven handlers and existed only for its own test), the live
+      export-to-Files path got component-level tests, and the E2E sweep's
+      FireCraft open-with phase was repaired (it imported a module URL the
+      production build does not serve) — the sweep is green 27/27.
 - [ ] **H6** Next release: **3.18.0** — full checklist in HANDOFF.md (H3.1 waiting on upstream; H5.2 GitForge runner pending).
 
 ## Deliberately closed (do not reopen without new evidence)
 
-- The 4 uncovered lines (3 unreachable default arms + Panels.jsx:336 V8
-  attribution quirk) — proven unreachable/mis-attributed; documented in
-  QUALITY-PROGRAM.md. Ratchets only ever go up.
+- The 4 uncovered lines — 3 are unreachable reducer/switch `default:` arms
+  (calcState.jsx:126, state.jsx:483, MarkdownView.jsx:81) and Panels.jsx:336
+  is a V8 attribution quirk; documented in QUALITY-PROGRAM.md. The paths
+  that were genuinely reachable (Files.jsx:304 "Open in FireCraft",
+  SaveDialog.jsx:50 backdrop cancel, Window.jsx:81-87 export-to-Files) are
+  covered as of 2026-10-20. Ratchets only ever go up.
 - Istanbul conditional-JSX attribution — covering those lines requires
   invoking the arrow functions (click the buttons), not refactoring JSX.
 - Cloudflare compute on the rendering path — verified absent; keep it that
@@ -62,3 +79,4 @@ of every working session. Plan-of-record for open work:
 | ID | Description | Impact | Mitigation | Status |
 |---|---|---|---|---|
 | R1 | H3.1 blocked on FireCraft upstream shipping an official app icon (aliasfoxkde/FireCraft#2) | WebOS uses a code-drawn placeholder for FireCraft; official mark unavailable until upstream ships one | Swap script ready; upstream issue filed with exact requirements | ACCEPTED — placeholder glyph is the permanent design (2026-10-19) |
+| R2 | Coverage ratchet was set from a non-reproducible local measurement (2026-10-19) | Every push from 594e579 to 7a6e12c had a red CI; v3.18.0 shipped with a failing gate and the release notes/progress board wrongly claimed CI was green | Root cause found (timer-dependent coverage); `tests/clock-timers.test.jsx` pins the metric; floors now sit a fixed tolerance below a measured value two consecutive runs agree on | RESOLVED 2026-10-20 |

@@ -6,7 +6,7 @@ import React from 'react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, act, cleanup, fireEvent } from '@testing-library/react';
 import { OSProvider, useOS } from '../src/os/state.jsx';
-import Window, { makeFirecraftExportHandlers } from '../src/shell/Window.jsx';
+import Window from '../src/shell/Window.jsx';
 import EmbedFrame from '../src/shell/EmbedFrame.jsx';
 import Screensaver from '../src/shell/Screensaver.jsx';
 import Sidebar from '../src/shell/Sidebar.jsx';
@@ -328,57 +328,6 @@ describe('Window', () => {
     } finally {
       vi.useRealTimers();
     }
-  });
-});
-
-describe('makeFirecraftExportHandlers', () => {
-  it('onExportRequest sets pendingExport with the bytes and a timestamped name', () => {
-    const h = makeFirecraftExportHandlers({});
-    h.onExportRequest(new ArrayBuffer(8));
-    expect(h.pendingExport).toBeTruthy();
-    expect(h.pendingExport.bytes).toBeInstanceOf(ArrayBuffer);
-    expect(h.pendingExport.name).toMatch(/^firecraft-export-\d+\.png$/);
-  });
-
-  it('onExportCancel clears pendingExport', () => {
-    const h = makeFirecraftExportHandlers({});
-    h.onExportRequest(new ArrayBuffer(8));
-    expect(h.pendingExport).toBeTruthy();
-    h.onExportCancel();
-    expect(h.pendingExport).toBeNull();
-  });
-
-  it('onExportSave calls putFile then launchPhotos with the correct path', async () => {
-    const putFile = vi.fn().mockResolvedValue(undefined);
-    const launchPhotos = vi.fn();
-    const h = makeFirecraftExportHandlers({ putFile, launchPhotos });
-    const buf = new ArrayBuffer(4);
-    h.onExportRequest(buf);
-    h.onExportSave('my-design.png');
-    await act(async () => {}); // drain microtasks
-    expect(putFile).toHaveBeenCalledOnce();
-    expect(putFile.mock.calls[0][0]).toBe('/Apps/firecraft/exports/my-design.png');
-    expect(putFile.mock.calls[0][2]).toBe('image/png');
-    expect(launchPhotos).toHaveBeenCalledWith('/Apps/firecraft/exports/my-design.png');
-  });
-
-  it('onExportSave without a pending export is a no-op', async () => {
-    const putFile = vi.fn();
-    const h = makeFirecraftExportHandlers({ putFile });
-    h.onExportSave('ignored.png');
-    await act(async () => {});
-    expect(putFile).not.toHaveBeenCalled();
-  });
-
-  it('onExportSave swallows putFile errors silently', async () => {
-    const putFile = vi.fn().mockRejectedValue(new Error('db error'));
-    const launchPhotos = vi.fn();
-    const h = makeFirecraftExportHandlers({ putFile, launchPhotos });
-    h.onExportRequest(new ArrayBuffer(4));
-    h.onExportSave('bad.png');
-    await act(async () => {});
-    expect(putFile).toHaveBeenCalled();
-    expect(launchPhotos).not.toHaveBeenCalled(); // not reached due to error
   });
 });
 

@@ -32,6 +32,23 @@ warn-then-fail order so CI is green at every commit.
    Browser-only glue (canvas loops, wasm instantiation) is covered through
    unit seams where practical and documented as excluded otherwise.
    Coverage gate in CI ratchets: start at the measured number, rise to 90.
+
+   **The measured number must be reproducible.** A coverage figure that
+   depends on how fast the machine is cannot be used as a floor: on
+   2026-10-19 the floors were raised from a local measurement of 96.02%
+   functions while CI measured 95.87% for the same commit, and every push
+   went red until 2026-10-20. Two rules follow, and both are enforced:
+   - **No timer-dependent coverage.** A callback that fires from
+     `setInterval`/`setTimeout` is covered only if the test file outlives
+     the timer. Drive such timers with fake timers instead, so the tick
+     always happens exactly once (`tests/clock-timers.test.jsx` is the
+     reference pattern for the three one-second clock intervals).
+   - **Floors sit a fixed tolerance below the measured value**, and the
+     measured value is confirmed by two consecutive full runs that agree
+     exactly. Current baseline (2026-10-20, 75 files / 1058 specs):
+     96.79 / 88.83 / 96.22 / 99.92; floors 96.7 / 88.75 / 96.05 / 99.85.
+     Only 4 lines are uncovered (3 unreachable `default:` arms plus one V8
+     attribution quirk).
 2. **Lint (ESLint 9 flat config)**: `eslint:recommended` + react-hooks +
    jsx-a11y (strict) + import ordering; **zero warnings** gate (`-D warnings`
    parity with the Rust repos' clippy gate).

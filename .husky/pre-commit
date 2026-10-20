@@ -1,0 +1,28 @@
+#!/usr/bin/env sh
+# Shared pre-commit hook (husky v9, installed from webos/package.json's
+# "prepare" script: `cd .. && husky .husky`).
+#
+# It runs eslint over the WebOS sources and tests — but only when files under
+# webos/src or webos/tests are actually staged, so commits that touch only
+# docs or packaging stay fast. The gate matches the CI lint step
+# (eslint . --max-warnings 0) so a commit that passes here passes CI.
+#
+# Husky runs this with `sh -e` from the repository root.
+set -e
+
+root="$(git rev-parse --show-toplevel)"
+cd "$root"
+
+staged="$(git diff --cached --name-only)"
+if ! printf '%s\n' "$staged" | grep -qE '^webos/(src|tests)/|^webos/eslint|^webos/vitest'; then
+  echo "webos: no source or test changes staged — skipping eslint"
+  exit 0
+fi
+
+if [ ! -f "$root/webos/node_modules/.bin/eslint" ]; then
+  echo "webos: eslint is not installed — run 'npm ci' in webos/ first" >&2
+  exit 1
+fi
+
+cd "$root/webos"
+node node_modules/.bin/eslint src tests --max-warnings 0
