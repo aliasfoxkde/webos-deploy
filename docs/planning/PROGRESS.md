@@ -8,7 +8,7 @@ of every working session. Plan-of-record for open work:
 
 | Dimension | State |
 |---|---|
-| Released / deployed version | **3.18.0** → next: **3.19.0** ([v3.17.0](https://github.com/aliasfoxkde/webos-deploy/releases/tag/v3.17.0)) |
+| Released / deployed version | **3.19.0** → next: **3.20.0** ([v3.18.0](https://github.com/aliasfoxkde/webos-deploy/releases/tag/v3.18.0)) |
 | Production | https://artcraft-webos.pages.dev — served bundle hash matches local `webos/dist`, `sw.js` cache `webos-v3.17.0` |
 | FireCraft | https://firecraft-web.pages.dev — v0.2.1 integrated, bridge autosave/open-with/exportPng→Photos; save-as dialog for export-to-Files (2026-10-19) |
 | Tests | 1058 specs / 75 files, `npm run ci` green |
@@ -16,7 +16,7 @@ of every working session. Plan-of-record for open work:
 | Lint | strictest ruleset, zero warnings |
 | Accessibility | WCAG 2.1 AAA token gates incl. wallpaper-extreme flattening + desktop scrim pills |
 | Docs coverage | ARCHITECTURE.md Module index (110 rows) ⇄ src/ enforced by `tests/docs-coverage.test.js` — now in GitForge CI pipeline |
-| CI | GitHub Actions — **was red on every push from 2026-10-19 to 2026-10-20** (coverage ratchet was set from a non-reproducible local measurement); fixed 2026-10-20, re-verified green. GitForge pipeline mirrors the same gates |
+| CI | GitHub Actions **green** on `main` (verified 2026-10-20, run 39491563665 — lint, docs gate, WCAG audit, coverage ratchet, build and the 27-phase e2e sweep all pass). GitForge pipeline mirrors the same gates. It had been red on every push from 2026-10-19 — see risk R2 |
 | Aegis | baseline regenerated 2026-10-19 (1810 findings / 111 files / 62 pattern classes; new classes: pii-output-marker, finance-tofixed-currency, mobile-optimization, role-play-override, chart-accessibility) |
 
 ## Done (evidence in HISTORY.md / SESSIONS.md)
@@ -59,7 +59,7 @@ of every working session. Plan-of-record for open work:
       export-to-Files path got component-level tests, and the E2E sweep's
       FireCraft open-with phase was repaired (it imported a module URL the
       production build does not serve) — the sweep is green 27/27.
-- [ ] **H6** Next release: **3.18.0** — full checklist in HANDOFF.md (H3.1 waiting on upstream; H5.2 GitForge runner pending).
+- [x] **H6** Releases — v3.18.0 shipped 2026-10-19 (its gate was red; fixed in v3.19.0), v3.19.0 shipped 2026-10-20 with a green gate. Checklist in HANDOFF.md.
 
 ## Deliberately closed (do not reopen without new evidence)
 

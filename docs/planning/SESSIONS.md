@@ -1,3 +1,49 @@
+## 2026-10-20 — CI repair: reproducible coverage, honest ratchet, e2e as a gate
+
+- **The CI gate had been red since 2026-10-19.** Commit 594e579 raised the
+  coverage floors from a *local* measurement of 96.02% functions; CI measured
+  95.87% for the same commit. Every push from 594e579 to 7a6e12c failed, and
+  v3.18.0 was cut and deployed with a failing gate while the progress board
+  and the release notes claimed CI was green.
+- **Root cause: the metric was not reproducible.** Three one-second clock
+  intervals (Taskbar, Sidebar clock widget, Screensaver big clock) were
+  covered only when the test file outlived the timer — true on this slow
+  NAS, false on a fast CI runner. The same tree measured 95.87%, 95.92%,
+  96.02% and 96.03% functions on four runs.
+- **Fix**: `tests/clock-timers.test.jsx` drives all three timers with fake
+  timers, so the tick always happens exactly once. Two consecutive full runs
+  now agree exactly, and CI matches local to within one branch.
+- **New baseline** (75 files / 1058 specs): 96.79% statements, 88.83%
+  branches, 96.22% functions, **99.92% lines** (4 uncovered lines, all
+  documented). Floors: 96.7 / 88.75 / 96.05 / 99.85 — the measured value
+  minus a tolerance that absorbs the old machine-dependent delta.
+- **Dead code removed**: `makeFirecraftExportHandlers` in
+  `src/shell/Window.jsx` duplicated the live state-driven handlers and
+  existed only for its own test; the live export-to-Files path now has
+  component-level tests instead.
+- **New coverage**: the FireCraft export-to-Files handoff (window → Save
+  dialog → WebOS disk → Photos), the Files "Open in FireCraft" context item,
+  and the SaveDialog backdrop cancel.
+- **E2E sweep repaired and promoted to a hard CI gate.** It had never run in
+  CI (the coverage step failed first) and had two real bugs: it imported
+  `/os/db.js`, a module URL the production build does not serve (the
+  FireCraft open-with phase was failing), and it read the DevTools port from
+  only the first stderr chunk, which is never the endpoint on a CI runner.
+  Also: WEBOS_DIR now resolves from the script location, `--no-sandbox` for
+  containers, browser auto-detection, and the FireCraft phases skip (rather
+  than fail) when the deployed app is unreachable. Green 27/27 phases, 0
+  page errors, with both Chromium and Chrome.
+- **CI parity**: `.github/workflows/ci.yml` now mirrors the GitForge gates
+  (docs coverage, WCAG audit) and adds the sweep; the GitForge browser is
+  optional because its image cannot install Chromium without root.
+- **Shared hooks**: the pre-commit lint lived only in an untracked
+  `.git/hooks/pre-commit`. It is now a committed husky hook at
+  `.husky/pre-commit`; the `prepare` script was broken (`husky` looks for
+  `.git` in the cwd, and `webos/` is not the repo root) and the unused
+  `lint-staged` dependency is gone.
+- **3.19.0 shipped**: version bumped in all three places, CI green
+  (run 39491563665), deployed to https://artcraft-webos.pages.dev.
+
 ## 2026-10-19 — FireCraft H2/H4 complete; 3.17.0 shipped
 
 - **H2 FireCraft integration** all complete (H2.1–H2.6): bridge contract
