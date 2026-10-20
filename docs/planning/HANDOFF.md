@@ -45,6 +45,14 @@ you complete them.
   stop, not a note.
 - **Ratchets only go up** (coverage floors, lint rules). Never lower one
   to make a change pass — fix the change.
+- **A measured metric must be reproducible.** A coverage number that
+  depends on wall-clock timing, machine speed or run order is a broken
+  gate: the same commit must measure the same thing on a laptop and on a
+  CI runner. Drive timers with fake timers (`vi.useFakeTimers()` /
+  `vi.advanceTimersByTime`), never with `setTimeout` real waits.
+  (This rule exists because three 1 s clock intervals made the floors
+  measure 95.87% on CI and 96.02% locally, turning CI red on every push
+  from 2026-10-19 to 2026-10-20.)
 - **No placeholders, stubs, or simulated data** in shipped code. Test
   doubles in tests are fine. Planning docs are where examples live.
 - **WCAG 2.1 AAA** is enforced by tests (`tests/contrast-audit.test.js`,
@@ -83,7 +91,7 @@ you complete them.
 | FireCraft checkout | `/nas/Temp/repos/FireCraft` (independent repo, M12, wasm target) |
 | FireCraft production | https://firecraft-web.pages.dev (`firecraft-web` Pages project) |
 | Deploy command | `npx wrangler pages deploy dist --project-name artcraft-webos --branch main` (from `webos/`) |
-| CI | GitHub Actions `.github/workflows/ci.yml`; GitForge mirror `.gitforce.yml` |
+| CI | GitHub Actions `.github/workflows/ci.yml` (lint → docs gate → WCAG audit → tests+coverage ratchet → build → **e2e sweep, hard gate**); GitForge mirror `.gitforce.yml` |
 | E2E tooling | `packaging/e2e/webos-sweep.mjs`, `packaging/e2e/firecraft-embed-probe.mjs` (env: `WEBOS_DIR`, `CHROME`, `SWEEP_SHOTS`, `SWEEP_PORT`, `FC_BASE_URL`) |
 | Aegis scanner | `/home/mkinney/.local/bin/aegis` (`aegis scan <dir>`; the MCP scan endpoint is broken — use the CLI) |
 | Test runner | `npx vitest run tests/<name>.test.js(x)` from `webos/`; `testTimeout` is 20 s — do not shrink it (coverage instrumentation breaks 5 s defaults) |
@@ -94,8 +102,10 @@ you complete them.
    sync if you add/remove files under `webos/src/` (test enforces).
 2. `cd webos && npm run ci` — must be green.
 3. If UI changed: `node packaging/e2e/webos-sweep.mjs` from the repo root
-   (builds are already fresh from step 2) — expect `PASS (24/24 …, 0 errors)`
-   and eyeball the new screenshots in `$SWEEP_SHOTS`.
+   (builds are already fresh from step 2; the sweep exits 2 if
+   `webos/dist/index.html` is missing) — expect `PASS (27/27 …, 0 errors)`
+   and eyeball the new screenshots in `$SWEEP_SHOTS`. The same sweep runs as
+   a **hard gate** in GitHub Actions; a red sweep is a stop, not a note.
 4. Commit (conventions above) and push; watch Actions
    (`gh run watch $(gh run list --limit 1 --json databaseId --jq '.[0].databaseId')`).
 5. If the change is user-facing → release (phase H6 checklist), deploy,
@@ -215,7 +225,7 @@ source commit unverified — the bundle carries no version string).
 
 ## Phase H4 — quality forward path
 
-- [ ] H4.1 **Branch coverage stretch to 90%+** (currently 88.78%, the
+- [ ] H4.1 **Branch coverage stretch to 90%+** (currently 88.83%, the
       primary gap). Specific files to analyse and cover:
 
       1. `src/shell/Settings.jsx` (57 lines) — a small component with one
@@ -266,7 +276,7 @@ source commit unverified — the bundle carries no version string).
       EACCES otherwise). Prefer copying the repo to /var/tmp instead of
       mounting the NAS path when practical.
 
-## Phase H6 — release checklist (next: 3.18.0)
+## Phase H6 — release checklist (next: 3.20.0)
 
 1. [ ] Pick the version (user-facing change → minor; fix-only → patch).
 2. [ ] Bump ×3 (`package.json`, `src/version.js`, `public/sw.js`).
@@ -298,6 +308,9 @@ source commit unverified — the bundle carries no version string).
 | Pages 25 MiB per-asset cap | FireCraft's 10.9 MB wasm is fine; larger blobs go the R2 `craftweb` route (see packaging/) |
 | `screen.getByText('New folder')`-style ambiguity (toolbar vs ctx menu) | Scope queries (`.ctx-item`), clear DOM in `beforeEach` |
 | OSProvider is a named export; `parent`/`base` are MemFS methods | Import `{ OSProvider }`; call on an `fs` instance |
+| Chromium's first stderr chunk is a dbus/GL warning, not the DevTools URL — `once(stderr,'data')` yields `127.0.0.1:undefined` | Accumulate the whole stderr stream and match `/DevTools listening on (ws:\/\/\S+)/` |
+| The production build does not serve source modules (`/os/db.js` 404s) and `fetch('file://…')` is blocked from an http origin | In the sweep, write VFS records straight into the `files` IndexedDB store from page context |
+| `husky`'s `prepare` script resolves `.git` relative to the CWD, and `webos/` is not the repo root | `"prepare": "cd .. && husky .husky"`, and the hook itself lives at the repo root `.husky/pre-commit` (committed, mode 755) |
 | WebOS preview server binds `[::1]` only for some commands | Prefer `vite preview --host 127.0.0.1` as the e2e scripts do |
 
 ## Do NOT (each has a reason)

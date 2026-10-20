@@ -8,15 +8,15 @@ of every working session. Plan-of-record for open work:
 
 | Dimension | State |
 |---|---|
-| Released / deployed version | **3.19.0** → next: **3.20.0** ([v3.18.0](https://github.com/aliasfoxkde/webos-deploy/releases/tag/v3.18.0)) |
-| Production | https://artcraft-webos.pages.dev — served bundle hash matches local `webos/dist`, `sw.js` cache `webos-v3.17.0` |
+| Released / deployed version | **3.19.0** → next: **3.20.0** ([v3.19.0](https://github.com/aliasfoxkde/webos-deploy/releases/tag/v3.19.0)) |
+| Production | https://artcraft-webos.pages.dev — served bundle hash matches local `webos/dist`, `sw.js` cache `webos-v3.19.0` |
 | FireCraft | https://firecraft-web.pages.dev — v0.2.1 integrated, bridge autosave/open-with/exportPng→Photos; save-as dialog for export-to-Files (2026-10-19) |
 | Tests | 1058 specs / 75 files, `npm run ci` green |
 | Coverage | 96.79% stmts / 88.83% branches / 96.22% funcs / **99.92% lines**; floors 96.7/88.75/96.05/99.85 in `webos/vitest.config.js` (measured − tolerance) |
 | Lint | strictest ruleset, zero warnings |
 | Accessibility | WCAG 2.1 AAA token gates incl. wallpaper-extreme flattening + desktop scrim pills |
 | Docs coverage | ARCHITECTURE.md Module index (110 rows) ⇄ src/ enforced by `tests/docs-coverage.test.js` — now in GitForge CI pipeline |
-| CI | GitHub Actions **green** on `main` (verified 2026-10-20, run 39491563665 — lint, docs gate, WCAG audit, coverage ratchet, build and the 27-phase e2e sweep all pass). GitForge pipeline mirrors the same gates. It had been red on every push from 2026-10-19 — see risk R2 |
+| CI | GitHub Actions **green** on `main` (verified 2026-10-20, run 39492352315 — lint, docs gate, WCAG audit, coverage ratchet, build and the 27-phase e2e sweep all pass). GitForge pipeline mirrors the same gates. It had been red on every push from 2026-10-19 — see risk R2 |
 | Aegis | baseline regenerated 2026-10-19 (1810 findings / 111 files / 62 pattern classes; new classes: pii-output-marker, finance-tofixed-currency, mobile-optimization, role-play-override, chart-accessibility) |
 
 ## Done (evidence in HISTORY.md / SESSIONS.md)

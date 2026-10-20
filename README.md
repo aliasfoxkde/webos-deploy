@@ -71,22 +71,29 @@ npm run coverage        # suite + v8 coverage, enforced ratchet floors
 npm run lint            # eslint, --max-warnings 0 in CI
 npm run build           # production bundle → dist/
 npm run ci              # lint → coverage → build, all three
+node ../packaging/e2e/webos-sweep.mjs   # headless-Chrome e2e sweep (27 phases)
 ```
 
 - **Coverage ratchet** — `webos/vitest.config.js` carries floors just under
   the measured baseline; any coverage regression fails `npm run coverage`.
-  Raise the floors as tests land, never lower them.
+  Raise the floors as tests land, never lower them. The baseline must be
+  *reproducible*: timers are driven with fake timers so the number does not
+  depend on machine speed (see `docs/planning/QUALITY-PROGRAM.md`).
 - **WCAG contrast auditor** — `webos/tests/contrast-audit.test.js` enforces
   token-level ratios per theme preset (danger ink ≥7:1 on paper, focused
   window ring ≥3:1, accent ink ≥7:1 on every accent swatch) and fails if app
   CSS hardcodes a preset palette color. Persona/preset text AAA lives in
   `webos/tests/personas-theme.test.js`; shared WCAG math in
   `webos/tests/theme-math.js`.
-- **CI** — `.github/workflows/ci.yml` (GitHub, push/PR/manual dispatch) and
-  `.gitforce.yml` (local GitForge mirror) both run install → lint → contrast
-  audit → coverage → build. Version bumps touch three files:
+- **CI** — `.github/workflows/ci.yml` (GitHub, push/PR/manual dispatch) runs
+  install → lint → docs-coverage gate → WCAG contrast audit → tests +
+  coverage ratchet → build → **e2e sweep (hard gate)**. `.gitforce.yml` is
+  the local GitForge mirror. Version bumps touch three files:
   `webos/package.json`, `webos/src/version.js`, `webos/public/sw.js` (cache
   key).
+- **Pre-commit** — `.husky/pre-commit` (husky, committed at the repo root)
+  lints `webos/src` and `webos/tests` with `--max-warnings 0` when source or
+  test files are staged.
 
 ## The Browser
 
