@@ -54,11 +54,13 @@ jobs:
       - name: Build
         run: npm run build
 
-      # Full-system sweep: boots the built dist in headless Chromium and
-      # drives every first-party surface. github-latest runners ship Google
-      # Chrome; the sweep also accepts /usr/bin/chromium.
-      - name: E2E sweep (headless Chromium)
+      # Full-system sweep: boots the built dist in headless Chrome and drives
+      # every first-party surface. The runner image ships Google Chrome
+      # stable; the sweep also accepts /usr/bin/chromium.
+      - name: E2E sweep (headless Chrome)
         run: node ../packaging/e2e/webos-sweep.mjs
+        env:
+          CHROME: /usr/bin/google-chrome
 
       - name: Upload dist artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

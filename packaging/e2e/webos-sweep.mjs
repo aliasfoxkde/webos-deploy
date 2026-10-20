@@ -13,7 +13,6 @@ import { spawn } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { once } from 'node:events';
 
 const PORT = Number(process.env.SWEEP_PORT || 4219);
 const SHOTS = process.env.SWEEP_SHOTS || '/var/tmp/sweep-shots';
@@ -64,9 +63,23 @@ const chr = spawn(CHROME, [
   '--no-sandbox', '--disable-gpu',
   `--user-data-dir=${profile}`, 'about:blank',
 ], { stdio: 'pipe' });
-let stderr = ''; chr.stderr.on('data', (d) => { stderr += d; });
-await once(chr.stderr, 'data');
-const wsPort = stderr.match(/DevTools listening on ws:\/\/127\.0\.0\.1:(\d+)/)?.[1];
+// Chromium announces its DevTools endpoint on stderr, but the line does not
+// necessarily arrive in the FIRST chunk — on a CI runner the first chunk is
+// usually a dbus/GL warning. Keep reading until the endpoint shows up.
+let stderr = '';
+const wsPort = await new Promise((resolve, reject) => {
+  const timer = setTimeout(
+    () => reject(new Error(`chromium did not report a DevTools port\n${stderr.slice(-500)}`)),
+    30000,
+  );
+  chr.stderr.on('data', (d) => {
+    stderr += d;
+    const m = stderr.match(/DevTools listening on (ws:\/\/\S+)/);
+    if (!m) return;
+    clearTimeout(timer);
+    try { resolve(new URL(m[1]).port); } catch (e) { reject(e); }
+  });
+});
 const targets = await (await fetch(`http://127.0.0.1:${wsPort}/json/list`)).json();
 const ws = new WebSocket(targets.find((t) => t.type === 'page').webSocketDebuggerUrl);
 await new Promise((res, rej) => { ws.onopen = res; ws.onerror = rej; });
