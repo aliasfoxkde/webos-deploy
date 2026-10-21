@@ -10,8 +10,10 @@ The craft app builds are **never committed to this repo** — they are synced
 from upstream GitHub releases (`storytold/<app>`, asset
 `{app}-web-<version>.zip`) by `packaging/fetch-apps.sh`. Exceptions:
 deckcraft/soundcraft/effectcraft deploy from their `apps/<name>/` source
-checkouts, and firecraft from its own repository checkout — none of the
-four has upstream release zips (see `CLAUDE.md`).
+checkouts — none of the three has upstream release zips yet (see
+`CLAUDE.md`). FireCraft releases live under the `aliasfoxkde` org rather
+than `storytold`, but from v0.2.2 they include a web zip, so it syncs
+through the same `fetch-apps.sh` pipeline.
 
 ## Layout
 
@@ -31,6 +33,7 @@ cadcraft/ … zed/   sibling independent source repos (NOT part of this repo)
 |---|---|
 | artcraft-webos (the desktop) | https://artcraft-webos.pages.dev/ |
 | craft apps | `https://<app>-web.pages.dev/` (vectorcraft: `vectorcraft-web-9y7`) |
+| firecraft | https://firecraft-web.pages.dev/ (synced from the `aliasfoxkde/firecraft` release zip) |
 | deckcraft | https://deckcraft-web.pages.dev/ (built from the `apps/deckcraft` source checkout — no upstream release zip yet) |
 | soundcraft | https://soundcraft-web.pages.dev/ (built from the `apps/soundcraft` source checkout) |
 | effectcraft | https://effectcraft-web.pages.dev/ (built from the `apps/effectcraft` source checkout) |
@@ -87,10 +90,12 @@ node ../packaging/e2e/webos-sweep.mjs   # headless-Chrome e2e sweep (27 phases)
   `webos/tests/theme-math.js`.
 - **CI** — `.github/workflows/ci.yml` (GitHub, push/PR/manual dispatch) runs
   install → lint → docs-coverage gate → WCAG contrast audit → tests +
-  coverage ratchet → build → **e2e sweep (hard gate)**. `.gitforce.yml` is
-  the local GitForge mirror. Version bumps touch three files:
-  `webos/package.json`, `webos/src/version.js`, `webos/public/sw.js` (cache
-  key).
+  coverage ratchet → build → **e2e sweep (hard gate)** → **shellcheck** →
+  **Aegis security scan**. `.gitforce.yml` is the local GitForge mirror
+  (same gates; its runner image is `node:24-trixie-slim`, so the Aegis
+  step installs Python first — Aegis ships as the `aegis-cli` pip
+  package). Version bumps touch three files: `webos/package.json`,
+  `webos/src/version.js`, `webos/public/sw.js` (cache key).
 - **Pre-commit** — `.husky/pre-commit` (husky, committed at the repo root)
   lints `webos/src` and `webos/tests` with `--max-warnings 0` when source or
   test files are staged.

@@ -8,15 +8,17 @@ conventions, and the standing routine loop.
 
 | Dimension | Current | Target |
 |---|---|---|
-| Tests | 1273 specs / 82 files | steady growth |
-| Coverage stmts | 98.44% | **99%+** |
-| Coverage branches | **94.10%** | 95%+ |
-| Coverage funcs | 98.21% | **99%+** |
+| Tests | 1339 specs / 88 files | steady growth |
+| Coverage stmts | 98.59% | **99%+** |
+| Coverage branches | **94.20%** | 95%+ |
+| Coverage funcs | 98.16% | **99%+** |
 | Lines | 99.92% | hold |
 | Lint | 0 warnings | hold |
-| Aegis | baseline + triage done | wire into CI |
-| Shell scripts | untested | add shellcheck |
-| FireCraft version | 0.1.0 (stale row) | resolve via H2.0 |
+| Aegis | wired into GitHub Actions + GitForge | hold |
+| Shell scripts | shellcheck in CI | hold |
+| FireCraft version | 0.2.2 (row + SW cache + pipeline) | hold |
+| Registry rows | 12/12 match deployment | hold |
+| Craft apps vs upstream | behind (0.3.0 → 0.10.0 etc.) | P10 |
 | Next release | 3.20.0 | per H6 checklist |
 
 ---
@@ -188,6 +190,14 @@ For deckcraft/soundcraft/effectcraft: these have no release zips yet;
 their registry `version` reflects the last verified commit hash from their
 checkouts (recorded in the H3 table).
 
+**Done 2026-10-21.** All twelve rows agree with what is deployed; every
+deployed bundle is byte-identical to the local build of the same version.
+FireCraft moved to 0.2.2 and onto the standard fetched-zip pipeline (H3.2),
+and the invariant is now pinned by `webos/tests/registry-versions.test.js`
+(registry row = `fetch-apps.sh` version = `pwa-inject.sh` SW-cache version).
+The audit also surfaced a separate gap — the deployed craft apps are far
+behind their upstream releases — recorded as P10.
+
 ---
 
 ## Phase P7 — Docs and Architecture Hygiene
@@ -223,6 +233,56 @@ cover:
 - Aegis triage (all HIGH/MEDIUM findings resolved or accepted with reason)
 - GitForge e2e hard gate (the sweep is now a blocking step, not optional)
 - Zero-warning lint enforcement pinned in CI and pre-commit hook
+
+---
+
+## Phase P10 — Adopt the Upstream Craft App Releases
+
+**Owner**: this repo · **Exit gate**: the deployed craft apps serve the
+current upstream release, and the registry/SW-cache rows follow
+
+Found during the P6 registry audit (2026-10-21): every registry row is
+consistent with what is deployed, but the deployed set is pinned to
+versions that upstream passed weeks or months ago. The registry was never
+lying — it just describes an old deployment.
+
+Latest upstream release carrying a web zip, per app:
+
+| App | Deployed now | Latest upstream web zip |
+|---|---|---|
+| cadcraft | 0.3.0 | v0.10.0 |
+| designcraft | 0.4.0 | v0.10.0 |
+| gridcraft | 0.3.0 | v0.9.0 |
+| lightcraft | 0.4.0 | v0.10.0 |
+| pdfcraft | 0.4.0 | v0.10.1 |
+| photocraft | 0.5.0 | v0.11.1 |
+| vectorcraft | 0.7.0 | v0.14.0 |
+| wordcraft | 0.3.0 | v0.9.0 |
+| deckcraft | 0.4.0 | v0.9.0 (source checkout today) |
+| soundcraft | 0.5.0 | v0.10.0 (source checkout today) |
+| effectcraft | 0.8.0 | v0.13.0 (source checkout today) |
+| firecraft | 0.2.2 | v0.2.2 ✓ (current) |
+
+Steps, per app:
+
+1. Point `packaging/fetch-apps.sh` at the new version and run
+   `packaging/fetch-apps.sh --app <name> --force`.
+2. Update the `pwa-inject.sh` version stamp so the SW cache name moves
+   with the bundle (a stale cache name keeps serving the old build).
+3. Update the registry `version` row in `webos/src/os/registry.js`.
+4. `cd webos && npm run ci` — `tests/registry-versions.test.js` fails if
+   any of the three version statements disagree.
+5. Deploy: `npx wrangler pages deploy apps/<name> --project-name <name>-web`.
+   Bundles over the 25 MiB Pages cap (designcraft, vectorcraft, pdfcraft,
+   wordcraft, effectcraft) keep only `_worker.js` in the deploy and stream
+   their wasm from R2 — upload the blob first with
+   `wrangler r2 object put craftweb/<file>.wasm --file <f> --remote`.
+6. For deckcraft/soundcraft/effectcraft: move the source checkouts out of
+   `apps/` first — `fetch_one` does `rm -rf apps/<name>` on `--force` and
+   would destroy the checkout.
+
+This is an upgrade, not a fix: each app visibly changes. Do it app by app,
+with the sweep between steps.
 
 ---
 
@@ -274,16 +334,17 @@ a manual step.
 | 174 | Aegis MEDIUM triage | P3 | completed |
 | 175 | Fix state.jsx listener leak | P3 | completed |
 | 176 | Fix bridge.js listener leak | P3 | completed |
-| 177 | Cover remaining branches (chat, notepad, editor, browser) | P1 | pending |
-| 178 | Raise statement and function coverage to 99%+ | P2 | pending |
+| 177 | Cover remaining branches (chat, notepad, editor, browser) | P1 | completed |
+| 178 | Raise statement and function coverage to 99%+ | P2 | completed (documented residuals) |
 | 179 | Aegis baseline and rescan | P3 | completed |
 | 180 | E2E sweep local validation | — | completed |
 | 181 | Local CI simulation | — | completed |
 | 182 | Update QUALITY-PROGRAM.md baseline | P7 | completed |
-| — | Aegis wire into CI | P3 | pending |
-| — | Shellcheck for packaging scripts | P3 | pending |
+| 183 | Aegis wire into CI | P3 | completed |
+| 184 | Shellcheck for packaging scripts | P3 | completed |
+| 185 | FireCraft H2.0 version sync | P5 | completed |
+| 186 | Registry version audit (H3.3) | P6 | completed |
+| 187 | Docs hygiene and HISTORY.md entry | P7 | in progress |
+| 188 | Release 3.20.0 | P8 | pending |
 | — | Dependency refresh | P4 | pending |
-| — | FireCraft H2.0 version sync | P5 | pending |
-| — | Registry version audit (H3.3) | P6 | pending |
-| — | Module index accuracy | P7 | pending |
-| — | Release 3.20.0 | P8 | pending |
+| — | Adopt upstream craft app releases | P10 | pending |

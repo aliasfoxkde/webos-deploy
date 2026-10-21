@@ -26,11 +26,11 @@ summaries (full notes live on each release page).
 | v3.12.0 | 2026-10-11 | SoundCraft + EffectCraft join the desktop |
 | v3.13.0 | 2026-10-11 | Theme builder + wallpaper compositor/studio |
 | v3.14.0 | 2026-10-12 | WCAG AAA token enumeration + real contrast fixes; 1017-spec suite; coverage floors 96.5/88.5/95.8/99.8 (99.92% lines); docs-coverage gate (Module index ⇄ src/); strict lint; CI hardening; GitForge clean-container validation; full-tree Aegis triage |
+| v3.15.0 | 2026-10-13 | FireCraft joins the desktop as the twelfth craft app (default app, own Pages project, original code-drawn mark); Welcome copy → 12 |
 | v3.16.0 | 2026-10-18 | FireCraft v0.2.1 integrated; 4 Settings edge-case specs; H3.3 photocraft corrected |
 | v3.17.0 | 2026-10-19 | FireCraft H2 complete (bridge/autosave/open-with/exportPng→Photos/E2E probe); H4 quality forward path complete (deps refreshed, Aegis clean, docs synced); H5.3 container revalidation clean; 1037 specs, coverage floors maintained |
 | v3.18.0 | 2026-10-19 | fix(bridge): close event-listener-leak in bridgeRequest/postToApp; chore(.gitforce): add docs-coverage gate; chore(aegis): regenerate baseline (1810 findings, 111 files); H3.2 firecraft fetch-apps entry complete; 1052 specs, 99.78% lines |
 | v3.19.0 | 2026-10-20 | fix(ci): coverage made reproducible (fake-timer clock specs) and the ratchet repaired — CI had been red on every push since v3.18.0 was cut; dead `makeFirecraftExportHandlers` export removed; export-to-Files, Files "Open in FireCraft" and SaveDialog backdrop covered; e2e sweep repaired (module-URL import, DevTools port, container sandbox, browser detection) and promoted to a hard CI gate; shared husky pre-commit hook committed; 1058 specs, 99.92% lines |
-| v3.15.0 | 2026-10-13 | FireCraft joins the desktop as the twelfth craft app (default app, own Pages project, original code-drawn mark); Welcome copy → 12 |
 
 ## Deployment map
 
@@ -39,7 +39,7 @@ Static Pages deployments only — no compute on the rendering path.
 | Target | Deploys from | What |
 |---|---|---|
 | https://artcraft-webos.pages.dev | `webos/dist` via `npx wrangler pages deploy dist --project-name artcraft-webos --branch main` (run from `webos/`) | The OS shell |
-| https://firecraft-web.pages.dev | `/nas/Temp/repos/FireCraft` checkout: `cargo run -p xtask -- dist --web` → `sha256sum -c MANIFEST.sha256` → `wrangler pages deploy dist/web --project-name firecraft-web` | FireCraft (twelfth craft app; no upstream release zips) |
+| https://firecraft-web.pages.dev | `apps/firecraft` (fetched from the `aliasfoxkde/firecraft` release zip via `packaging/fetch-apps.sh`) → `wrangler pages deploy apps/firecraft --project-name firecraft-web` | FireCraft (twelfth craft app; upstream publishes a web zip since v0.2.2) |
 | cadcraft-web, designcraft-web, gridcraft-web, lightcraft-web, pdfcraft-web, photocraft-web, vectorcraft-web-9y7, wordcraft-web, deckcraft-web, soundcraft-web, effectcraft-web (.pages.dev) | upstream release zips via `packaging/fetch-apps.sh` (the first eight); `apps/<name>/` source checkouts (deck/sound/effect — no upstream zips yet) | The other craft apps — URLs as registered in `webos/src/os/registry.js` |
 | R2 bucket `craftweb` + `_worker.js` | `packaging/` tooling | wasm blobs over the 25 MiB Pages asset cap |
 

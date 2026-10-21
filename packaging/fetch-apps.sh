@@ -31,7 +31,7 @@ done
 APPS_LIST=(
   "cadcraft 0.3.0"
   "designcraft 0.4.0"
-  "firecraft 0.2.1 aliasfoxkde"
+  "firecraft 0.2.2 aliasfoxkde"
   "gridcraft 0.3.0"
   "lightcraft 0.4.0"
   "pdfcraft 0.4.0"

@@ -1,3 +1,66 @@
+## 2026-10-21 — coverage sprint, Aegis+shellcheck in CI, FireCraft v0.2.2, registry audit
+
+- **App branch coverage (P1).** New specs for the four apps that had no
+  dedicated file: `tests/browser-tabs.test.js` (26 specs, pure unit tests
+  over `src/apps/browser/tabs.js` — the reducer and its helpers have no UI
+  dependency, so they are tested directly rather than through the DOM),
+  `tests/notepad-branches.test.jsx` (24 specs over `notes.js` plus UI
+  smoke), `tests/editor-branches.test.jsx` (21 specs over `buffers.js` plus
+  UI smoke), and additions to `tests/calc-programmer.test.js` (unary `+`,
+  the Unicode operator aliases `× ÷ −`, and the unexpected-character
+  throw). Several early failures were wrong expectations, not bugs:
+  `tabsReducer` compares tab ids with `===` so the fixtures have to come
+  from `initialTabs()`, and `deleteNote` re-seeds an "Untitled" note when
+  the last one is removed instead of leaving an empty list.
+- **Statement/function coverage (P2).** 98.59% stmts / 94.20% branches /
+  98.16% funcs / 99.92% lines over 88 files / 1339 specs. The residual is
+  classified in the `vitest.config.js` comment: seven genuinely
+  unreachable lines (marked `// istanbul ignore next`), and the rest
+  environment-specific (IndexedDB error paths that `fake-indexeddb` never
+  fires, network/wasm paths with no network in the test env, an async
+  stream whose timers differ under happy-dom). The 99%+ target was not
+  reached on statements and functions; the residuals are documented rather
+  than papered over.
+- **Aegis + shellcheck in CI (P3).** Aegis ships as a Python CLI
+  (`aegis-cli` on PyPI), so the GitHub Actions job installs Python 3.12
+  before `pip install aegis-cli && aegis scan . --baseline
+  webos/.aegis-baseline.json --format github`. The GitForge runner image
+  (`node:24-trixie-slim`) has no Python, so that job installs it first.
+  `packaging/*.sh` now goes through shellcheck.
+- **FireCraft v0.2.2 (P5 / H2.0).** The deployed bundle was
+  `firecraft-web-71ff69a0cf973bce`, which is exactly the wasm
+  (`0820a445…`) published in the upstream v0.2.2 release notes — so
+  production was already at v0.2.2, sourced from the upstream release zip.
+  A local rebuild from upstream HEAD produced a *different* wasm
+  (`0ef001db…`) because 17 commits sit on top of the `v0.2.2` tag
+  (`1665ce8`) — CI/docs work plus the feature-gated, native-only
+  `lossy-webp` encoder, which wasm does not build. The right answer was
+  therefore not the local build: upstream now publishes a web zip, so H3.2
+  applies and the deployment was migrated to the fetched release build
+  (`packaging/fetch-apps.sh --app firecraft --force` → `apps/firecraft/`).
+  The registry row went `0.2.1` → `0.2.2`, and `pwa-inject.sh` was
+  stamping the SW cache as `firecraft-web-0.2.1` — that would have kept
+  browsers serving the old bundle from cache after the deploy, so it now
+  stamps `0.2.2`. Embed probe green locally and against production.
+- **Registry audit (P6 / H3.3).** All twelve craft-app rows match what is
+  deployed, checked by comparing each live bundle's asset hash and wasm
+  SHA-256 against the local build. The invariant was previously stated in
+  three places with nothing keeping them together; `tests/registry-versions.test.js`
+  now fails if the registry row, the `fetch-apps.sh` version and the
+  `pwa-inject.sh` SW-cache version disagree. The audit also found that
+  upstream has released far newer versions of every craft app (all with
+  web zips) — the deployed set is pinned well behind. That is an upgrade
+  decision, not an audit fix, so it is recorded as P10 rather than
+  folded in here.
+- **Docs (P7).** HISTORY/PROGRESS/HANDOFF/PHASES updated; CLAUDE.md and
+  README corrected on FireCraft's deployment route (it now rides the
+  standard fetch pipeline, and `aliasfoxkde/firecraft` is the one craft
+  app not under the `storytold` org). ARCHITECTURE.md's Module index was
+  already accurate — the two-way gate `tests/docs-coverage.test.js`
+  proves it, so no edit was needed.
+- **E2E sweep**: 27/27 phases green, 0 page errors, against the newly
+  deployed FireCraft bundle.
+
 ## 2026-10-20 — CI repair: reproducible coverage, honest ratchet, e2e as a gate
 
 - **The CI gate had been red since 2026-10-19.** Commit 594e579 raised the

@@ -4,20 +4,21 @@ Live status board. Update this (and [SESSIONS.md](SESSIONS.md)) at the end
 of every working session. Plan-of-record for open work:
 [HANDOFF.md](HANDOFF.md).
 
-## Snapshot (verified 2026-10-20)
+## Snapshot (verified 2026-10-21)
 
 | Dimension | State |
 |---|---|
 | Released / deployed version | **3.19.0** → next: **3.20.0** ([v3.19.0](https://github.com/aliasfoxkde/webos-deploy/releases/tag/v3.19.0)) |
 | Production | https://artcraft-webos.pages.dev — served bundle hash matches local `webos/dist`, `sw.js` cache `webos-v3.19.0` |
-| FireCraft | https://firecraft-web.pages.dev — v0.2.1 integrated, bridge autosave/open-with/exportPng→Photos; save-as dialog for export-to-Files (2026-10-19) |
-| Tests | 1273 specs / 82 files, `npm run ci` green |
-| Coverage | 98.44% stmts / 94.10% branches / 98.21% funcs / **99.92% lines**; floors 98.3/94.0/98.1/99.85 in `webos/vitest.config.js` (82 files / 1273 tests) (measured − tolerance; 81 files / 1222 tests) |
+| FireCraft | https://firecraft-web.pages.dev — **v0.2.2**, served from the upstream release zip (`firecraft-web-71ff69a0cf973bce`, wasm `0820a445…`) on the standard `fetch-apps.sh` pipeline; bridge autosave/open-with/exportPng→Photos + export-to-Files (2026-10-21) |
+| Tests | 1339+ specs / 88 files, `npm run ci` green |
+| Coverage | 98.59% stmts / 94.20% branches / 98.16% funcs / **99.92% lines**; floors 98.3/94.0/98.1/99.85 in `webos/vitest.config.js` (88 files / 1339 tests, measured − tolerance) |
 | Lint | strictest ruleset, zero warnings |
 | Accessibility | WCAG 2.1 AAA token gates incl. wallpaper-extreme flattening + desktop scrim pills |
-| Docs coverage | ARCHITECTURE.md Module index (110 rows) ⇄ src/ enforced by `tests/docs-coverage.test.js` — now in GitForge CI pipeline |
-| CI | GitHub Actions **green** on `main` (verified 2026-10-20, run 39492352315 — lint, docs gate, WCAG audit, coverage ratchet, build and the 27-phase e2e sweep all pass). GitForge pipeline mirrors the same gates. It had been red on every push from 2026-10-19 — see risk R2 |
-| Aegis | baseline regenerated 2026-10-19 (1810 findings / 111 files / 62 pattern classes; new classes: pii-output-marker, finance-tofixed-currency, mobile-optimization, role-play-override, chart-accessibility) |
+| Docs coverage | ARCHITECTURE.md Module index ⇄ src/ enforced by `tests/docs-coverage.test.js` — now in GitForge CI pipeline |
+| Registry versions | 12/12 craft-app rows match the deployed bundle (verified by asset + wasm hash); pinned by `tests/registry-versions.test.js` |
+| CI | GitHub Actions: lint, docs gate, WCAG audit, coverage ratchet, build, 27-phase e2e sweep, **shellcheck**, **Aegis scan**. GitForge pipeline mirrors the same gates. It had been red on every push from 2026-10-19 — see risk R2 |
+| Aegis | baseline regenerated 2026-10-19 (1810 findings / 111 files / 62 pattern classes); scan now runs in CI against that baseline |
 
 ## Done (evidence in HISTORY.md / SESSIONS.md)
 
@@ -40,9 +41,15 @@ of every working session. Plan-of-record for open work:
       export-to-Files (shared SaveDialog component, 2026-10-19); H2.6 E2E probe
       open→apply→exportDocument round-trip verified.
 - [ ] **H3** Upstream adoption watch — H3.1 FireCraft app mark swap when
-      upstream ships one (waiting on aliasfoxkde/FireCraft#2); H3.2
-      fetch-apps.sh entry done (firecraft 0.2.1 from aliasfoxkde org,
-      pwa-inject + icons done); watching deck/sound/effect for upstream zips.
+      upstream ships one (waiting on aliasfoxkde/FireCraft#2); H3.2 done
+      2026-10-21 (firecraft 0.2.2 from aliasfoxkde org, fetched zip,
+      pwa-inject + icons done, deployed and probe-green); H3.3 registry
+      audit done 2026-10-21 — all 12 rows match deployment; watching
+      deck/sound/effect for upstream zips.
+- [ ] **P10** Adopt the upstream craft-app releases — the deployed set is
+      pinned to versions upstream passed (cadcraft 0.3.0 vs v0.10.0,
+      vectorcraft 0.7.0 vs v0.14.0, …); every one of those releases
+      ships a web zip. Deliberate upgrade, app by app — see PHASES.md P10.
 - [x] **H4** Quality forward path — H4.1 coverage floors met (96.5/88.5/95.8/99.6), H4.2 deps refreshed (vitest 5.0.5, coverage-v8, fake-indexeddb; React 19 / Vite 8 / ESLint 10 deferred), H4.3 Aegis re-scan zero new findings (baseline suppresses all), H4.4 sweep synced.
 - [x] **H5** H5.3 container revalidation complete in node:24-trixie-slim; H5.1 pipeline registered (push, 4e1079cd…ccc957); H5.2 GitHub Actions as primary gate (runner dispatch pending for GitForge).
 - [x] **H7** Coverage determinism + CI repair (2026-10-20) — three one-second

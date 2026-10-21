@@ -168,7 +168,7 @@ inject_app wordcraft   "WordCraft"   "Word processing"                        "#
     <path d="M136 80h176l64 64v288H136 Z"/>
     <path d="M184 216h144M184 264h144M184 312h96"/>'
 
-inject_app firecraft   "FireCraft"   "Procedural 3D simulation"               "#f97316" "0.2.1" '
+inject_app firecraft   "FireCraft"   "Web & screen design"                     "#f97316" "0.2.2" '
     <path d="M256 80 C320 160 400 200 400 280 C400 360 320 400 256 440 C192 400 112 360 112 280 C112 200 192 160 256 80 Z"/>
     <path d="M256 160 C288 200 320 220 320 268 C320 316 288 336 256 356 C224 336 192 316 192 268 C192 220 224 200 256 160 Z" fill="#f97316" stroke="none"/>'
 

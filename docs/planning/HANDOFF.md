@@ -136,7 +136,7 @@ deployed bundle at firecraft-web.pages.dev was pushed by the operator
 during that work (asset hash `firecraft-web-a7c2fc5b38107fce`, exact
 source commit unverified — the bundle carries no version string).
 
-- [ ] H2.0 **Verify-or-redeploy FireCraft** (independent repo):
+- [x] H2.0 **Verify-or-redeploy FireCraft** (independent repo):
 
       1. `cd /nas/Temp/repos/FireCraft && git status` — commit or stash
          any changes before touching anything.
@@ -159,6 +159,26 @@ source commit unverified — the bundle carries no version string).
          `FC_BASE_URL=https://artcraft-webos.pages.dev/` against production.
       9. Update registry `version` row; `cd webos && npm run ci`; release;
          H2.0 is done only when the embed probe is green in both environments.
+
+      **Done 2026-10-21.** Steps 1–5: upstream is at v0.2.2
+      (`0b5c8e7`; the `v0.2.2` tag is `1665ce8`, and 17 commits of
+      post-tag work sit on top — CI/docs plus the feature-gated
+      native-only `lossy-webp` encoder, which wasm does not build).
+      The local `cargo run -p xtask -- dist --web` produced wasm
+      `0ef001db57dfeb1df3e5489461fce83e11a549a64d6500f189c169d4cf8eb2dd`
+      (asset `firecraft-web-bfc5c1ecf8622ce2`) — which differs from the
+      published release. Upstream v0.2.2 ships `firecraft-web-0.2.2.zip`
+      whose wasm is `0820a44550e6d8319ae7dbb2a3be0f4fb0c2b7fbc2266d8b3cf0774acac6bded`
+      (asset `firecraft-web-71ff69a0cf973bce`), and that is what
+      firecraft-web.pages.dev was already serving. Since upstream now
+      publishes a web zip, H3.2 applies: the deployment was migrated to the
+      fetched release build (`apps/firecraft/`, via
+      `packaging/fetch-apps.sh --app firecraft --force`), the registry row
+      was set to `0.2.2`, and `pwa-inject.sh` now stamps
+      `firecraft-web-0.2.2` as the SW cache name (it was still `0.2.1`).
+      Steps 8: the embed probe is green locally and against production
+      (`FC_BASE_URL=https://artcraft-webos.pages.dev/`) — ready + apply +
+      exportDocument with real bytes, no mocks.
 
 - [x] H2.1 **Read the contract** (`/nas/Temp/repos/FireCraft/docs/WEBOS.md`) — inbound
       `openDocument{bytes}` / `apply{name,payload}` / `exportPng` /
@@ -195,33 +215,56 @@ source commit unverified — the bundle carries no version string).
       zip, extracts the icon, resizes to 256 px, updates ATTRIBUTION.md and
       the SVG stub. Run it when FireCraft ships an official mark. Dry-run
       verified clean (`--dry-run` prints the full plan before touching anything).
-- [ ] H3.2 When FireCraft (or deck/sound/effect) publishes upstream
+- [x] H3.2 When FireCraft (or deck/sound/effect) publishes upstream
       release zips: add it to `packaging/fetch-apps.sh`'s list, migrate
       deployment to the fetched build, and update CLAUDE.md/PROGRESS.md —
       NEVER run fetch-apps.sh with `--force` while a checkout still lives
       in the target path (it `rm -rf`s).
-- [ ] H3.3 **Keep registry `version` fields in sync with deployed app versions**.
-      The current version table (verified 2026-10-18 from sibling checkouts):
 
-      | App | Sibling commit | Deployed version | Registry row |
-      |---|---|---|---|
-      | cadcraft | `59631c8` | 0.3.0 | 0.3.0 ✓ |
-      | designcraft | `14e677b` | 0.4.0 | 0.4.0 ✓ |
-      | gridcraft | `fb82389` | 0.3.0 | 0.3.0 ✓ |
-      | lightcraft | `a6bc63a` | 0.4.0 | 0.4.0 ✓ |
-      | pdfcraft | `f4d489e` | 0.4.0 | 0.4.0 ✓ |
-      | photocraft | `f4d489e` (v0.5.0 tag) | 0.5.0 | 0.5.0 ✓ |
-      | vectorcraft | `eec150e2` | 0.7.0 | 0.7.0 ✓ |
-      | wordcraft | `7584b9b` | 0.3.0 | 0.3.0 ✓ |
-      | deckcraft | `84acb49` | 0.4.0 | 0.4.0 ✓ |
-      | soundcraft | `240aa84` | 0.5.0 | 0.5.0 ✓ |
-      | effectcraft | `67434e9` | 0.8.0 | 0.8.0 ✓ |
-      | firecraft | `/nas/Temp/repos/FireCraft` | (verify per H2.0) | 0.1.0 ⚠ |
+      **FireCraft done 2026-10-21.** Upstream `aliasfoxkde/firecraft` v0.2.2
+      publishes `firecraft-web-0.2.2.zip` (wasm SHA-256
+      `0820a44550e6d8319ae7dbb2a3be0f4fb0c2b7fbc2266d8b3cf0774acac6bded`).
+      It is now in `fetch-apps.sh` (as `"firecraft 0.2.2 aliasfoxkde"`) and
+      deploys from `apps/firecraft/` like the other craft apps. `apps/firecraft`
+      holds a fetched build, not a checkout, so `--force` is safe there.
+      deckcraft/soundcraft/effectcraft still have no upstream web zip.
+- [x] H3.3 **Keep registry `version` fields in sync with deployed app versions**.
+      Re-audited 2026-10-21 by comparing each deployed bundle's asset hash
+      (and wasm SHA-256) against the local build, and the local build against
+      the version the pipeline syncs:
 
-      photocraft's registry (0.5.0) and sibling (v0.5.0 tag, `f4d489e`) are
-      aligned. No action needed.
-      firecraft's row stays at 0.1.0 until H2.0 resolves (the upstream
-      Cargo.toml version is the source of truth).
+      | App | Deployed bundle | Version served | Registry row | Pipeline version |
+      |---|---|---|---|---|
+      | cadcraft | `cadcraft-web-b1015ce37f44b8a6` | 0.3.0 | 0.3.0 ✓ | 0.3.0 ✓ |
+      | designcraft | `designcraft-web-47bda5c2b7b43c6c` | 0.4.0 | 0.4.0 ✓ | 0.4.0 ✓ |
+      | gridcraft | `gridcraft-web-15e7a40018a19806` | 0.3.0 | 0.3.0 ✓ | 0.3.0 ✓ |
+      | lightcraft | `lightcraft_web` | 0.4.0 | 0.4.0 ✓ | 0.4.0 ✓ |
+      | pdfcraft | `pdfcraft-web-a5e9b1d863d1ae9b` | 0.4.0 | 0.4.0 ✓ | 0.4.0 ✓ |
+      | photocraft | `photocraft-web-d1c0874c5553435c` | 0.5.0 | 0.5.0 ✓ | 0.5.0 ✓ |
+      | vectorcraft | `vectorcraft-web-dc0d7ab8eeca049b` | 0.7.0 | 0.7.0 ✓ | 0.7.0 ✓ |
+      | wordcraft | `wordcraft-web-da2e873784bb53d3` | 0.3.0 | 0.3.0 ✓ | 0.3.0 ✓ |
+      | deckcraft | `deckcraft-web-112f793cffb6e2dd` | 0.4.0 | 0.4.0 ✓ | source checkout |
+      | soundcraft | `soundcraft-web-6a85e8f57d59c592` | 0.5.0 | 0.5.0 ✓ | source checkout |
+      | effectcraft | `effectcraft_web` | 0.8.0 | 0.8.0 ✓ | source checkout |
+      | firecraft | `firecraft-web-71ff69a0cf973bce` | 0.2.2 | 0.2.2 ✓ | 0.2.2 ✓ |
+
+      All twelve rows agree, and every deployed bundle is byte-identical to
+      the local build of the same version. The invariant is now pinned by
+      `webos/tests/registry-versions.test.js`, which fails if the registry
+      row, the `fetch-apps.sh` version, and the `pwa-inject.sh` SW-cache
+      version ever disagree.
+
+      **Open finding (not a registry defect): upstream has moved ahead of
+      what is deployed.** As of 2026-10-21 the latest upstream releases
+      carrying a web zip are cadcraft v0.10.0, designcraft v0.10.0,
+      gridcraft v0.9.0, lightcraft v0.10.0, pdfcraft v0.10.1,
+      photocraft v0.11.1, vectorcraft v0.14.0, wordcraft v0.9.0,
+      deckcraft v0.9.0, soundcraft v0.10.0, effectcraft v0.13.0 —
+      every one of them ships `<app>-web-<version>.zip`. The deployed set is
+      pinned to much older versions because `fetch-apps.sh` was never
+      re-pointed. Adopting the newer builds is a deliberate upgrade
+      decision (each one changes a user-visible app), tracked as P10 in
+      PHASES.md — not an audit fix.
 
 ## Phase H4 — quality forward path
 
@@ -319,8 +362,11 @@ source commit unverified — the bundle carries no version string).
   `calcState.jsx:126`, `MarkdownView.jsx:81`, `state.jsx:483` + V8
   attribution quirk `Panels.jsx:336` — proven, documented in
   QUALITY-PROGRAM.md; ratchets only go up).
-- Do not add `firecraft` to `packaging/fetch-apps.sh` (no upstream zips;
-  `--force` would delete its checkout if paths ever collide).
+- Do not add `deckcraft`/`soundcraft`/`effectcraft` to
+  `packaging/fetch-apps.sh` (no upstream zips; `--force` would `rm -rf`
+  their source checkouts, which live in `apps/<name>/`). FireCraft IS in
+  the list since upstream v0.2.2 — `apps/firecraft/` holds a fetched build,
+  not a checkout.
 - Do not commit sibling repos' contents or fetched builds.
 - Do not introduce SSR, a Node server, or any render-path compute.
 - Do not lower coverage floors, lint strictness, WCAG gates, or
