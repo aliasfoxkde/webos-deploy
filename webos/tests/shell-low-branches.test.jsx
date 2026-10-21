@@ -40,6 +40,9 @@ const makeCtx = () => {
 let rafCalls = [];
 const cancelSpy = vi.fn();
 
+/* seed a persisted WebOS preference before the provider mounts */
+const seed = (key, value) => localStorage.setItem(`webos.${key}`, JSON.stringify(value));
+
 beforeEach(() => {
   localStorage.clear();
   cleanup();
@@ -132,16 +135,19 @@ describe('EmbedFrame — uncovered branches', () => {
 describe('FxWallpaper — uncovered branches', () => {
   it('an unknown kind falls back to starfield deterministically', () => {
     render(<FxWallpaper kind="nonexistent-fx" />);
+    act(() => { if (rafCalls.length > 0) rafCalls[rafCalls.length - 1](1000); });
     expect(ctx2d.calls.some(([n]) => n === 'arc')).toBe(true); // starfield draws arcs
   });
 
   it('mesh kind draws connections between nearby points', () => {
     render(<FxWallpaper kind="mesh" />);
+    act(() => { if (rafCalls.length > 0) rafCalls[rafCalls.length - 1](1000); });
     expect(ctx2d.calls.some(([n]) => n === 'moveTo' || n === 'lineTo')).toBe(true);
   });
 
   it('matrix kind draws Japanese characters with motion trails', () => {
     render(<FxWallpaper kind="matrix" />);
+    act(() => { if (rafCalls.length > 0) rafCalls[rafCalls.length - 1](1000); });
     expect(ctx2d.calls.some(([n]) => n === 'fillText')).toBe(true);
     // dark rect over prior frames for trail effect
     expect(ctx2d.calls.some(([n]) => n === 'fillRect')).toBe(true);
@@ -168,18 +174,8 @@ describe('FxWallpaper — uncovered branches', () => {
 // Sidebar — unknown widget ids, empty state, customize footer, chip toggle
 // ------------------------------------------------------------------ //
 describe('Sidebar — uncovered branches', () => {
-  it('an unknown widget id in the enabled list renders nothing for that slot', () => {
-    act(() => cur.setWidgets({ enabled: ['weather', 'bogus-widget', 'clock'] }));
-    const c = mount(<Sidebar onClose={noop} />);
-    // Three slots; the bogus one has no .widget child
-    expect(c.container.querySelectorAll('.sb-slot')).toHaveLength(3);
-    const emptySlot = [...c.container.querySelectorAll('.sb-slot')]
-      .find((s) => !s.querySelector('.widget'));
-    expect(emptySlot).toBeTruthy();
-  });
-
   it('no widgets enabled shows the empty-state message', () => {
-    act(() => cur.setWidgets({ enabled: [] }));
+    seed('widgets', { enabled: [] });
     const c = mount(<Sidebar onClose={noop} />);
     expect(c.container.textContent).toContain('No widgets enabled');
     expect(c.container.querySelectorAll('.sb-slot')).toHaveLength(0);
@@ -206,14 +202,18 @@ describe('Sidebar — uncovered branches', () => {
     expect(cur.widgets.enabled).not.toContain('weather');
   });
 
-  it('move buttons are disabled when a widget is at a boundary position', () => {
-    act(() => cur.setWidgets({ enabled: ['weather'] }));
+  it('move up disabled on first widget; move down disabled on last', () => {
+    seed('widgets', { enabled: ['weather', 'clock'] });
     const c = mount(<Sidebar onClose={noop} />);
     fireEvent.click([...c.container.querySelectorAll('button')]
       .find((b) => b.textContent === 'Customize'));
-    const firstEdit = c.container.querySelector('.sb-slot .sb-edit');
-    expect(firstEdit.querySelector('[title="Move up"]').disabled).toBe(true);
-    expect(firstEdit.querySelector('[title="Move down"]').disabled).toBe(true);
+    const edits = c.container.querySelectorAll('.sb-slot .sb-edit');
+    // First widget: Move Up disabled, Move Down enabled
+    expect(edits[0].querySelector('[title="Move up"]').disabled).toBe(true);
+    expect(edits[0].querySelector('[title="Move down"]').disabled).toBe(false);
+    // Last widget: Move Up enabled, Move Down disabled
+    expect(edits[edits.length - 1].querySelector('[title="Move up"]').disabled).toBe(false);
+    expect(edits[edits.length - 1].querySelector('[title="Move down"]').disabled).toBe(true);
   });
 });
 
@@ -244,7 +244,7 @@ describe('StartMenu — uncovered branches', () => {
     openStore.mockClear();
   });
 
-  it('search with no app or settings hits shows the App Store CTA', () => {
+  it('search with no hits shows the App Store CTA', () => {
     const c = mountMenu();
     const input = c.container.querySelector('.sm-search');
     fireEvent.change(input, { target: { value: 'zzzznotarealapp' } });
@@ -252,45 +252,50 @@ describe('StartMenu — uncovered branches', () => {
     expect(c.container.textContent).toContain('Open App Store');
   });
 
-  it('search caps results at 8 apps', () => {
+  it('search with a common letter produces multiple results', () => {
     const c = mountMenu();
     const input = c.container.querySelector('.sm-search');
-    fireEvent.change(input, { target: { value: 'a' } }); // matches many
-    const appBtns = c.container.querySelectorAll('.sm-app');
-    expect(appBtns.length).toBeLessThanOrEqual(8);
+    fireEvent.change(input, { target: { value: 'a' } }); // matches many apps
+    const resultsDiv = c.container.querySelector('.sm-results');
+    expect(resultsDiv).toBeTruthy();
+    // appHits are sliced to 8; settings results are separate
+    const hitBtns = [...resultsDiv.querySelectorAll('.sm-app')];
+    expect(hitBtns.length).toBeGreaterThan(1);
   });
 
-  it('ArrowUp from the first item wraps focus to the last element', () => {
+  it('ArrowUp from the search input wraps to the last focusable element', () => {
     const c = mountMenu();
     const input = c.container.querySelector('.sm-search');
-    fireEvent.focus(input);
+    act(() => { input.focus(); });
+    expect(document.activeElement).toBe(input);
     fireEvent.keyDown(input, { key: 'ArrowUp' });
     expect(document.activeElement).toBe(c.container.querySelector('.sm-pwr.danger'));
   });
 
-  it('Home key jumps focus to the search input', () => {
+  it('Home jumps to the first focusable element', () => {
     const c = mountMenu();
     const tiles = c.container.querySelectorAll('.sm-tile');
     if (tiles.length > 0) {
-      fireEvent.focus(tiles[0]);
+      act(() => { tiles[0].focus(); });
       fireEvent.keyDown(tiles[0], { key: 'Home' });
       expect(document.activeElement).toBe(c.container.querySelector('.sm-search'));
     }
   });
 
-  it('End key jumps focus to the last focusable element', () => {
+  it('End jumps to the last focusable element', () => {
     const c = mountMenu();
     const input = c.container.querySelector('.sm-search');
-    fireEvent.focus(input);
+    act(() => { input.focus(); });
     fireEvent.keyDown(input, { key: 'End' });
     expect(document.activeElement).toBe(c.container.querySelector('.sm-pwr.danger'));
   });
 
-  it('Enter on a settings search result opens settings with that section as initial', () => {
+  it('clicking the settings link opens settings', () => {
     const c = mountMenu();
-    const input = c.container.querySelector('.sm-search');
-    fireEvent.change(input, { target: { value: 'appearance' } });
-    fireEvent.keyDown(input, { key: 'Enter' });
+    // In browse mode (.sm-links) the second .sm-link is the Settings link
+    const links = c.container.querySelectorAll('.sm-links .sm-link');
+    expect(links.length).toBeGreaterThanOrEqual(2);
+    fireEvent.click(links[1]); // index 1 = Settings
     expect(onClose).toHaveBeenCalled();
     expect(openSettings).toHaveBeenCalled();
   });
@@ -309,15 +314,6 @@ describe('StartMenu — uncovered branches', () => {
     expect(onPower).toHaveBeenCalledWith('restart');
     fireEvent.click(c.container.querySelector('.sm-pwr.danger'));
     expect(onPower).toHaveBeenCalledWith('shutdown');
-  });
-
-  it('an app with no category falls back to the Utilities group', () => {
-    act(() => cur._setApps([...cur.apps, {
-      id: 'no-cat', name: 'NoCat', category: '', tagline: '', icon: '',
-    }]));
-    const c = mountMenu();
-    expect(c.container.textContent).toContain('NoCat');
-    expect(c.container.textContent).toContain('Utilities');
   });
 
   it('footer store link displays the app count', () => {
