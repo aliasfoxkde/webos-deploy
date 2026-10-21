@@ -24,6 +24,11 @@ describe('evalProgrammer precedence', () => {
     expect(evalProgrammer('~(1 | 2)', 10, 32)).toBe(-4n);
   });
 
+  it('unary + is parsed without effect', () => {
+    expect(evalProgrammer('+5', 10, 32)).toBe(5n);
+    expect(evalProgrammer('+-3', 10, 32)).toBe(-3n);
+  });
+
   it('literals follow the active base; foreign digits are errors', () => {
     expect(evalProgrammer('ff + 1', 16, 32)).toBe(256n);
     expect(evalProgrammer('101 + 1', 2, 32)).toBe(6n); // 0b101 + 1 = 6? no: 5+1
@@ -77,6 +82,16 @@ describe('toBaseString', () => {
 });
 
 describe('programmer parse guards', () => {
+  it('unicode operator aliases × ÷ − are recognised as * / -', () => {
+    // U+00D7 MULTIPLICATION SIGN, U+00F7 DIVISION SIGN, U+2212 MINUS SIGN
+    expect(evalProgrammer('3 × 4', 10, 32)).toBe(12n);
+    expect(evalProgrammer('20 ÷ 4', 10, 32)).toBe(5n);
+    expect(evalProgrammer('5 − 3', 10, 32)).toBe(2n);
+  });
+
+  it('throws on unexpected character', () => {
+    expect(() => evalProgrammer('3 @ 4', 10, 32)).toThrow("Unexpected character '@'");
+  });
   it('integer division and modulo with BigInt operands', () => {
     expect(evalProgrammer('17 / 5', 10, 64)).toBe(3n);
     expect(evalProgrammer('17 % 5', 10, 64)).toBe(2n);
