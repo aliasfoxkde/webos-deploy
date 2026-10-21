@@ -45,8 +45,8 @@ warn-then-fail order so CI is green at every commit.
      reference pattern for the three one-second clock intervals).
    - **Floors sit a fixed tolerance below the measured value**, and the
      measured value is confirmed by two consecutive full runs that agree
-     exactly. Current baseline (2026-10-20, 81 files / 1222 specs):
-     98.41 / 94.01 / 98.16 / 99.92; floors 98.3 / 94.0 / 98.1 / 99.85.
+     exactly. Current baseline (2026-10-21, 82 files / 1273 specs):
+     98.44 / 94.10 / 98.21 / 99.92; floors 98.3 / 94.0 / 98.1 / 99.85.
      Only 4 lines are uncovered (3 unreachable `default:` arms plus one V8
      attribution quirk).
 2. **Lint (ESLint 9 flat config)**: `eslint:recommended` + react-hooks +

@@ -11,8 +11,8 @@ of every working session. Plan-of-record for open work:
 | Released / deployed version | **3.19.0** → next: **3.20.0** ([v3.19.0](https://github.com/aliasfoxkde/webos-deploy/releases/tag/v3.19.0)) |
 | Production | https://artcraft-webos.pages.dev — served bundle hash matches local `webos/dist`, `sw.js` cache `webos-v3.19.0` |
 | FireCraft | https://firecraft-web.pages.dev — v0.2.1 integrated, bridge autosave/open-with/exportPng→Photos; save-as dialog for export-to-Files (2026-10-19) |
-| Tests | 1222 specs / 81 files, `npm run ci` green |
-| Coverage | 98.41% stmts / 94.03% branches / 98.16% funcs / **99.92% lines**; floors 98.3/94.0/98.1/99.85 in `webos/vitest.config.js` (measured − tolerance; 81 files / 1222 tests) |
+| Tests | 1273 specs / 82 files, `npm run ci` green |
+| Coverage | 98.44% stmts / 94.10% branches / 98.21% funcs / **99.92% lines**; floors 98.3/94.0/98.1/99.85 in `webos/vitest.config.js` (82 files / 1273 tests) (measured − tolerance; 81 files / 1222 tests) |
 | Lint | strictest ruleset, zero warnings |
 | Accessibility | WCAG 2.1 AAA token gates incl. wallpaper-extreme flattening + desktop scrim pills |
 | Docs coverage | ARCHITECTURE.md Module index (110 rows) ⇄ src/ enforced by `tests/docs-coverage.test.js` — now in GitForge CI pipeline |
