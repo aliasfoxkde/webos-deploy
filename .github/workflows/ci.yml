@@ -37,10 +37,10 @@ jobs:
         run: npm run lint
 
       - name: Security scan (Aegis)
-        uses: actions/setup-python@e7551a7d77d9392fb2dd0a5b8ae869b25ef4a1e2 # v5
-        with:
-          python-version: '3.12'
-      - run: pip install aegis-cli && aegis scan . --baseline webos/.aegis-baseline.json --format github
+        run: ../packaging/aegis-scan.sh
+
+      - name: Shellcheck (packaging scripts)
+        run: shellcheck ../packaging/*.sh
 
       # Standalone so each gate is legible in the job summary.
       - name: Docs coverage gate

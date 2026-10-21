@@ -91,10 +91,14 @@ node ../packaging/e2e/webos-sweep.mjs   # headless-Chrome e2e sweep (27 phases)
 - **CI** — `.github/workflows/ci.yml` (GitHub, push/PR/manual dispatch) runs
   install → lint → docs-coverage gate → WCAG contrast audit → tests +
   coverage ratchet → build → **e2e sweep (hard gate)** → **shellcheck** →
-  **Aegis security scan**. `.gitforce.yml` is the local GitForge mirror
-  (same gates; its runner image is `node:24-trixie-slim`, so the Aegis
-  step installs Python first — Aegis ships as the `aegis-cli` pip
-  package). Version bumps touch three files: `webos/package.json`,
+  **Aegis security scan**. The Aegis step is
+  `packaging/aegis-scan.sh`, which downloads the pinned release binary
+  (`aliasfoxkde/aegis` v0.6.4, checksum-verified) and scans `webos/src`
+  against `webos/.aegis-baseline.json`; it fails only on findings that
+  are not in the triaged baseline. `.gitforce.yml` is the local GitForge
+  mirror (same gates; its runner image is `node:24-trixie-slim` and has
+  no curl, which the script handles). Version bumps touch three files:
+  `webos/package.json`,
   `webos/src/version.js`, `webos/public/sw.js` (cache key).
 - **Pre-commit** — `.husky/pre-commit` (husky, committed at the repo root)
   lints `webos/src` and `webos/tests` with `--max-warnings 0` when source or

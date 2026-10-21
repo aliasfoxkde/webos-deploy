@@ -18,10 +18,8 @@ jobs:
         run: cd webos && node node_modules/.bin/eslint . --max-warnings 0
       - name: shellcheck
         run: apt-get update -qq && apt-get install -y -qq shellcheck && shellcheck packaging/*.sh
-      - name: install aegis
-        run: pip install -q aegis-cli
       - name: security scan (aegis)
-        run: aegis scan . --baseline webos/.aegis-baseline.json --format github
+        run: packaging/aegis-scan.sh
       - name: docs coverage gate
         run: cd webos && npx vitest run tests/docs-coverage.test.js
       - name: wcag contrast audit

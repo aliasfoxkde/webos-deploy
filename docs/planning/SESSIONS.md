@@ -1,3 +1,40 @@
+## 2026-10-21 — Aegis CI gate repair
+
+- **The Aegis CI step never scanned anything.** Added on 2026-10-20
+  (`b1302c1`), it was broken in four independent ways: the
+  `actions/setup-python` action was pinned to a SHA that does not exist
+  upstream (run 39558202920 failed at "Set up job" in 2 s); the PyPI package
+  `aegis-cli` is an unrelated project that scaffolds starter files and has
+  no `scan` command; `--format github` does not exist (valid: human, json,
+  sarif) and `--format` is a top-level flag that must precede the
+  subcommand; and the committed baseline had been produced by an aegis build
+  with 8 coarse categories, while every released binary emits 22
+  fine-grained ones — 0 common fingerprints against 0.6.0–0.6.4, so
+  `--baseline` filtered nothing and the gate would have failed on every
+  run.
+- **Fix**: `packaging/aegis-scan.sh` — pins `aliasfoxkde/aegis` v0.6.4,
+  verifies the release tarball's SHA-256, extracts it, and runs
+  `aegis --format sarif scan src --baseline .aegis-baseline.json` from
+  `webos/`. Both `.github/workflows/ci.yml` (`run: ../packaging/aegis-scan.sh`)
+  and `.gitforce.yml` (`run: packaging/aegis-scan.sh`) call it. The GitForge
+  image has no curl; the script falls back to wget, then to node.
+- **Baseline regenerated** with that binary: 1809 findings / 111 files / 22
+  categories. A semantic diff against the previous baseline showed 18 new /
+  19 gone findings, all line shifts in `src/shell/Window.jsx` plus one
+  dropped `function-name-verbose` — the accepted-residual content is
+  unchanged; only the tool version differs. Re-scan against it: 0 new
+  findings, exit 0.
+- **Negative control**: appending
+  `const hardcodedSecret = "AKIAIOSFODNN7EXAMPLE";` to `webos/src/version.js`
+  produced 4 new findings and exit 1. The gate gates.
+- **Machine cleanup**: the wrong pip package had overwritten
+  `~/.local/bin/aegis` with a 158-byte console script. `pip uninstall` is
+  refused by PEP 668; `python3 -m pip uninstall -y --break-system-packages
+  aegis-cli` removed it, and the real scanner (v0.6.4) was restored at
+  `~/.local/bin/aegis`.
+- Docs corrected where they described Aegis as a PyPI package (README,
+  QUALITY-PROGRAM, PROGRESS, PHASES, this file).
+
 ## 2026-10-21 — coverage sprint, Aegis+shellcheck in CI, FireCraft v0.2.2, registry audit
 
 - **App branch coverage (P1).** New specs for the four apps that had no
@@ -21,12 +58,13 @@
   stream whose timers differ under happy-dom). The 99%+ target was not
   reached on statements and functions; the residuals are documented rather
   than papered over.
-- **Aegis + shellcheck in CI (P3).** Aegis ships as a Python CLI
-  (`aegis-cli` on PyPI), so the GitHub Actions job installs Python 3.12
-  before `pip install aegis-cli && aegis scan . --baseline
-  webos/.aegis-baseline.json --format github`. The GitForge runner image
-  (`node:24-trixie-slim`) has no Python, so that job installs it first.
-  `packaging/*.sh` now goes through shellcheck.
+- **Aegis + shellcheck in CI (P3).** *(Corrected 2026-10-21 — see the
+  repair note below; the original wiring never scanned anything.)* Aegis is
+  a Rust scanner published as release binaries at `aliasfoxkde/aegis`; the
+  PyPI package `aegis-cli` is an unrelated project. `packaging/aegis-scan.sh`
+  now pins the scanner version, verifies the download checksum, and runs the
+  scan against the triaged baseline. `packaging/*.sh` goes through
+  shellcheck.
 - **FireCraft v0.2.2 (P5 / H2.0).** The deployed bundle was
   `firecraft-web-71ff69a0cf973bce`, which is exactly the wasm
   (`0820a445…`) published in the upstream v0.2.2 release notes — so

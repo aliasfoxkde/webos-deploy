@@ -17,8 +17,8 @@ of every working session. Plan-of-record for open work:
 | Accessibility | WCAG 2.1 AAA token gates incl. wallpaper-extreme flattening + desktop scrim pills |
 | Docs coverage | ARCHITECTURE.md Module index ⇄ src/ enforced by `tests/docs-coverage.test.js` — now in GitForge CI pipeline |
 | Registry versions | 12/12 craft-app rows match the deployed bundle (verified by asset + wasm hash); pinned by `tests/registry-versions.test.js` |
-| CI | GitHub Actions: lint, docs gate, WCAG audit, coverage ratchet, build, 27-phase e2e sweep, **shellcheck**, **Aegis scan**. GitForge pipeline mirrors the same gates. It had been red on every push from 2026-10-19 — see risk R2 |
-| Aegis | baseline regenerated 2026-10-19 (1810 findings / 111 files / 62 pattern classes); scan now runs in CI against that baseline |
+| CI | GitHub Actions: lint, docs gate, WCAG audit, coverage ratchet, build, 27-phase e2e sweep, **shellcheck**, **Aegis scan**. GitForge pipeline mirrors the same gates. It had been red on every push from 2026-10-19 — see risk R2. The Aegis step added 2026-10-20 was itself broken (never scanned) and was repaired 2026-10-21 — see R3 |
+| Aegis | scanner pinned to `aliasfoxkde/aegis` **v0.6.4** (checksum-verified) via `packaging/aegis-scan.sh`; baseline regenerated with that binary (1809 findings / 111 files / 22 categories); the gate fails only on findings outside the baseline |
 
 ## Done (evidence in HISTORY.md / SESSIONS.md)
 
@@ -87,3 +87,4 @@ of every working session. Plan-of-record for open work:
 |---|---|---|---|---|
 | R1 | H3.1 blocked on FireCraft upstream shipping an official app icon (aliasfoxkde/FireCraft#2) | WebOS uses a code-drawn placeholder for FireCraft; official mark unavailable until upstream ships one | Swap script ready; upstream issue filed with exact requirements | ACCEPTED — placeholder glyph is the permanent design (2026-10-19) |
 | R2 | Coverage ratchet was set from a non-reproducible local measurement (2026-10-19) | Every push from 594e579 to 7a6e12c had a red CI; v3.18.0 shipped with a failing gate and the release notes/progress board wrongly claimed CI was green | Root cause found (timer-dependent coverage); `tests/clock-timers.test.jsx` pins the metric; floors now sit a fixed tolerance below a measured value two consecutive runs agree on | RESOLVED 2026-10-20 |
+| R3 | The Aegis CI step added 2026-10-20 never scanned anything: nonexistent `setup-python` SHA, wrong tool (the PyPI `aegis-cli` is an unrelated project), nonexistent `--format github`, and a baseline built by a different aegis version (8 categories vs 22) whose fingerprints matched nothing | The security gate was reported as wired but was in fact dead — the repo was unscanned in CI while the progress board claimed a scan ran | `packaging/aegis-scan.sh` pins the real scanner (aliasfoxkde/aegis v0.6.4) with a verified checksum; the baseline was regenerated with that binary; a negative control (injected AWS key) proves the gate fails on new findings | RESOLVED 2026-10-21 |

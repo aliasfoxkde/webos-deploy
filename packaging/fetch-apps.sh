@@ -48,7 +48,7 @@ APPS_LIST=(
 mkdir -p "$ZIPS" "$APPS"
 
 fetch_one() { # name version [org]
-  local name=$1 ver=$2 org=${3:-storytold}
+  local name=$1 ver=$2 org=${3:-$ORG}
   local zip="$ZIPS/$name-web-$ver.zip" dest="$APPS/$name"
   if [ -d "$dest" ] && [ "$FORCE" -eq 0 ]; then
     echo "== $name $ver: already present (use --force to refetch)"

@@ -128,6 +128,37 @@ Classes from the current scan requiring explicit note:
 All other findings are in the baseline and accepted. The Aegis baseline was
 regenerated 2026-10-21.
 
+## Aegis CI gate repair (2026-10-21)
+
+The Aegis step added to CI on 2026-10-20 (commit `b1302c1`) was broken in
+four independent ways and never ran a scan. It was fixed on 2026-10-21.
+
+| Defect | Evidence |
+|---|---|
+| `actions/setup-python@e7551a7d…` — that SHA does not exist upstream, so the job failed at "Set up job" in 2 s | run 39558202920 |
+| The PyPI package `aegis-cli` is an unrelated project (it scaffolds starter files; it has no `scan` command) | `aegis --help` lists only `check`, `generate`, `install-hook`, `list-languages` |
+| `--format github` does not exist; valid formats are `human`, `json`, `sarif`. `--format` is a top-level flag and must precede the subcommand | `aegis --help` |
+| The committed baseline was produced by a build with 8 coarse categories, while every released binary emits 22 fine-grained ones — so no fingerprint matched and `--baseline` filtered nothing | 0 common fingerprints against 0.6.0–0.6.4; category histograms 8 vs 22 |
+
+The fix is `packaging/aegis-scan.sh`: it pins scanner version **v0.6.4**,
+verifies the release tarball's SHA-256
+(`cba86099574d76c3c31104bf0a006b6dddb3379cc921aef07f322cb2a8a7ee4c`), and
+runs `aegis --format sarif scan src --baseline .aegis-baseline.json` from
+`webos/`. The baseline was regenerated with that same binary: 1809 findings
+over 111 files, 22 categories. A semantic diff against the previous baseline
+showed only 18 new / 19 gone findings, all line shifts in
+`src/shell/Window.jsx` plus one dropped `function-name-verbose` — the
+accepted-residual content is unchanged; only the tool version differs.
+
+Negative control: appending `const hardcodedSecret = "AKIAIOSFODNN7EXAMPLE";`
+to `webos/src/version.js` produces 4 new findings and exit 1. The gate
+therefore gates.
+
+The unrelated pip package was removed from this machine
+(`python3 -m pip uninstall --break-system-packages aegis-cli`; the plain
+uninstall is refused by PEP 668) and the real scanner was restored at
+`~/.local/bin/aegis`.
+
 ## Non-negotiables carried from the craft rules
 
 - No placeholders/stubs/fake data in shipped code; examples live in docs.

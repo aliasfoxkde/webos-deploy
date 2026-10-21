@@ -18,7 +18,7 @@ render() { # svgpath outpng size
 </style></head><body>$svg</body></html>
 HTML
   "$CHROME" --headless --disable-gpu --no-sandbox --hide-scrollbars \
-    --default-background-color=00000000 --window-size=$size,$size \
+    --default-background-color=00000000 --window-size="$size,$size" \
     --screenshot="$out" "file://$OUT/page.html" >/dev/null 2>&1
 }
 

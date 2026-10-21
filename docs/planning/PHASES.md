@@ -125,13 +125,27 @@ new measured value minus tolerance.
 
 ### P3.1 — Wire Aegis into GitHub Actions
 
-1. Add an `aegis-scan` job to `.github/workflows/ci.yml` after the lint job:
+1. Add the scan step to `.github/workflows/ci.yml` after the lint job. It
+   is a script, not an inline command — the scanner has to be fetched,
+   checksum-verified and pinned:
    ```yaml
-   - name: security scan
-     run: aegis scan . --baseline .aegis-baseline.json --format github
+   - name: Security scan (Aegis)
+     run: ../packaging/aegis-scan.sh
    ```
-2. Add the same to `.gitforce.yml`.
-3. Verify the job runs and produces annotations on the Actions run page.
+   (`packaging/aegis-scan.sh` downloads the pinned `aliasfoxkde/aegis`
+   release binary, verifies its SHA-256, and runs
+   `aegis --format sarif scan src --baseline .aegis-baseline.json` from
+   `webos/` — the job's working directory.)
+2. Add the same to `.gitforce.yml` (`run: packaging/aegis-scan.sh`; that
+   pipeline runs from the repo root).
+3. Verify the job runs green on the Actions run page.
+
+> **Repaired 2026-10-21.** The original wiring was broken and never scanned
+> anything: the `setup-python` action was pinned to a nonexistent SHA, the
+> PyPI `aegis-cli` package is an unrelated project with no `scan` command,
+> `--format github` does not exist, and the committed baseline came from a
+> different aegis build (8 categories vs 22) so it filtered nothing. See
+> QUALITY-PROGRAM.md § "Aegis CI gate repair".
 
 ### P3.2 — Add shellcheck for packaging scripts
 
@@ -344,7 +358,8 @@ a manual step.
 | 184 | Shellcheck for packaging scripts | P3 | completed |
 | 185 | FireCraft H2.0 version sync | P5 | completed |
 | 186 | Registry version audit (H3.3) | P6 | completed |
-| 187 | Docs hygiene and HISTORY.md entry | P7 | in progress |
-| 188 | Release 3.20.0 | P8 | pending |
+| 187 | Docs hygiene and HISTORY.md entry | P7 | completed |
+| 188 | Release 3.20.0 | P8 | in progress |
+| 189 | Repair the broken Aegis CI gate | P3 | in progress |
 | — | Dependency refresh | P4 | pending |
 | — | Adopt upstream craft app releases | P10 | pending |

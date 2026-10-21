@@ -96,7 +96,6 @@ fi
 # Step 4: extract and validate
 if [ "$DRY_RUN" -eq 1 ]; then
   echo "[dry-run] Would extract $ICON_IN_ZIP → $WORK/icon-raw.png"
-  SRC_ICON="$WORK/icon-raw.png"
 else
   unzip -p "$ZIP" "$ICON_IN_ZIP" > "$WORK/icon-raw.png"
   # Basic validation: must be a PNG (PNG signature: 89 50 4E 47)
@@ -110,7 +109,7 @@ fi
 # Step 5: rasterize to 256 px (reuse icons-render.sh technique)
 CHROME="${CHROME:-/usr/bin/chromium}"
 if ! command -v "$CHROME" >/dev/null 2>&1; then
-  CHROME=$(ls ~/.cache/ms-playwright/chromium-*/chrome-linux/chrome 2>/dev/null | head -1 || true)
+  CHROME=$(find "$HOME/.cache/ms-playwright" -type f -path '*/chrome-linux/chrome' -print -quit 2>/dev/null || true)
 fi
 if [ -z "$CHROME" ] || [ ! -x "$CHROME" ]; then
   echo "ERROR: Chromium not found at \$CHROME ($CHROME) or in ms-playwright cache."
@@ -120,8 +119,9 @@ fi
 
 render_png() {
   # Resize source PNG to 256 px for the web app mark
-  local src=$1 out=$2 size=256
-  local w=$(identify -format "%w" "$src" 2>/dev/null || echo "0")
+  local src=$1 out=$2
+  local w
+  w=$(identify -format "%w" "$src" 2>/dev/null || echo "0")
   if [ "$w" -lt 256 ]; then
     echo "WARNING: Source icon is only ${w}px wide; upscaling for web deployment."
   fi
