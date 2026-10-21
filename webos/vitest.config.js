@@ -19,13 +19,12 @@ export default defineConfig({
       exclude: ['src/main.jsx', 'src/version.js'],
       reporter: ['text', 'lcov'],
       reportsDirectory: 'coverage',
-      // Ratchet. The floors are the measured baseline minus a tolerance that
-      // absorbs the machine-dependent delta the timer bug used to cause
-      // (3 functions / 1 statement); a real regression still fails the gate.
+      // Ratchet. The floors are the measured baseline minus a tolerance;
+      // a real regression still fails the gate.
       //
-      // Measured 2026-10-20 (full suite, 75 files / 1058 tests):
-      //   statements 96.79% (6980/7211)   branches 88.83% (4169/4693)
-      //   functions  96.22% (1837/1909)   lines    99.92% (5544/5548)
+      // Measured 2026-10-20 (full suite, 81 files / 1222 tests):
+      //   statements 98.41% (7097/7211)   branches 94.03% (4413/4693)
+      //   functions  98.16% (1874/1909)   lines    99.92% (5544/5548)
       // Only 4 lines remain uncovered (calcState.jsx:126, MarkdownView.jsx:81
       // and state.jsx:483 — unreachable reducer/switch defaults — plus
       // Panels.jsx:336, a V8 attribution quirk).
@@ -43,9 +42,9 @@ export default defineConfig({
       // Raise the floors as tests land; a regression in any metric fails
       // `npm run coverage`.
       thresholds: {
-        statements: 96.7,
-        branches: 88.75,
-        functions: 96.05,
+        statements: 98.3,
+        branches: 94.0,
+        functions: 98.1,
         lines: 99.85,
       },
     },
