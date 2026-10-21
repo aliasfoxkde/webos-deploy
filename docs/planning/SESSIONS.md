@@ -13,7 +13,7 @@
   from `initialTabs()`, and `deleteNote` re-seeds an "Untitled" note when
   the last one is removed instead of leaving an empty list.
 - **Statement/function coverage (P2).** 98.59% stmts / 94.20% branches /
-  98.16% funcs / 99.92% lines over 88 files / 1339 specs. The residual is
+  98.16% funcs / 99.92% lines over 88 files / 1344 specs. The residual is
   classified in the `vitest.config.js` comment: seven genuinely
   unreachable lines (marked `// istanbul ignore next`), and the rest
   environment-specific (IndexedDB error paths that `fake-indexeddb` never

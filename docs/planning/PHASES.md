@@ -8,7 +8,7 @@ conventions, and the standing routine loop.
 
 | Dimension | Current | Target |
 |---|---|---|
-| Tests | 1339 specs / 88 files | steady growth |
+| Tests | 1344 specs / 88 files | steady growth |
 | Coverage stmts | 98.59% | **99%+** |
 | Coverage branches | **94.20%** | 95%+ |
 | Coverage funcs | 98.16% | **99%+** |
