@@ -1,3 +1,28 @@
+## 2026-10-21 — v3.20.0 released and deployed
+
+- **Release**: `chore(release): 3.20.0` (`0c7d3f8`) bumped the version in
+  the three places (`webos/package.json`, `webos/src/version.js`,
+  `webos/public/sw.js`); the Aegis gate fix (`0b2dbbc`) rode along as the
+  release commit's successor, so the tag points at the tree that actually
+  carries the gate.
+- **Gate green**: GitHub Actions run 39629797419 — lint, Aegis scan,
+  shellcheck, docs-coverage gate, WCAG contrast audit, coverage ratchet,
+  build, 27-phase e2e sweep, artifact upload. Local coverage run: 88
+  files / 1344 specs, 98.59% stmts / 94.18% branches / 98.16% funcs /
+  99.92% lines, exit 0. (A first local run with the default `forks` pool
+  failed with 15 worker-start timeouts and one test error — the NAS was
+  under load from concurrent workstreams; re-running with `--pool=threads`
+  was clean. CI, on a normal runner, was green on the same commit.)
+- **E2E**: 27/27 phases green, 0 page errors against the release build.
+- **Published**: `gh release create v3.20.0` with honest notes (what
+  shipped, what was fixed, what was verified).
+- **Deployed**: `wrangler pages deploy dist --project-name artcraft-webos
+  --branch main` from `webos/`. Production verified — served
+  `assets/index-5l-KssXj.js` equals the local dist's, and `sw.js` carries
+  the cache name `webos-v3.20.0`.
+- Docs closed out: HISTORY.md (release row + verification entry),
+  PROGRESS.md (snapshot → 3.20.0), HANDOFF.md (H6 → next TBD).
+
 ## 2026-10-21 — Aegis CI gate repair
 
 - **The Aegis CI step never scanned anything.** Added on 2026-10-20

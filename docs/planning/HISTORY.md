@@ -31,6 +31,7 @@ summaries (full notes live on each release page).
 | v3.17.0 | 2026-10-19 | FireCraft H2 complete (bridge/autosave/open-with/exportPng→Photos/E2E probe); H4 quality forward path complete (deps refreshed, Aegis clean, docs synced); H5.3 container revalidation clean; 1037 specs, coverage floors maintained |
 | v3.18.0 | 2026-10-19 | fix(bridge): close event-listener-leak in bridgeRequest/postToApp; chore(.gitforce): add docs-coverage gate; chore(aegis): regenerate baseline (1810 findings, 111 files); H3.2 firecraft fetch-apps entry complete; 1052 specs, 99.78% lines |
 | v3.19.0 | 2026-10-20 | fix(ci): coverage made reproducible (fake-timer clock specs) and the ratchet repaired — CI had been red on every push since v3.18.0 was cut; dead `makeFirecraftExportHandlers` export removed; export-to-Files, Files "Open in FireCraft" and SaveDialog backdrop covered; e2e sweep repaired (module-URL import, DevTools port, container sandbox, browser detection) and promoted to a hard CI gate; shared husky pre-commit hook committed; 1058 specs, 99.92% lines |
+| v3.20.0 | 2026-10-21 | FireCraft v0.2.2 adopted from the upstream release zip (standard fetch pipeline, registry + SW cache stamp moved 0.2.1→0.2.2); registry version audit pinned by a new test (12/12 rows match deployment); coverage sprint to 1344 specs / 88 files (98.59% stmts, 94.20% branches, 98.16% funcs, 99.92% lines); **the Aegis CI gate repaired** — it had never scanned anything (nonexistent setup-python SHA, wrong tool, nonexistent `--format github`, a baseline from a mismatched scanner build); scanner pinned to aliasfoxkde/aegis v0.6.4 with checksum verification and the baseline regenerated with it; shellcheck made green on the remaining packaging scripts and added to GitHub Actions; CI green (run 39629797419), e2e sweep 27/27, deployed and production-verified (`webos-v3.20.0`) |
 
 ## Deployment map
 
@@ -62,6 +63,15 @@ Static Pages deployments only — no compute on the rendering path.
   `node:24-trixie-slim`; Actions green on `376b509`; production verified
   (bundle hash `index-DT3Qpkrn.js`, `webos-v3.17.0` cache, FireCraft
   autosave/open-with/exportPng→Photos all wired).
+- **2026-10-21 (v3.20.0)**: GitHub Actions green on the release commit
+  (`0b2dbbc`, run 39629797419) — lint, Aegis scan, shellcheck, docs-coverage
+  gate, WCAG contrast audit, coverage ratchet (88 files / 1344 specs,
+  98.59/94.18/98.16/99.92), build, 27-phase e2e sweep, artifact upload;
+  local coverage run green (1344/1344, exit 0); 27-phase headless-Chromium
+  sweep of the built bundle — PASS, 0 page errors; Aegis gate proven live
+  (negative control: injected AWS key → 4 findings, exit 1); production
+  verified (served `assets/index-5l-KssXj.js` equals local dist,
+  `sw.js` cache `webos-v3.20.0`).
 - E2E tooling (committed, survives scratch GC): `packaging/e2e/webos-sweep.mjs`
   (full-system sweep) and `packaging/e2e/firecraft-embed-probe.mjs`
   (FireCraft bridge probe; `FC_BASE_URL=` for production runs).

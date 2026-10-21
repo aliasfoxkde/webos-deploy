@@ -359,7 +359,7 @@ a manual step.
 | 185 | FireCraft H2.0 version sync | P5 | completed |
 | 186 | Registry version audit (H3.3) | P6 | completed |
 | 187 | Docs hygiene and HISTORY.md entry | P7 | completed |
-| 188 | Release 3.20.0 | P8 | in progress |
-| 189 | Repair the broken Aegis CI gate | P3 | in progress |
+| 188 | Release 3.20.0 | P8 | completed |
+| 189 | Repair the broken Aegis CI gate | P3 | completed |
 | — | Dependency refresh | P4 | pending |
 | — | Adopt upstream craft app releases | P10 | pending |
