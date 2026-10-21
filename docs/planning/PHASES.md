@@ -35,8 +35,9 @@ no dedicated spec file. Current branch/statement coverage is low.
 2. Identify uncovered branches: URL validation (invalid URL guard),
    history add / de-duplication, bookmark toggle, tab-add/close, empty
    state for each panel.
-3. Write `tests/browser-branches.test.jsx`: cover each branch with a
-   self-contained spec using the pattern from `shell-low-branches.test.jsx`
+3. Write browser branch coverage specs (file name TBD per the test
+   conventions): cover each branch with a self-contained spec using the
+   pattern from `shell-low-branches.test.jsx`
    (OSProvider + `fireEvent` + assertions).
 4. `npm run ci` — update floors if coverage rises.
 
@@ -47,21 +48,21 @@ The Chat app has partial coverage. Audit what's missing:
 1. Run `npx vitest run --coverage` and note which Chat.jsx branches are
    uncovered (role rendering branches, history scroll, send-state machine,
    empty-state paths).
-2. Write `tests/chat-branches.test.jsx` targeting those branches.
+2. Write Chat app branch coverage specs targeting those branches.
 3. Verify all Chat branches are covered.
 
 ### P1.3 — Notepad app branches (`src/apps/notepad/`)
 
 1. Run coverage and identify uncovered branches in Notes.jsx and any
    sidebar/editor sub-components.
-2. Write `tests/notepad-branches.test.jsx` targeting the gaps.
+2. Write Notepad app branch coverage specs targeting the gaps.
 3. Verify all Notepad branches are covered.
 
 ### P1.4 — Editor app branches (`src/apps/editor/`)
 
 1. Run coverage and audit `Editor.jsx`, `buffers.js`, toolbar state
    machine, and buffer-switch branches.
-2. Write `tests/editor-branches.test.jsx` targeting the gaps.
+2. Write Editor app branch coverage specs targeting the gaps.
 3. Verify all Editor branches are covered.
 
 **When P1.1–P1.4 are done, task #177 is complete.**
@@ -246,7 +247,7 @@ the server is consistently reachable at `127.0.0.1` for e2e runs.
 
 The current `webos-sweep.mjs` is a headless-Chrome smoke test. It
 exercises the full rendering pipeline but does not assert internal state.
-Consider adding `tests/e2e-walkthrough.test.js` that uses the CDP client
+Consider adding an e2e state-assertion test that uses the CDP client
 to make assertions about JS state (window count, IndexedDB records, etc.)
 in addition to the screenshot-based visual checks.
 
