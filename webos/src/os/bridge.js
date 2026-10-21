@@ -107,7 +107,7 @@ export async function handleBridge(files, app, event) {
    Used by tests and the same-origin fixture; real embedded apps can hand-roll
    the same three lines. targetOrigin must be the HOST's origin. */
 export function bridgeRequest(win, request, timeoutMs = 10000) {
-  const requestId = `req-${Math.random().toString(36).slice(2)}`;
+  const requestId = `req-${globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2)}`;
   let timer;
   let resolve;
   let reject;
@@ -135,7 +135,7 @@ export function bridgeRequest(win, request, timeoutMs = 10000) {
    The matching reply carries the same `source` string the app sets.
    Returns the reply payload on ok, throws on timeout or error reply. */
 export function postToApp(frame, request, source, timeoutMs = 15000) {
-  const requestId = `req-${Math.random().toString(36).slice(2)}`;
+  const requestId = `req-${globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2)}`;
   let timer;
   let resolve;
   let reject;

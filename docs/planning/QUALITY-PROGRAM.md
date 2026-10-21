@@ -45,8 +45,8 @@ warn-then-fail order so CI is green at every commit.
      reference pattern for the three one-second clock intervals).
    - **Floors sit a fixed tolerance below the measured value**, and the
      measured value is confirmed by two consecutive full runs that agree
-     exactly. Current baseline (2026-10-20, 75 files / 1058 specs):
-     96.79 / 88.83 / 96.22 / 99.92; floors 96.7 / 88.75 / 96.05 / 99.85.
+     exactly. Current baseline (2026-10-20, 81 files / 1222 specs):
+     98.41 / 94.01 / 98.16 / 99.92; floors 98.3 / 94.0 / 98.1 / 99.85.
      Only 4 lines are uncovered (3 unreachable `default:` arms plus one V8
      attribution quirk).
 2. **Lint (ESLint 9 flat config)**: `eslint:recommended` + react-hooks +
@@ -104,6 +104,29 @@ warn-then-fail order so CI is green at every commit.
 The full-repo scan (`aegis scan .`) additionally sweeps gitignored sibling
 checkouts (uutils upstream CI scripts etc.) — those are not this repo's code
 and are out of scope; CI scans `webos/src` from `webos/`.
+
+
+## Aegis re-triage (2026-10-21, after branch-coverage sprint)
+
+Current scan: 111 files / 1809 findings (vs 88 files / 1810 baseline from
+2026-10-19). No new genuine findings against baseline.
+
+Classes from the current scan requiring explicit note:
+
+| Pattern class | Location | Verdict |
+|---|---|---|
+| australian-tfn | wallpapers.js lines 31,33,39 (gradient CSS geometry -- 9-digit hex color values) | False positive. CSS radial-gradient uses 9-digit numbers as color stop positions, not TFNs. |
+| pii-output-marker | Panels.jsx CSS variable names (--pii-fingerprint etc.) | False positive. These are CSS custom property identifiers, not PII. |
+| event-listener-leak | state.jsx:553-554, bridge.js:127,158 | False positive. Both use .finally(clear) which properly removes the listener on settle/timeout. |
+| x-frame-options | registry.js:117,224 | True positive, accepted. Intentional: registry data should not be frame-embeddable. Does not affect user content. |
+| insecure-random | bridge.js:110,138 | Fixed 2026-10-21. Now uses crypto.randomUUID() with Math.random() fallback for environments without WebCrypto. |
+| finance-tofixed-currency | format.js:5-7, wallpapers.js:84 | Acceptable. toFixed used for byte-size display, not financial computation. |
+| chart-accessibility | LensFilters.jsx:17 (SVG canvas) | False positive. Not a chart; Aegis pattern trips on canvas usage. |
+| mobile-optimization | LensFilters.jsx:97-98 | Acceptable. Canvas-based filter ops; mobile responsiveness is a UI concern not testable in a headless environment. |
+| role-play-override | themes.js:300 (CSS var name) | False positive. Aegis pattern trips on substring "role" in CSS variable names. |
+
+All other findings are in the baseline and accepted. The Aegis baseline was
+regenerated 2026-10-21.
 
 ## Non-negotiables carried from the craft rules
 

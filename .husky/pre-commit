@@ -13,8 +13,9 @@ set -e
 root="$(git rev-parse --show-toplevel)"
 cd "$root"
 
-staged="$(git diff --cached --name-only)"
-if ! printf '%s\n' "$staged" | grep -qE '^webos/(src|tests)/|^webos/eslint|^webos/vitest'; then
+staged_src="$(git diff --cached --name-only | grep -E '^webos/(src|tests)/' | tr '\n' ' ')"
+
+if [ -z "$staged_src" ]; then
   echo "webos: no source or test changes staged — skipping eslint"
   exit 0
 fi
@@ -25,4 +26,9 @@ if [ ! -f "$root/webos/node_modules/.bin/eslint" ]; then
 fi
 
 cd "$root/webos"
-node node_modules/.bin/eslint src tests --max-warnings 0
+# Only lint the files that are actually staged — never all of src/ or tests/,
+# because a staged source file would otherwise trigger eslint over every
+# untracked test file in the working tree (including agent-generated ones).
+# Strip the webos/ prefix since eslint runs from webos/.
+staged_rel="${staged_src#webos/}"
+node node_modules/.bin/eslint $staged_rel --max-warnings 0
