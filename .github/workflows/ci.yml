@@ -6,13 +6,9 @@ on:
   pull_request:
   workflow_dispatch:
 
-# Least privilege: the workflow only reads the repo (no deploy keys, no
-# packages). Deploy runs locally via wrangler, not from CI.
 permissions:
   contents: read
 
-# Superseded runs on the same ref are cancelled — the gates take minutes
-# and only the latest push's verdict matters.
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
@@ -40,8 +36,13 @@ jobs:
       - name: Lint (zero warnings)
         run: npm run lint
 
-      # Standalone so each gate is legible in the job summary; the same
-      # suites also run inside the coverage step.
+      - name: Security scan (Aegis)
+        uses: actions/setup-python@e7551a7d77d9392fb2dd0a5b8ae869b25ef4a1e2 # v5
+        with:
+          python-version: '3.12'
+      - run: pip install aegis-cli && aegis scan . --baseline webos/.aegis-baseline.json --format github
+
+      # Standalone so each gate is legible in the job summary.
       - name: Docs coverage gate
         run: npx vitest run tests/docs-coverage.test.js
 
@@ -54,9 +55,6 @@ jobs:
       - name: Build
         run: npm run build
 
-      # Full-system sweep: boots the built dist in headless Chrome and drives
-      # every first-party surface. The runner image ships Google Chrome
-      # stable; the sweep also accepts /usr/bin/chromium.
       - name: E2E sweep (headless Chrome)
         run: node ../packaging/e2e/webos-sweep.mjs
         env:

@@ -1,18 +1,5 @@
 # GitForge CI pipeline (https://github.com/aliasfoxkde/GitForge) — local
 # mirror of .github/workflows/ci.yml.
-#
-# ONE job, ordered steps: GitForge's deployed trigger path queues only the
-# first job with empty `needs` and never schedules dependents, so a
-# needs-based lane split silently degrades to "first job only". Steps are
-# ordered so a failure fails the job immediately.
-#
-# The coverage step enforces the ratchet in webos/vitest.config.js and runs
-# the whole suite — including the WCAG contrast auditor
-# (tests/contrast-audit.test.js) and the persona/theme gate
-# (tests/personas-theme.test.js tests/docs-references.test.js tests/glass-tokens.test.js).
-#
-# node:24 — matches the version the suite is validated against locally
-# (v24.x); happy-dom 20 + vitest 5 are happy there.
 name: webos-deploy-ci
 version: "1"
 trigger_on: [push]
@@ -29,6 +16,12 @@ jobs:
         run: cd webos && npm ci
       - name: lint
         run: cd webos && node node_modules/.bin/eslint . --max-warnings 0
+      - name: shellcheck
+        run: apt-get update -qq && apt-get install -y -qq shellcheck && shellcheck packaging/*.sh
+      - name: install aegis
+        run: pip install -q aegis-cli
+      - name: security scan (aegis)
+        run: aegis scan . --baseline webos/.aegis-baseline.json --format github
       - name: docs coverage gate
         run: cd webos && npx vitest run tests/docs-coverage.test.js
       - name: wcag contrast audit
@@ -37,12 +30,6 @@ jobs:
         run: cd webos && npm run coverage
       - name: build
         run: cd webos && npm run build
-      # The e2e sweep needs a headless browser. This GitForge image ships
-      # none, and installing one via apt needs root — so the browser is
-      # fetched instead as a self-contained Chrome headless shell, which
-      # needs no privileges. The sweep is therefore a hard gate here too,
-      # exactly as it is on GitHub Actions (where the runner image already
-      # ships Google Chrome).
       - name: install headless browser
         run: npx --yes @puppeteer/browsers install chrome-headless-shell@stable --path "$HOME/.cache/webos-browsers"
       - name: e2e sweep
