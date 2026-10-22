@@ -154,6 +154,33 @@ Negative control: appending `const hardcodedSecret = "AKIAIOSFODNN7EXAMPLE";`
 to `webos/src/version.js` produces 4 new findings and exit 1. The gate
 therefore gates.
 
+### The baseline is line-sensitive — regenerate it, never hand-edit it
+
+A finding's fingerprint is `"{pattern}:{file}:{line}:{sha256(content)}"`, so
+the **line number** is part of it. Editing a file above a finding shifts the
+finding and the committed baseline no longer matches it: the gate then
+reports the moved findings as new. That is what happened on 2026-10-22 when
+a comment in `src/os/registry.js` moved 11 findings (CI run 39709521521).
+
+The fix is to regenerate the baseline with the **pinned** scanner and prove
+the change is a shift, not new content:
+
+```bash
+cd webos
+~/.local/bin/aegis --version          # must read "aegis 0.6.4"
+~/.local/bin/aegis --format json scan src > /var/tmp/aegis-new-baseline.json
+# semantic diff, ignoring the line numbers:
+diff <(jq -r '.findings[] | [.pattern,.category,.severity,.location.file,.description] | @tsv' .aegis-baseline.json | sort) \
+     <(jq -r '.findings[] | [.pattern,.category,.severity,.location.file,.description] | @tsv' /var/tmp/aegis-new-baseline.json | sort)
+# only line shifts must differ; the finding COUNT and the semantic set must not
+cp /var/tmp/aegis-new-baseline.json .aegis-baseline.json
+bash packaging/aegis-scan.sh           # must print PASS
+```
+
+The 2026-10-22 regeneration: 1809 findings before and after, zero
+differences in (pattern, category, severity, file, description), 22 line
+entries changed — the 11 moved findings, old line and new line.
+
 The unrelated pip package was removed from this machine
 (`python3 -m pip uninstall --break-system-packages aegis-cli`; the plain
 uninstall is refused by PEP 668) and the real scanner was restored at

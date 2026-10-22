@@ -1,3 +1,22 @@
+## 2026-10-22 — the Aegis baseline is line-sensitive (found by CI)
+
+- The commit that closed P9.2–P9.4 went red on the Aegis gate
+  (run 39709521521): 11 findings in `src/os/registry.js`. The cause was a
+  comment edit in that file — a finding's fingerprint is
+  `"{pattern}:{file}:{line}:{sha256(content)}"`, so the line number is part
+  of it and moving a finding invalidates its baseline entry. The scanner
+  was right; the baseline was stale by 5 lines.
+- The baseline was regenerated with the pinned scanner (v0.6.4, verified
+  `aegis --version`) and the change was proved to be a shift, not new
+  content: 1809 findings before and after, **zero** differences in
+  (pattern, category, severity, file, description), 22 line entries changed
+  — the 11 moved findings, old line and new line. The re-scan then
+  printed PASS.
+- The procedure is now written down in QUALITY-PROGRAM.md, including the
+  semantic diff that has to come back empty before the baseline is
+  replaced. Hand-editing the baseline is never the answer: it would
+  silently accept whatever the scanner now reports.
+
 ## 2026-10-22 — the last open plan items (P9.2, P9.3, P9.4)
 
 - **P9.2 — the preview server now binds the IPv4 loopback.** Vite's
