@@ -166,16 +166,46 @@ The fix is to regenerate the baseline with the **pinned** scanner and prove
 the change is a shift, not new content:
 
 ```bash
-cd webos
-~/.local/bin/aegis --version          # must read "aegis 0.6.4"
-~/.local/bin/aegis --format json scan src > /var/tmp/aegis-new-baseline.json
-# semantic diff, ignoring the line numbers:
+packaging/aegis-baseline.sh            # regenerate, then verify the gate passes
+packaging/aegis-baseline.sh --check    # verify the committed baseline is current
+```
+
+The script scans with the **pinned** binary, refuses to install a baseline
+whose finding set changed beyond line shifts, and re-runs the gate on the
+result. Its drift check compares the semantic set — (pattern, category,
+severity, file, description) — and ignores the line numbers, so only a shift
+passes:
+
+```bash
 diff <(jq -r '.findings[] | [.pattern,.category,.severity,.location.file,.description] | @tsv' .aegis-baseline.json | sort) \
      <(jq -r '.findings[] | [.pattern,.category,.severity,.location.file,.description] | @tsv' /var/tmp/aegis-new-baseline.json | sort)
-# only line shifts must differ; the finding COUNT and the semantic set must not
-cp /var/tmp/aegis-new-baseline.json .aegis-baseline.json
-bash packaging/aegis-scan.sh           # must print PASS
 ```
+
+### The raw scanner output is not reproducible — it is normalized on the way in
+
+The scanner's JSON is not byte-stable across runs of *unchanged* source, so
+committing it raw turns every regeneration into a 30 000-line diff nobody can
+review. `packaging/aegis-baseline.mjs` removes exactly the volatile parts:
+
+| Volatile part | Why it varies | Fix |
+|---|---|---|
+| finding order | walk order over the source tree | sorted by (file, line, column, pattern) — a total order, verified unique |
+| `id` | a timestamp nonce (`0x18e0b87a…` is the scan time in ns) | dropped |
+| `stats.scan_time_ms`, `stats.io_time_ms` | wall clock cost of the scan | dropped |
+| `stats.workers_used` | the CPU count the scan happened to use (2 under `taskset -c 0,1`, 16 otherwise) | dropped |
+| `stats.findings_by_severity`, `stats.findings_by_category` | hash-map iteration order | sorted by key |
+
+Everything else — including `stable_id` and `fingerprint`, which are
+content-derived — is preserved verbatim. Three independent scans of unchanged
+source now normalize to **byte-identical** files, and the result is the same
+on a 2-core and a 16-core machine.
+
+`jq` was tried first and rejected: `sort_by` with a multi-part key does not
+produce the tuple order on the real data (it inverts the tie at
+`src/apps/calculator/modes/Converter.jsx:28`), and `jq -S` also rewrites
+every key order in the file, so a "sorted" baseline diffed as 58 000 lines
+against the committed one. The normalizer is Node, which the repo already
+requires.
 
 The 2026-10-22 regeneration: 1809 findings before and after, zero
 differences in (pattern, category, severity, file, description), 22 line
