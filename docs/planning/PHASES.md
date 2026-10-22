@@ -361,5 +361,5 @@ a manual step.
 | 187 | Docs hygiene and HISTORY.md entry | P7 | completed |
 | 188 | Release 3.20.0 | P8 | completed |
 | 189 | Repair the broken Aegis CI gate | P3 | completed |
-| — | Dependency refresh | P4 | pending |
+| 190 | Dependency refresh | P4 | completed (majors deferred with reasons) |
 | — | Adopt upstream craft app releases | P10 | pending |

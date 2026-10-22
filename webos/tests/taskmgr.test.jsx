@@ -305,7 +305,11 @@ describe('TaskManager live signals', () => {
       .toContain('2 · worst 121 ms · last 121 ms'); // last = most recent entry (120.5)
     expect(screen.getByText('Service worker').closest('div').textContent).toContain('active');
     expect(screen.getByText('Site storage').closest('div').textContent).toContain('persistent');
-    expect(screen.getByText(/up \d+s/)).toBeTruthy(); // the clock tick advances uptime
+    // The clock tick advances uptime. The format changes at the minute
+    // boundary (fmtUptime: "42s" → "3m 07s" → "1h 05m"), so match any of
+    // them — a seconds-only regex stops matching once the suite has been
+    // running long enough to cross 60 s, which is a load-dependent flake.
+    expect(screen.getByText(/up (?:\d+s|\d+m \d+s|\d+h \d+m|\d+d \d+h)/)).toBeTruthy();
   });
 
   it('Status header sorts rows and toggles aria-sort direction', async () => {

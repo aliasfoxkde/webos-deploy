@@ -50,7 +50,7 @@ of every working session. Plan-of-record for open work:
       pinned to versions upstream passed (cadcraft 0.3.0 vs v0.10.0,
       vectorcraft 0.7.0 vs v0.14.0, …); every one of those releases
       ships a web zip. Deliberate upgrade, app by app — see PHASES.md P10.
-- [x] **H4** Quality forward path — H4.1 coverage floors met (96.5/88.5/95.8/99.6), H4.2 deps refreshed (vitest 5.0.5, coverage-v8, fake-indexeddb; React 19 / Vite 8 / ESLint 10 deferred), H4.3 Aegis re-scan zero new findings (baseline suppresses all), H4.4 sweep synced.
+- [x] **H4** Quality forward path — H4.1 coverage floors met (96.5/88.5/95.8/99.6), H4.2 deps refreshed (vitest 5.0.5, coverage-v8, fake-indexeddb; re-refreshed 2026-10-21: sql.js 1.15.1, vite 6.4.5 — React 19 / Vite 8 / ESLint 10 / happy-dom 21 deferred with reasons in SESSIONS.md), H4.3 Aegis re-scan zero new findings (baseline suppresses all), H4.4 sweep synced.
 - [x] **H5** H5.3 container revalidation complete in node:24-trixie-slim; H5.1 pipeline registered (push, 4e1079cd…ccc957); H5.2 GitHub Actions as primary gate (runner dispatch pending for GitForge).
 - [x] **H7** Coverage determinism + CI repair (2026-10-20) — three one-second
       clock intervals (Taskbar, Sidebar clock widget, Screensaver big clock)

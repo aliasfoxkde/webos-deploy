@@ -1,3 +1,39 @@
+## 2026-10-21 — dependency refresh (P4)
+
+- **In-range upgrades taken**: `sql.js` 1.14.2 → 1.15.1, `vite` 6.4.4 →
+  6.4.5 (both within the declared `^` ranges). The lockfile was also
+  re-synced — it still carried the project version 3.18.0 and the
+  `lint-staged` dependency that the husky cleanup removed in v3.19.0.
+  Gate green after the change: 88 files / 1344 specs, 98.59% stmts /
+  94.20% branches / 98.16% funcs / 99.92% lines, build clean.
+- **A load-dependent flake surfaced and was fixed**: `tests/taskmgr.test.jsx`
+  asserted the uptime with `/up \d+s/`, but `fmtUptime` switches to
+  `"1m 21s"` once the elapsed time passes 60 s — and the elapsed time is
+  measured from the module import, so on a loaded machine the suite
+  crosses that boundary before the assertion runs. The failing run's DOM
+  dump showed `up 1m 21s`, which is why the seconds-only regex stopped
+  matching. The regex now accepts all four formats (`Ns`, `Nm NNs`,
+  `Nh NNm`, `Nd NhN`).
+- **Majors skipped, one line each**:
+  - `react`/`react-dom` 19 — React 19 changes ref and StrictMode/act
+    semantics across 1344 specs and the eight embedded craft apps; it
+    needs its own branch and a full revalidation, not a routine refresh
+    (deferred in H4.2, unchanged).
+  - `vite` 8 + `@vitejs/plugin-react` 6 — plugin-react 6 requires
+    `vite ^8` and pulls in a new oxc/rolldown babel chain; that is a
+    build-stack migration (chunking, asset hashes, the wasm asset paths)
+    that has to be validated on its own branch.
+  - `eslint` 10 + `@eslint/js` 10 — the flat config here is the
+    strictest ruleset; ESLint 10 removes and renames rules, so a
+    zero-warnings gate needs per-rule revalidation before it can be
+    trusted.
+  - `happy-dom` 21 — trialled on branch `chore/deps-happydom-21`: the
+    new major no longer gives an iframe a `contentWindow`, so
+    `vi.spyOn(frame.contentWindow, 'postMessage')` throws in the two
+    EmbedFrame bridge specs (`tests/shell-window.test.jsx`,
+    `tests/shell-low-branches.test.jsx`); adopting it means rewriting
+    those tests against a fake frame window.
+
 ## 2026-10-21 — v3.20.0 released and deployed
 
 - **Release**: `chore(release): 3.20.0` (`0c7d3f8`) bumped the version in
