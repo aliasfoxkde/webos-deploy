@@ -1,10 +1,10 @@
 # Phased Work Plan — ArtCraft WebOS
 
-Generated 2026-10-21. Replaces and supersedes the "gaps and next steps"
+Generated 2026-10-22. Replaces and supersedes the "gaps and next steps"
 portions of prior session records. Read HANDOFF.md first for context,
 conventions, and the standing routine loop.
 
-## Status at a Glance (2026-10-21)
+## Status at a Glance (2026-10-22)
 
 | Dimension | Current | Target |
 |---|---|---|
@@ -18,8 +18,8 @@ conventions, and the standing routine loop.
 | Shell scripts | shellcheck in CI | hold |
 | FireCraft version | 0.2.2 (row + SW cache + pipeline) | hold |
 | Registry rows | 12/12 match deployment | hold |
-| Craft apps vs upstream | behind (0.3.0 → 0.10.0 etc.) | P10 |
-| Next release | 3.20.0 | per H6 checklist |
+| Craft apps vs upstream | current (all twelve, 2026-10-22) | hold |
+| Next release | 3.21.0 | per H6 checklist |
 
 ---
 
@@ -262,20 +262,20 @@ lying — it just describes an old deployment.
 
 Latest upstream release carrying a web zip, per app:
 
-| App | Deployed now | Latest upstream web zip |
+| App | Deployed before | Adopted 2026-10-22 |
 |---|---|---|
-| cadcraft | 0.3.0 | v0.10.0 |
-| designcraft | 0.4.0 | v0.10.0 |
-| gridcraft | 0.3.0 | v0.9.0 |
-| lightcraft | 0.4.0 | v0.10.0 |
-| pdfcraft | 0.4.0 | v0.10.1 |
-| photocraft | 0.5.0 | v0.11.1 |
-| vectorcraft | 0.7.0 | v0.14.0 |
-| wordcraft | 0.3.0 | v0.9.0 |
-| deckcraft | 0.4.0 | v0.9.0 (source checkout today) |
-| soundcraft | 0.5.0 | v0.10.0 (source checkout today) |
-| effectcraft | 0.8.0 | v0.13.0 (source checkout today) |
-| firecraft | 0.2.2 | v0.2.2 ✓ (current) |
+| cadcraft | 0.3.0 | 0.10.0 |
+| designcraft | 0.4.0 | 0.11.0 |
+| gridcraft | 0.3.0 | 0.10.0 |
+| lightcraft | 0.4.0 | 0.11.0 |
+| pdfcraft | 0.4.0 | 0.11.0 |
+| photocraft | 0.5.0 | 0.12.0 |
+| vectorcraft | 0.7.0 | 0.14.0 |
+| wordcraft | 0.3.0 | 0.9.0 |
+| deckcraft | 0.4.0 | 0.9.0 |
+| soundcraft | 0.5.0 | 0.11.0 |
+| effectcraft | 0.8.0 | 0.14.0 |
+| firecraft | 0.2.2 | 0.2.2 (already current) |
 
 Steps, per app:
 
@@ -287,16 +287,33 @@ Steps, per app:
 4. `cd webos && npm run ci` — `tests/registry-versions.test.js` fails if
    any of the three version statements disagree.
 5. Deploy: `npx wrangler pages deploy apps/<name> --project-name <name>-web`.
-   Bundles over the 25 MiB Pages cap (designcraft, vectorcraft, pdfcraft,
-   wordcraft, effectcraft) keep only `_worker.js` in the deploy and stream
-   their wasm from R2 — upload the blob first with
-   `wrangler r2 object put craftweb/<file>.wasm --file <f> --remote`.
+   Bundles over the 25 MiB Pages cap keep only `_worker.js` in the deploy
+   and stream their wasm from R2 — `packaging/r2-publish.sh <app>` does
+   that (moves the blob into `r2-blobs/`, writes `_worker.js` +
+   `wrangler.toml` with the `CRAFTWEB` binding, uploads with
+   `wrangler r2 object put craftweb/<file>.wasm --file <f> --remote`),
+   after which the deploy runs **from the app directory** so wrangler
+   picks up that configuration.
 6. For deckcraft/soundcraft/effectcraft: move the source checkouts out of
    `apps/` first — `fetch_one` does `rm -rf apps/<name>` on `--force` and
-   would destroy the checkout.
+   would destroy the checkout. (Done 2026-10-21: they live in
+   `/nas/Temp/repos/<name>`.)
 
 This is an upgrade, not a fix: each app visibly changes. Do it app by app,
 with the sweep between steps.
+
+**Done 2026-10-22.** All twelve apps sit on their current upstream web
+release. DeckCraft, SoundCraft and EffectCraft now publish upstream
+release zips and joined the standard pipeline; EffectCraft ships its own
+PWA glue, so `packaging/pwa-inject.sh` leaves that bundle alone (its SW
+cache name is upstream's content hash, not the release version — the
+exception is pinned in `webos/tests/registry-versions.test.js`). Seven
+wasm bundles of 29–74 MiB (deckcraft, designcraft, effectcraft, lightcraft,
+pdfcraft, vectorcraft, wordcraft) exceed the Pages per-asset cap and are
+served from the R2 `craftweb` bucket. Every deployment was verified in
+production: the served asset name matches the local bundle, the wasm
+answers `200` with `application/wasm`, and the SW cache name carries the
+new version.
 
 ---
 
@@ -307,9 +324,9 @@ recorded here so they are not lost.
 
 ### P9.1 — EffectCraft web deployment
 
-EffectCraft (`apps/effectcraft/`) has no upstream release zip and no
-checkout under `apps/`. When it publishes or is checked out, follow H3.2
-to add it to `fetch-apps.sh` and deploy from the fetched build.
+**Resolved 2026-10-22.** EffectCraft now publishes a release web zip and
+rides the standard `fetch-apps.sh` pipeline; its source checkout lives at
+`/nas/Temp/repos/effectcraft`.
 
 ### P9.2 — WebOS preview server security hardening
 
@@ -333,10 +350,11 @@ pattern or deprecated and removed from the repo.
 
 ### P9.5 — Cloudflare R2 asset automation
 
-FireCraft's wasm is currently deployed via `wrangler pages deploy` and
-also mirrored to R2. The R2 path (documented in `packaging/`) should be
-automated so `wrangler r2 object put` is part of the release script, not
-a manual step.
+**Done 2026-10-22.** `packaging/r2-publish.sh <app>` performs the whole
+route in one step: move the wasm into `r2-blobs/`, write `_worker.js` and
+the `wrangler.toml` with the `CRAFTWEB` binding, upload with
+`wrangler r2 object put … --remote`, and print the deploy command to run
+from the app directory.
 
 ---
 
@@ -362,4 +380,4 @@ a manual step.
 | 188 | Release 3.20.0 | P8 | completed |
 | 189 | Repair the broken Aegis CI gate | P3 | completed |
 | 190 | Dependency refresh | P4 | completed (majors deferred with reasons) |
-| — | Adopt upstream craft app releases | P10 | pending |
+| 191 | Adopt upstream craft app releases | P10 | completed (2026-10-22) |

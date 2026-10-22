@@ -319,7 +319,7 @@ source commit unverified — the bundle carries no version string).
       EACCES otherwise). Prefer copying the repo to /var/tmp instead of
       mounting the NAS path when practical.
 
-## Phase H6 — release checklist (next: TBD; last release 3.20.0, 2026-10-21)
+## Phase H6 — release checklist (next: TBD; last release 3.21.0, 2026-10-22)
 
 1. [ ] Pick the version (user-facing change → minor; fix-only → patch).
 2. [ ] Bump ×3 (`package.json`, `src/version.js`, `public/sw.js`).
@@ -348,13 +348,14 @@ source commit unverified — the bundle carries no version string).
 | Istanbul/V8 line attribution: conditional-JSX lines count arrow INVOCATIONS, not element creations; `Panels.jsx` `catch{}` block is a proven blind spot | Cover by clicking (invoking arrows); accept the 4 settled uncovered lines; never "fix" by refactoring to ternaries (changes nothing) |
 | Coverage run flakes at 5 s wall-clock defaults under instrumentation | `testTimeout: 20_000` is set; keep it |
 | Plain `grep` misreads some test files as binary; cwd resets between commands | `/usr/bin/grep`; re-anchor `cd` every command |
-| Pages 25 MiB per-asset cap | FireCraft's 10.9 MB wasm is fine; larger blobs go the R2 `craftweb` route (see packaging/) |
+| Pages 25 MiB per-asset cap | Blobs over 25 MiB go the R2 `craftweb` route — `packaging/r2-publish.sh <app>` prepares it, and the deploy must run **from the app directory** (`wrangler` refuses a config path for Pages) |
 | `screen.getByText('New folder')`-style ambiguity (toolbar vs ctx menu) | Scope queries (`.ctx-item`), clear DOM in `beforeEach` |
 | OSProvider is a named export; `parent`/`base` are MemFS methods | Import `{ OSProvider }`; call on an `fs` instance |
 | Chromium's first stderr chunk is a dbus/GL warning, not the DevTools URL — `once(stderr,'data')` yields `127.0.0.1:undefined` | Accumulate the whole stderr stream and match `/DevTools listening on (ws:\/\/\S+)/` |
 | The production build does not serve source modules (`/os/db.js` 404s) and `fetch('file://…')` is blocked from an http origin | In the sweep, write VFS records straight into the `files` IndexedDB store from page context |
 | `husky`'s `prepare` script resolves `.git` relative to the CWD, and `webos/` is not the repo root | `"prepare": "cd .. && husky .husky"`, and the hook itself lives at the repo root `.husky/pre-commit` (committed, mode 755) |
 | WebOS preview server binds `[::1]` only for some commands | Prefer `vite preview --host 127.0.0.1` as the e2e scripts do |
+| RTL's async helpers time out after 1 s, which flakes on a loaded machine | `configure({ asyncUtilTimeout: 5_000 })` in `webos/tests/setup.js` |
 
 ## Do NOT (each has a reason)
 

@@ -4,12 +4,13 @@ Live status board. Update this (and [SESSIONS.md](SESSIONS.md)) at the end
 of every working session. Plan-of-record for open work:
 [HANDOFF.md](HANDOFF.md).
 
-## Snapshot (verified 2026-10-21)
+## Snapshot (verified 2026-10-22)
 
 | Dimension | State |
 |---|---|
-| Released / deployed version | **3.20.0** ([v3.20.0](https://github.com/aliasfoxkde/webos-deploy/releases/tag/v3.20.0)) → next: TBD |
-| Production | https://artcraft-webos.pages.dev — served bundle hash matches local `webos/dist`, `sw.js` cache `webos-v3.20.0` |
+| Released / deployed version | **3.21.0** ([v3.21.0](https://github.com/aliasfoxkde/webos-deploy/releases/tag/v3.21.0)) → next: TBD |
+| Production | https://artcraft-webos.pages.dev — served bundle hash matches local `webos/dist`, `sw.js` cache `webos-v3.21.0` |
+| Craft apps | all twelve on their current upstream web release (2026-10-22): cadcraft 0.10.0, deckcraft 0.9.0, designcraft 0.11.0, effectcraft 0.14.0, firecraft 0.2.2, gridcraft 0.10.0, lightcraft 0.11.0, pdfcraft 0.11.0, photocraft 0.12.0, soundcraft 0.11.0, vectorcraft 0.14.0, wordcraft 0.9.0 — seven of them served from the R2 `craftweb` route |
 | FireCraft | https://firecraft-web.pages.dev — **v0.2.2**, served from the upstream release zip (`firecraft-web-71ff69a0cf973bce`, wasm `0820a445…`) on the standard `fetch-apps.sh` pipeline; bridge autosave/open-with/exportPng→Photos + export-to-Files (2026-10-21) |
 | Tests | 1344+ specs / 88 files, `npm run ci` green |
 | Coverage | 98.59% stmts / 94.20% branches / 98.16% funcs / **99.92% lines**; floors 98.3/94.0/98.1/99.85 in `webos/vitest.config.js` (88 files / 1344 tests, measured − tolerance) |
@@ -44,12 +45,16 @@ of every working session. Plan-of-record for open work:
       upstream ships one (waiting on aliasfoxkde/FireCraft#2); H3.2 done
       2026-10-21 (firecraft 0.2.2 from aliasfoxkde org, fetched zip,
       pwa-inject + icons done, deployed and probe-green); H3.3 registry
-      audit done 2026-10-21 — all 12 rows match deployment; watching
-      deck/sound/effect for upstream zips.
-- [ ] **P10** Adopt the upstream craft-app releases — the deployed set is
-      pinned to versions upstream passed (cadcraft 0.3.0 vs v0.10.0,
-      vectorcraft 0.7.0 vs v0.14.0, …); every one of those releases
-      ships a web zip. Deliberate upgrade, app by app — see PHASES.md P10.
+      audit done 2026-10-21 — all 12 rows match deployment. Deck/sound/effect
+      upstream zips arrived and were adopted with P10 (2026-10-22); the watch
+      continues for the next upstream release of any of the twelve.
+- [x] **P10** Adopt the upstream craft-app releases — complete 2026-10-22:
+      all twelve craft apps upgraded to their current upstream web release
+      (cadcraft 0.3.0→0.10.0 … vectorcraft 0.7.0→0.14.0, deck/sound/effect
+      joined the standard release-zip pipeline), seven oversized wasm
+      bundles moved to the R2 route via `packaging/r2-publish.sh`, registry
+      rows + SW cache stamps re-pinned, each deployment production-verified
+      (asset hash + `application/wasm`), shell released as v3.21.0.
 - [x] **H4** Quality forward path — H4.1 coverage floors met (96.5/88.5/95.8/99.6), H4.2 deps refreshed (vitest 5.0.5, coverage-v8, fake-indexeddb; re-refreshed 2026-10-21: sql.js 1.15.1, vite 6.4.5 — React 19 / Vite 8 / ESLint 10 / happy-dom 21 deferred with reasons in SESSIONS.md), H4.3 Aegis re-scan zero new findings (baseline suppresses all), H4.4 sweep synced.
 - [x] **H5** H5.3 container revalidation complete in node:24-trixie-slim; H5.1 pipeline registered (push, 4e1079cd…ccc957); H5.2 GitHub Actions as primary gate (runner dispatch pending for GitForge).
 - [x] **H7** Coverage determinism + CI repair (2026-10-20) — three one-second
@@ -66,7 +71,7 @@ of every working session. Plan-of-record for open work:
       export-to-Files path got component-level tests, and the E2E sweep's
       FireCraft open-with phase was repaired (it imported a module URL the
       production build does not serve) — the sweep is green 27/27.
-- [x] **H6** Releases — v3.18.0 shipped 2026-10-19 (its gate was red; fixed in v3.19.0), v3.19.0 shipped 2026-10-20 with a green gate, v3.20.0 shipped 2026-10-21 (FireCraft v0.2.2 sync, coverage sprint, Aegis gate repaired). Checklist in HANDOFF.md.
+- [x] **H6** Releases — v3.18.0 shipped 2026-10-19 (its gate was red; fixed in v3.19.0), v3.19.0 shipped 2026-10-20 with a green gate, v3.20.0 shipped 2026-10-21 (FireCraft v0.2.2 sync, coverage sprint, Aegis gate repaired), v3.21.0 shipped 2026-10-22 (all craft apps upgraded to their current upstream releases; R2 publish automated). Checklist in HANDOFF.md.
 
 ## Deliberately closed (do not reopen without new evidence)
 

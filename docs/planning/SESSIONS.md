@@ -1,3 +1,53 @@
+## 2026-10-22 — craft apps upgraded to their current upstream releases (P10)
+
+- **All twelve craft apps now serve their current upstream web release.**
+  Before: cadcraft 0.3.0, designcraft 0.4.0, gridcraft 0.3.0, lightcraft
+  0.4.0, pdfcraft 0.4.0, photocraft 0.5.0, vectorcraft 0.7.0, wordcraft
+  0.3.0, deckcraft 0.4.0, soundcraft 0.5.0, effectcraft 0.8.0 (firecraft
+  was already current at 0.2.2). After: 0.10.0 / 0.11.0 / 0.10.0 / 0.11.0 /
+  0.11.0 / 0.12.0 / 0.14.0 / 0.9.0 / 0.9.0 / 0.11.0 / 0.14.0.
+- **DeckCraft, SoundCraft and EffectCraft joined the standard pipeline.**
+  Upstream now publishes a release web zip for each, so they are in
+  `fetch-apps.sh`'s `APPS_LIST` like the other nine. Their source
+  checkouts were moved out of `apps/` to `/nas/Temp/repos/<name>` first —
+  `fetch_one` does `rm -rf apps/<name>` on `--force` and would have
+  destroyed them.
+- **EffectCraft is the one PWA exception.** Its upstream release ships
+  its own glue (manifest, icons, a service worker that precaches the
+  build's file list, cache name `effectcraft-<content hash>`), so
+  `packaging/pwa-inject.sh` leaves that bundle alone. The exception is
+  pinned in `webos/tests/registry-versions.test.js`; DeckCraft and
+  SoundCraft got the injected manifest/icons/service worker with
+  original code-drawn glyphs (slide frame, waveform bars).
+- **The oversized bundles moved to the R2 route, and the route is now
+  scripted.** Seven wasm bundles are 29–74 MiB — over Cloudflare Pages'
+  25 MiB per-asset cap. The new `packaging/r2-publish.sh <app>` moves the
+  wasm into `r2-blobs/`, writes `_worker.js` and the `wrangler.toml` with
+  the `CRAFTWEB` binding, and uploads the blob with
+  `wrangler r2 object put craftweb/<file>.wasm --file <f> --remote`. The
+  deploy then runs **from the app directory** — wrangler refuses a
+  custom config path for Pages ("Pages does not support custom paths for
+  the Wrangler configuration file").
+- **Every deployment was verified in production**, not just uploaded:
+  the served asset name matches the local bundle, the wasm answers `200`
+  with `content-type: application/wasm`, and each injected service worker
+  carries the new cache name (`cadcraft-web-0.10.0`,
+  `vectorcraft-web-0.14.0`, …). EffectCraft keeps upstream's hash-based
+  cache name.
+- **Two load-dependent test failures surfaced and were fixed at the
+  root.** `tests/shell-window.test.jsx` asserted the CADCraft version as
+  a literal (`v0.3.0`) and only failed once the apps were upgraded; it
+  now reads the version from the registry. `tests/taskmgr.test.jsx`'s
+  performance assertions used RTL's 1 s async timeout and missed it on a
+  loaded machine — the whole suite now sets
+  `configure({ asyncUtilTimeout: 5_000 })` in `tests/setup.js`, which
+  removes the class rather than patching one test.
+- **Gate and release**: lint clean, 1344/1344 specs, coverage 98.59%
+  stmts / 94.20% branches / 98.16% funcs / 99.92% lines (floors hold),
+  build clean, e2e sweep 27/27 with 0 page errors, shell released as
+  **v3.21.0** (`webos-v3.21.0` live, served bundle hash
+  `index-CJ0BIUc9.js` matches the local dist).
+
 ## 2026-10-21 — dependency refresh (P4)
 
 - **In-range upgrades taken**: `sql.js` 1.14.2 → 1.15.1, `vite` 6.4.4 →
