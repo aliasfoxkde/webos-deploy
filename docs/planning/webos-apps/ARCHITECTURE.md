@@ -680,11 +680,13 @@ to their `DEFAULT_*` consts — installed apps, pins, groups, files kept) and
 shared with the Storage panel via the exported `factoryReset()` in
 `state.jsx` — one implementation, two entries.
 
-Validation: `scripts/screenshot-drive.mjs` steps 34–35 sweep all six personas
-(dataset + `--radius` + computed font per persona, screenshots), apply the
-four knobs to a live window (flex-direction, title position, box-shadow,
-font), then drive About → "Reset look & layout" with an auto-accepted confirm
-and assert the state slices land back on defaults.
+Validation: `tests/personas-theme.test.js` asserts the six personas' dataset,
+`--radius` and computed font, the four knobs on a live window (flex-direction,
+title position, box-shadow, font), and that About → "Reset look & layout"
+lands the state slices back on defaults. The deprecated
+`scripts/screenshot-drive.mjs` steps 34–35 also swept all six personas with
+screenshots, but that driver is no longer the gate — see
+`packaging/e2e/webos-sweep.mjs`.
 
 ### 3.2.0 — taskbar grouping, window placement, single-instance apps
 

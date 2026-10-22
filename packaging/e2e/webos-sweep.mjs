@@ -4,6 +4,11 @@
 // screenshots each, and attributes console errors to the phase that caused
 // them. Verdict: per-phase PASS/FAIL + overall.
 //
+// One phase goes past the pixels: `state-assertions` reads the shell's
+// internal state over CDP — the window registry in the OS reducer and the
+// records in the IndexedDB database the shell persists to — so a surface
+// that renders the right pixels over the wrong state still fails.
+//
 // Lives in packaging/e2e/ so it survives scratch GC. Build first
 // (cd webos && npm run build), then from the repo root:
 //   node packaging/e2e/webos-sweep.mjs
@@ -513,7 +518,145 @@ else await phase('firecraft-open-with', async () => {
   if (!opened) throw new Error('FireCraft did not respond to open-with path argument');
 });
 
-/* ================ G. persistence across reload ================ */
+/* ================ G. internal state (not just pixels) ================ */
+// The phases above prove that surfaces RENDER. This one asserts the state
+// behind them: the window registry in the OS reducer, and the records in
+// the IndexedDB database the shell persists to (src/os/db.js).
+await phase('state-assertions', async () => {
+  // start from a clean desktop
+  await evalJs(`(() => { [...document.querySelectorAll('.win')].forEach(w => __os.close(w.dataset.id)); return true; })()`);
+  await wait(400);
+
+  // two launches register in the reducer AND in the DOM
+  await evalJs(`__os.launch('notepad')`);
+  await evalJs(`__os.launch('calc')`);
+  if (!await poll(`__os.windows.length === 2`, 8000)) throw new Error('state: two launches did not register two windows');
+  const apps = await evalJs(`__os.windows.map(w => w.appId).sort().join(',')`);
+  if (apps !== 'calc,notepad') throw new Error(`state: unexpected window apps "${apps}"`);
+  const dom = await evalJs(`document.querySelectorAll('.win').length`);
+  if (dom !== 2) throw new Error(`state: ${dom} windows in the DOM, 2 in the reducer`);
+  const recents = await evalJs(`(__os.recents || []).join(',')`);
+  if (!recents.includes('notepad') || !recents.includes('calc')) throw new Error(`state: recents missing a launched app: "${recents}"`);
+
+  // a single-instance app focuses the running window instead of opening a second
+  await evalJs(`__os.launch('settings')`);
+  await wait(600);
+  const one = await evalJs(`__os.windows.length`);
+  await evalJs(`__os.launch('settings')`);
+  await wait(600);
+  const two = await evalJs(`__os.windows.length`);
+  if (one !== two) throw new Error(`state: settings opened ${two - one} extra window(s) — single-instance violated`);
+
+  // the persisted database carries its stores, and a record round-trips
+  const idb = await evalJs(`(async () => {
+    const db = await new Promise((res, rej) => {
+      const r = indexedDB.open('webos', 1);
+      r.onupgradeneeded = () => {
+        const d = r.result;
+        if (!d.objectStoreNames.contains('kv')) d.createObjectStore('kv');
+        if (!d.objectStoreNames.contains('files')) d.createObjectStore('files', { keyPath: 'path' });
+      };
+      r.onsuccess = () => res(r.result);
+      r.onerror = () => rej(r.error);
+    });
+    const put = (store, value, key) => new Promise((res, rej) => {
+      const req = key ? db.transaction(store, 'readwrite').objectStore(store).put(value, key)
+        : db.transaction(store, 'readwrite').objectStore(store).put(value);
+      req.onsuccess = () => res();
+      req.onerror = () => rej(req.error);
+    });
+    const get = (store, key) => new Promise((res, rej) => {
+      const req = db.transaction(store, 'readonly').objectStore(store).get(key);
+      req.onsuccess = () => res(req.result);
+      req.onerror = () => rej(req.error);
+    });
+    await put('kv', { probe: 'state-assertions' }, 'sweep-probe');
+    const kv = await get('kv', 'sweep-probe');
+    await put('files', { path: '/sweep/state-probe.txt', type: 'text/plain', size: 21, mtime: 1 }, null);
+    const file = await get('files', '/sweep/state-probe.txt');
+    const stores = [...db.objectStoreNames].sort().join(',');
+    db.close();
+    return { stores, kvProbe: kv && kv.probe, filePath: file && file.path, fileSize: file && file.size };
+  })()`);
+  if (!idb.stores.includes('kv') || !idb.stores.includes('files')) throw new Error(`state: IndexedDB stores are "${idb.stores}"`);
+  if (idb.kvProbe !== 'state-assertions') throw new Error(`state: kv record read back as ${JSON.stringify(idb.kvProbe)}`);
+  if (idb.filePath !== '/sweep/state-probe.txt' || idb.fileSize !== 21) throw new Error(`state: files record read back as ${JSON.stringify(idb)}`);
+  await shot('state-assertions');
+});
+
+/* ================ H. surfaces the legacy driver covered ================ */
+// webos/scripts/screenshot-drive.mjs drove these by hand. They are automated
+// here so the coverage does not depend on a person remembering to run it.
+await phase('mobile-layout', async () => {
+  await evalJs(`(() => { [...document.querySelectorAll('.win')].forEach(w => __os.close(w.dataset.id)); return true; })()`);
+  await evalJs(`__os.setUiMode('mobile')`);
+  await wait(700);
+  if (!await evalJs(`!!document.querySelector('#home-fab')`)) throw new Error('mobile: no FAB in the dock');
+  await shot('mobile-fab');
+  await evalJs(`document.querySelector('#home-fab').click()`);
+  await wait(500);
+  const apps = await evalJs(`document.querySelectorAll('.drawer-app').length`);
+  if (!apps) throw new Error('mobile: the drawer lists no apps');
+  await shot('mobile-drawer');
+  await evalJs(`[...document.querySelectorAll('.drawer-app')].find(b => b.textContent.includes('Terminal'))?.click()`);
+  await wait(900);
+  const wins = await evalJs(`__os.windows.length`);
+  if (!wins) throw new Error('mobile: launching from the drawer opened no window');
+  await shot('mobile-app');
+  await evalJs(`(() => { [...document.querySelectorAll('.win')].forEach(w => __os.close(w.dataset.id)); return true; })()`);
+  await evalJs(`__os.setUiMode('auto')`);
+  await wait(500);
+});
+
+await phase('window-tiling', async () => {
+  await evalJs(`(() => { [...document.querySelectorAll('.win')].forEach(w => __os.close(w.dataset.id)); return true; })()`);
+  await evalJs(`__os.launch('notepad')`);
+  await wait(700);
+  const vw = await evalJs(`window.innerWidth`);
+  const key = (k) => evalJs(`window.dispatchEvent(new KeyboardEvent('keydown', { key: ${JSON.stringify(k)}, metaKey: true, bubbles: true }))`);
+  await key('ArrowLeft');
+  await wait(500);
+  const left = await evalJs(`(() => { const w = __os.windows[0]; return { x: w.rect.x, w: w.rect.w, snap: w.snap }; })()`);
+  if (left.x !== 0) throw new Error(`tiling: Meta+Left left x=${left.x}, want 0`);
+  if (Math.abs(left.w - vw / 2) > 60) throw new Error(`tiling: Meta+Left width ${left.w}, want about ${Math.round(vw / 2)}`);
+  await shot('tiled-left');
+  await key('ArrowUp');
+  await wait(400);
+  const up = await evalJs(`(() => { const w = __os.windows[0]; return { max: w.max, snap: w.snap }; })()`);
+  if (!up.max) throw new Error('tiling: Meta+Up did not maximize');
+  await key('ArrowDown');
+  await wait(400);
+  const down = await evalJs(`(() => { const w = __os.windows[0]; return { max: w.max }; })()`);
+  if (down.max) throw new Error('tiling: Meta+Down did not unmaximize');
+  await evalJs(`(() => { [...document.querySelectorAll('.win')].forEach(w => __os.close(w.dataset.id)); return true; })()`);
+});
+
+await phase('taskbar-groups', async () => {
+  await evalJs(`(() => { (__os.groups || []).forEach(g => __os.removeGroup(g.id)); return true; })()`);
+  await wait(400);
+  await clickAt(700, 520, 'right');
+  await poll(`!!document.querySelector('.ctx-item')`, 6000);
+  await evalJs(`[...document.querySelectorAll('.ctx-item')].find(b => b.textContent.includes('New group'))?.click()`);
+  await wait(600);
+  const groups = await evalJs(`(__os.groups || []).length`);
+  if (!groups) throw new Error('groups: the context menu did not create one');
+  if (!await evalJs(`!!document.querySelector('.group-tile')`)) throw new Error('groups: no tile on the desktop');
+  const appId = await evalJs(`__os.apps[0].id`);
+  await evalJs(`__os.groupAdd(__os.groups[0].id, ${JSON.stringify(appId)})`);
+  await wait(500);
+  const members = await evalJs(`(__os.groups[0].appIds || []).length`);
+  if (members !== 1) throw new Error(`groups: ${members} members, want 1`);
+  await evalJs(`document.querySelector('.group-tile')?.click()`);
+  await wait(500);
+  const rows = await evalJs(`document.querySelectorAll('.gp-app').length`);
+  if (rows !== 1) throw new Error(`groups: the popup lists ${rows} members, want 1`);
+  await shot('group-popup');
+  await evalJs(`__os.removeGroup(__os.groups[0].id)`);
+  await wait(500);
+  if (await evalJs(`(__os.groups || []).length`)) throw new Error('groups: the group survived removal');
+});
+
+/* ================ I. persistence across reload ================ */
 await phase('persistence', async () => {
   await evalJs(`__os.setTheme({ accent: '#ff5a5a' })`);
   await wait(500);

@@ -48,6 +48,10 @@ of every working session. Plan-of-record for open work:
       audit done 2026-10-21 — all 12 rows match deployment. Deck/sound/effect
       upstream zips arrived and were adopted with P10 (2026-10-22); the watch
       continues for the next upstream release of any of the twelve.
+- [x] **P9** Future-work items — P9.1 and P9.5 closed with the craft-app
+      upgrade (2026-10-22); P9.2 preview server pinned to 127.0.0.1;
+      P9.3 the sweep asserts internal state (window registry + IndexedDB);
+      P9.4 the legacy driver deprecated, its surfaces ported into the sweep.
 - [x] **P10** Adopt the upstream craft-app releases — complete 2026-10-22:
       all twelve craft apps upgraded to their current upstream web release
       (cadcraft 0.3.0→0.10.0 … vectorcraft 0.7.0→0.14.0, deck/sound/effect

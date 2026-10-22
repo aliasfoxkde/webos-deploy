@@ -330,23 +330,35 @@ rides the standard `fetch-apps.sh` pipeline; its source checkout lives at
 
 ### P9.2 — WebOS preview server security hardening
 
-The preview server binds `[::1]` only for some vite commands
-(known pitfall in HANDOFF.md). Audit all preview/bind logic and ensure
-the server is consistently reachable at `127.0.0.1` for e2e runs.
+**Done 2026-10-22.** `vite.config.js` now pins both servers to the IPv4
+loopback — `server: { host: '127.0.0.1' }` and `preview: { host:
+'127.0.0.1' }` — and the `dev` / `preview` npm scripts pass
+`--host 127.0.0.1` as well. The preview server was reachable on
+`[::1]` only, so anything addressed to `127.0.0.1` (the e2e scripts, the
+CDP driver) could not reach it; the pin also keeps it off the LAN.
 
 ### P9.3 — CDP driver as first-class test
 
-The current `webos-sweep.mjs` is a headless-Chrome smoke test. It
-exercises the full rendering pipeline but does not assert internal state.
-Consider adding an e2e state-assertion test that uses the CDP client
-to make assertions about JS state (window count, IndexedDB records, etc.)
-in addition to the screenshot-based visual checks.
+**Done 2026-10-22.** The sweep now has a `state-assertions` phase: over
+CDP it reads the window registry in the OS reducer (two launches register
+two windows in both the state and the DOM; recents list them; a
+single-instance app focuses instead of opening a second window) and round-trips
+records through the `webos` IndexedDB database (`kv` and `files` stores,
+a record read back byte-for-byte). A surface that renders the right pixels
+over the wrong state now fails the sweep.
 
 ### P9.4 — `screenshot-drive.mjs` replacement
 
-The legacy screenshot driver (`scripts/screenshot-drive.mjs`, 1,477 LOC)
-is run manually. It should either be replaced by the `webos-sweep.mjs`
-pattern or deprecated and removed from the repo.
+**Done 2026-10-22.** The surfaces the legacy driver covered by hand now run
+as sweep phases: `mobile-layout` (FAB, drawer, launch from the drawer),
+`window-tiling` (Meta+ArrowLeft tiles, Meta+ArrowUp maximizes, Meta+ArrowDown
+restores) and `taskbar-groups` (create through the desktop context menu,
+file a member in, popup lists it, remove the group). The driver itself is
+deprecated with a banner at the top of the file — it gates nothing, and
+extending it would fork the gate. It is kept for the manual-only visual
+coverage no gate asserts on (persona variants, tray menus, drag-pinning, the
+add-app dialog, the SQLite viewer); deleting a tracked 1,477-LOC tool is the
+operator's call, not a silent part of this phase.
 
 ### P9.5 — Cloudflare R2 asset automation
 

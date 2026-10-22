@@ -1,3 +1,17 @@
+// DEPRECATED (2026-10-22) — do not extend this file.
+//
+// The automated gate is `packaging/e2e/webos-sweep.mjs`: it boots the built
+// dist, drives every first-party surface, asserts on internal state (the
+// window registry in the OS reducer, IndexedDB records) and attributes page
+// errors to the phase that caused them. The surfaces this driver covered by
+// hand — the mobile layout, keyboard tiling, taskbar groups — now run as
+// sweep phases (mobile-layout, window-tiling, taskbar-groups).
+//
+// What is left here is manual-only visual coverage that no gate asserts on
+// (persona variants, tray menus, drag-pinning, the add-app dialog, the
+// SQLite viewer). It is kept because it is still the only way to look at
+// those surfaces; it gates nothing.
+//
 // Dev tool: CDP-driven screenshot session against a running WebOS preview
 // server (`npm run preview`), for visual verification without a browser.
 // Usage: node scripts/screenshot-drive.mjs [base-url] [out-dir]

@@ -15,11 +15,9 @@
 import { PLUGIN_APPS } from '../apps/manifests.js';
 
 export const DEFAULT_APPS = [
-  // -- the 12 craft apps (most deployed on Cloudflare Pages from upstream
-  //    release zips; deckcraft/soundcraft/effectcraft deploy from their
-  //    apps/<name> source checkouts and firecraft from its own checkout at
-  //    /nas/Temp/repos/FireCraft — these four have no upstream release zips,
-  //    so none of them is in packaging/fetch-apps.sh's list) --
+  // -- the 12 craft apps (deployed on Cloudflare Pages from upstream release
+  //    zips via packaging/fetch-apps.sh; the wasm of the seven oversized
+  //    bundles streams from the R2 bucket `craftweb` through a _worker.js) --
   {
     id: 'cadcraft', name: 'CADCraft', tagline: 'CAD & drafting', version: '0.10.0',
     url: 'https://cadcraft-web.pages.dev/', icon: 'icons/craft/cadcraft.png', accent: '#22d3ee', embed: true,

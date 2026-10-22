@@ -354,7 +354,7 @@ source commit unverified — the bundle carries no version string).
 | Chromium's first stderr chunk is a dbus/GL warning, not the DevTools URL — `once(stderr,'data')` yields `127.0.0.1:undefined` | Accumulate the whole stderr stream and match `/DevTools listening on (ws:\/\/\S+)/` |
 | The production build does not serve source modules (`/os/db.js` 404s) and `fetch('file://…')` is blocked from an http origin | In the sweep, write VFS records straight into the `files` IndexedDB store from page context |
 | `husky`'s `prepare` script resolves `.git` relative to the CWD, and `webos/` is not the repo root | `"prepare": "cd .. && husky .husky"`, and the hook itself lives at the repo root `.husky/pre-commit` (committed, mode 755) |
-| WebOS preview server binds `[::1]` only for some commands | Prefer `vite preview --host 127.0.0.1` as the e2e scripts do |
+| WebOS preview server used to bind `[::1]` only, so `127.0.0.1` could not reach it | Fixed at the source (2026-10-22): `vite.config.js` pins `server`/`preview` to `host: '127.0.0.1'` and the npm scripts pass `--host 127.0.0.1` |
 | RTL's async helpers time out after 1 s, which flakes on a loaded machine | `configure({ asyncUtilTimeout: 5_000 })` in `webos/tests/setup.js` |
 
 ## Do NOT (each has a reason)

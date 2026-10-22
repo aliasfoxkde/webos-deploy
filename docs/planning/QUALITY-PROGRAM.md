@@ -11,7 +11,7 @@ gates (`cargo xtask ci`) and are out of scope here.
 |---|---|---|---|---|---|
 | `webos/src` (JS/JSX) | 8,350 LOC / 72 files | 0 | none | none | none |
 | `webos/src/styles.css` | 1,051 LOC | — | — | — | unaudited |
-| `webos/scripts/screenshot-drive.mjs` | 1,477 LOC | manual, ~7 min/run | none | none | — |
+| `webos/scripts/screenshot-drive.mjs` | 1,477 LOC | manual, ~7 min/run (deprecated 2026-10-22 — the gate is `packaging/e2e/webos-sweep.mjs`) | none | none | — |
 | `packaging/*.sh` | ~500 LOC | 0 | shellcheck absent | none | — |
 
 What exists today: one e2e driver (`screenshot-drive.mjs`, 38 CDP-driven

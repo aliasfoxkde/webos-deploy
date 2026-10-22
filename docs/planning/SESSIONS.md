@@ -1,3 +1,35 @@
+## 2026-10-22 — the last open plan items (P9.2, P9.3, P9.4)
+
+- **P9.2 — the preview server now binds the IPv4 loopback.** Vite's
+  default host ('localhost') resolved to `[::1]` on this host, so the
+  server was unreachable on `127.0.0.1` — the address the e2e scripts and
+  the CDP driver use. `vite.config.js` now pins `server` and `preview` to
+  `host: '127.0.0.1'` (verified: `ss` shows `127.0.0.1:5180`, and
+  `http://[::1]:5180/` is refused), and the `dev`/`preview` npm scripts
+  pass `--host 127.0.0.1` too. The pin also keeps the preview off the LAN.
+- **P9.3 — the sweep asserts internal state, not just pixels.** The new
+  `state-assertions` phase reads the window registry in the OS reducer
+  over CDP (two launches register two windows in the state AND in the
+  DOM, `recents` lists them, a single-instance app focuses the running
+  window instead of opening a second) and round-trips records through the
+  `webos` IndexedDB database (`kv` and `files` stores present, a record
+  read back byte-for-byte). A surface that renders the right pixels over
+  the wrong state now fails.
+- **P9.4 — the legacy driver is deprecated, and what it covered by hand
+  is automated.** `webos/scripts/screenshot-drive.mjs` (1,477 LOC, manual,
+  ~7 min/run) now carries a banner: it gates nothing and must not be
+  extended. Three of its surfaces moved into the sweep as phases —
+  `mobile-layout` (FAB, drawer, launch from the drawer), `window-tiling`
+  (Meta+ArrowLeft tiles, Meta+ArrowUp maximizes, Meta+ArrowDown restores)
+  and `taskbar-groups` (create through the desktop context menu, file a
+  member in, the popup lists it, remove the group). The file itself is
+  kept for the manual-only visual coverage no gate asserts on (persona
+  variants, tray menus, drag-pinning, the add-app dialog, the SQLite
+  viewer) — deleting a tracked 1,477-LOC tool is the operator's call.
+- **Sweep is now 31 phases, 0 page errors.** The gate that runs in CI
+  covers state, the mobile layout, tiling and groups on top of the 27
+  it already had.
+
 ## 2026-10-22 — craft apps upgraded to their current upstream releases (P10)
 
 - **All twelve craft apps now serve their current upstream web release.**

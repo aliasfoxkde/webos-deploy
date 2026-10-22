@@ -4,9 +4,9 @@
   "version": "3.21.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --host 127.0.0.1",
     "build": "vite build",
-    "preview": "vite preview",
+    "preview": "vite preview --host 127.0.0.1",
     "test": "vitest run",
     "coverage": "vitest run --coverage",
     "lint": "eslint . --max-warnings 0",
