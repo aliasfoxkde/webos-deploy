@@ -29,21 +29,23 @@ done
 # app version pairs — keep in sync with webos/src/os/registry.js
 # Each entry: "<name> <ver>" or "<name> <ver> <org>" (default org = storytold)
 APPS_LIST=(
-  "cadcraft 0.3.0"
-  "designcraft 0.4.0"
+  "cadcraft 0.10.0"
+  "deckcraft 0.9.0"
+  "designcraft 0.11.0"
+  "effectcraft 0.14.0"
   "firecraft 0.2.2 aliasfoxkde"
-  "gridcraft 0.3.0"
-  "lightcraft 0.4.0"
-  "pdfcraft 0.4.0"
-  "photocraft 0.5.0"
-  "vectorcraft 0.7.0"
-  "wordcraft 0.3.0"
+  "gridcraft 0.10.0"
+  "lightcraft 0.11.0"
+  "pdfcraft 0.11.0"
+  "photocraft 0.12.0"
+  "soundcraft 0.11.0"
+  "vectorcraft 0.14.0"
+  "wordcraft 0.9.0"
 )
-# NOTE: DeckCraft, SoundCraft and EffectCraft are NOT in this list — apps/<name>
-# currently holds full source checkouts deployed straight to their pages.dev
-# projects, and fetch_one does `rm -rf apps/<name>` on --force, which would
-# destroy them. Add "<name> <ver>" here only once the checkout is gone and
-# release zips exist under the org.
+# NOTE: DeckCraft, SoundCraft and EffectCraft joined this list on 2026-10-21 —
+# upstream now publishes a web zip for each, and their source checkouts moved
+# out of apps/ to /nas/Temp/repos/<name> so `fetch_one`'s `rm -rf apps/<name>`
+# cannot destroy them.
 
 mkdir -p "$ZIPS" "$APPS"
 
@@ -81,6 +83,8 @@ for entry in "${APPS_LIST[@]}"; do
   # shellcheck disable=SC2086
   set -- $entry
   [ -n "$APP" ] && [ "$1" != "$APP" ] && continue
-  fetch_one "$1" "$2" "$3"
+  # "${3:-$ORG}" — a two-field entry has no org field, and `set -u` would
+  # abort on an unbound $3.
+  fetch_one "$1" "$2" "${3:-$ORG}"
 done
 echo "done. builds in apps/ (gitignored — deployed via wrangler, see README)."

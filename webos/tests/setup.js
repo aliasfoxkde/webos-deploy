@@ -4,6 +4,14 @@
 // (which ships none); importing the /auto side effect installs the globals.
 import 'fake-indexeddb/auto';
 import { Blob as NodeBlob } from 'node:buffer';
+import { configure } from '@testing-library/react';
+
+// RTL's async helpers (findByText and friends) give up after 1 s by default.
+// On a loaded machine an async lookup that resolves in 2 ms of real time can
+// still miss that budget, and the suite then fails for load reasons rather
+// than logic. Give the async utilities the same headroom the 20 s per-test
+// budget already allows.
+configure({ asyncUtilTimeout: 5_000 });
 
 // fake-indexeddb structured-clones records with Node's structuredClone, which
 // does not recognize happy-dom's Blob — stored blobs degrade to content-less

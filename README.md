@@ -22,7 +22,7 @@ webos/          the OS shell (Vite + React) → deploys to artcraft-webos.pages.
 apps/           fetched upstream builds, one dir per app   [gitignored]
 zips/           release zip cache                          [gitignored]
 r2-blobs/       >25 MiB wasm blobs, uploaded to R2         [gitignored]
-packaging/      fetch-apps.sh, pwa-inject.sh, icons-*.sh
+packaging/      fetch-apps.sh, pwa-inject.sh, r2-publish.sh, icons-*.sh
 docs/           architecture + planning notes
 cadcraft/ … zed/   sibling independent source repos (NOT part of this repo)
 ```
@@ -34,9 +34,9 @@ cadcraft/ … zed/   sibling independent source repos (NOT part of this repo)
 | artcraft-webos (the desktop) | https://artcraft-webos.pages.dev/ |
 | craft apps | `https://<app>-web.pages.dev/` (vectorcraft: `vectorcraft-web-9y7`) |
 | firecraft | https://firecraft-web.pages.dev/ (synced from the `aliasfoxkde/firecraft` release zip) |
-| deckcraft | https://deckcraft-web.pages.dev/ (built from the `apps/deckcraft` source checkout — no upstream release zip yet) |
-| soundcraft | https://soundcraft-web.pages.dev/ (built from the `apps/soundcraft` source checkout) |
-| effectcraft | https://effectcraft-web.pages.dev/ (built from the `apps/effectcraft` source checkout) |
+| deckcraft | https://deckcraft-web.pages.dev/ (synced from the upstream release zip) |
+| soundcraft | https://soundcraft-web.pages.dev/ (synced from the upstream release zip) |
+| effectcraft | https://effectcraft-web.pages.dev/ (synced from the upstream release zip) |
 | Browser in Browser (Firefox WASM) | https://browserinbrowser.pages.dev/ |
 
 ## Quickstart
@@ -57,13 +57,21 @@ cd webos && npx wrangler pages deploy dist --project-name artcraft-webos --branc
 
 Craft app builds deploy as static sites to Cloudflare Pages
 (`<app>-web.pages.dev`), which caps static files at 25 MiB. Bundles over the
-cap (designcraft ~40 MiB, vectorcraft, pdfcraft, wordcraft, effectcraft
-~44.7 MiB) keep only a `_worker.js` in the Pages deploy — any `.wasm` request
-streams from the R2 bucket `craftweb` (binding `CRAFTWEB`, key = the bare
-filename) and everything else falls through to static assets. Upload the
-oversized blob with `wrangler r2 object put craftweb/<file>.wasm --file <f>
---remote`, mirror it in `r2-blobs/`, and note that `--remote` is required
-(plain `wrangler r2 object put` writes to a local simulator).
+cap (deckcraft, designcraft, effectcraft, lightcraft, pdfcraft, vectorcraft,
+wordcraft — 29–74 MiB) keep only a `_worker.js` in the Pages deploy — any
+`.wasm` request streams from the R2 bucket `craftweb` (binding `CRAFTWEB`,
+key = the bare filename) and everything else falls through to static assets.
+`packaging/r2-publish.sh <app>` does that: it moves the wasm out of the
+deploy directory into `r2-blobs/`, writes the `_worker.js` and the
+`wrangler.toml` with the R2 binding, and uploads the blob with
+`wrangler r2 object put craftweb/<file>.wasm --file <f> --remote` (`--remote`
+is required — plain `wrangler r2 object put` writes to a local simulator).
+Then deploy from the app directory, so wrangler picks up its config:
+
+```bash
+packaging/r2-publish.sh pdfcraft
+cd apps/pdfcraft && npx wrangler pages deploy . --project-name pdfcraft-web --branch main
+```
 
 ## Quality gates (webos/)
 

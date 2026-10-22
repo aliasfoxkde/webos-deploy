@@ -227,9 +227,11 @@ describe('TaskManager component', () => {
     navigator.serviceWorker = { getRegistrations: async () => [{}, {}] };
     mount();
     fireEvent.click(screen.getByRole('tab', { name: 'Performance' }));
-    expect(await screen.findByText(/8/)).toBeTruthy(); // cores
-    expect(await screen.findByText('active')).toBeTruthy(); // 2 registrations
-    expect(await screen.findByText(/50 B of 100 B \(50\.00%\) · persistent/)).toBeTruthy();
+    // The storage estimate resolves asynchronously, so these lookups can miss
+    // RTL's 1 s default timeout on a loaded machine — give them room.
+    expect(await screen.findByText(/8/, {}, { timeout: 5_000 })).toBeTruthy(); // cores
+    expect(await screen.findByText('active', {}, { timeout: 5_000 })).toBeTruthy(); // 2 registrations
+    expect(await screen.findByText(/50 B of 100 B \(50\.00%\) · persistent/, {}, { timeout: 5_000 })).toBeTruthy();
     delete navigator.serviceWorker;
     delete navigator.storage;
     delete navigator.hardwareConcurrency;

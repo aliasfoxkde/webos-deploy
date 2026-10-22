@@ -12,7 +12,7 @@ import Screensaver from '../src/shell/Screensaver.jsx';
 import Sidebar from '../src/shell/Sidebar.jsx';
 import FxWallpaper from '../src/shell/FxWallpaper.jsx';
 import { WALLPAPERS } from '../src/os/wallpapers.js';
-import { STORE_APPS } from '../src/os/registry.js';
+import { APP_INDEX, STORE_APPS } from '../src/os/registry.js';
 
 // The file bridge is mocked at the boundary: EmbedFrame must decide WHICH
 // frame may talk to it (source pinning) before bridge logic ever runs.
@@ -98,7 +98,10 @@ describe('Window', () => {
     expect(sec.className).toContain('focused'); // launch focuses
     expect(c.container.querySelector('.titlebar img').getAttribute('src')).toContain('cadcraft');
     expect(c.container.querySelector('.titlebar .t').textContent).toContain('CADCraft');
-    expect(c.container.querySelector('.titlebar .t small').textContent).toBe(`v0.3.0`);
+    // Read the version from the registry so a release bump does not turn this
+    // into a stale literal that only fails after the apps are upgraded.
+    const cad = APP_INDEX.find((a) => a.id === 'cadcraft');
+    expect(c.container.querySelector('.titlebar .t small').textContent).toBe(`v${cad.version}`);
     expect(c.container.querySelector('.tb-btn.ext')).toBeTruthy();
     expect(c.container.querySelector('.win-body').style.getPropertyValue('--win-accent')).toBeTruthy();
   });

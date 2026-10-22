@@ -6,6 +6,11 @@
 // A drift between them is silent: the shell advertises one version, the
 // bundle served is another, and the old SW cache keeps serving the stale
 // one. This test pins the invariant so the mismatch cannot ship.
+//
+// EffectCraft is the one exception: its upstream release ships its own PWA
+// glue (manifest, icons and a service worker that precaches the build's file
+// list), so packaging/pwa-inject.sh does not touch it. Its cache name is
+// upstream's content hash, not the release version.
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -14,11 +19,14 @@ import { APP_INDEX } from '../src/os/registry.js';
 // vitest root is webos/, so packaging/ sits beside the cwd.
 const PACKAGING = join(process.cwd(), '..', 'packaging');
 
-// The apps that ride the fetch-apps.sh pipeline. deckcraft/soundcraft/
-// effectcraft are excluded: they deploy from source checkouts and have no
-// release zip (see CLAUDE.md).
-const FETCHED = ['cadcraft', 'designcraft', 'gridcraft', 'lightcraft', 'pdfcraft',
-  'photocraft', 'vectorcraft', 'wordcraft', 'firecraft'];
+// Every craft app rides the fetch-apps.sh pipeline: upstream publishes a
+// web release zip for each of them.
+const FETCHED = ['cadcraft', 'deckcraft', 'designcraft', 'effectcraft', 'firecraft',
+  'gridcraft', 'lightcraft', 'pdfcraft', 'photocraft', 'soundcraft', 'vectorcraft',
+  'wordcraft'];
+
+// Apps whose bundle gets the deployment's PWA wiring injected.
+const INJECTED = FETCHED.filter((id) => id !== 'effectcraft');
 
 function fetchListVersions() {
   const src = readFileSync(join(PACKAGING, 'fetch-apps.sh'), 'utf8');
@@ -43,14 +51,16 @@ describe('craft app version rows stay in sync across the pipeline', () => {
   const fetchVersions = fetchListVersions();
   const pwaVersions = pwaInjectVersions();
 
-  it('fetch-apps.sh lists every app that has a release zip', () => {
+  it('fetch-apps.sh lists every craft app', () => {
     for (const id of FETCHED) {
       expect(fetchVersions[id], `${id} missing from fetch-apps.sh APPS_LIST`).toBeDefined();
     }
+    expect(Object.keys(fetchVersions).sort()).toEqual([...FETCHED].sort());
   });
 
-  it('pwa-inject.sh covers the same apps as fetch-apps.sh', () => {
-    expect(Object.keys(pwaVersions).sort()).toEqual([...FETCHED].sort());
+  it('pwa-inject.sh covers every app except the one shipping its own PWA', () => {
+    expect(Object.keys(pwaVersions).sort()).toEqual([...INJECTED].sort());
+    expect(pwaVersions.effectcraft, 'effectcraft must not be injected').toBeUndefined();
   });
 
   it('the registry version row matches the synced release version', () => {
@@ -64,17 +74,16 @@ describe('craft app version rows stay in sync across the pipeline', () => {
   it('the service-worker cache name matches the release version', () => {
     // A stale cache name means the SW keeps serving the previous bundle
     // from cache after a deploy — the app appears frozen at the old version.
-    for (const id of FETCHED) {
+    for (const id of INJECTED) {
       expect(pwaVersions[id], `${id} pwa-inject version`).toBe(fetchVersions[id]);
     }
   });
 
-  it('no app outside the fetched set is smuggled into fetch-apps.sh', () => {
-    // deckcraft/soundcraft/effectcraft deploy from source checkouts;
-    // `fetch_one` does `rm -rf apps/<name>` on --force, which would destroy
-    // the checkout. They must never appear in APPS_LIST.
-    for (const id of Object.keys(fetchVersions)) {
-      expect(['deckcraft', 'soundcraft', 'effectcraft']).not.toContain(id);
+  it('every craft app has a registry row', () => {
+    for (const id of FETCHED) {
+      const row = APP_INDEX.find((a) => a.id === id);
+      expect(row, `${id} missing from the registry`).toBeDefined();
+      expect(row.url, `${id} registry url`).toMatch(/^https:\/\//);
     }
   });
 });
