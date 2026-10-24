@@ -1,0 +1,23 @@
+# Dependency and action updates. The quality rules cap this at in-range
+# refreshes (see docs/planning/SESSIONS.md 2026-10-21: React 19 / Vite 8 /
+# ESLint 10 / happy-dom 21 are deferred with reasons) — weekly cadence keeps
+# the PR volume at one batch. Actions are SHA-pinned in the workflow; the
+# github-actions ecosystem updates the pin and the version comment together.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /webos
+    schedule:
+      interval: weekly
+    groups:
+      in-range:
+        update-types:
+          - patch
+          - minor
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5

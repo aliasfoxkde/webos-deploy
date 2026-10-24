@@ -103,7 +103,13 @@ node ../packaging/e2e/webos-sweep.mjs   # headless-Chrome e2e sweep (27 phases)
   `packaging/aegis-scan.sh`, which downloads the pinned release binary
   (`aliasfoxkde/aegis` v0.6.4, checksum-verified) and scans `webos/src`
   against `webos/.aegis-baseline.json`; it fails only on findings that
-  are not in the triaged baseline. `.gitforce.yml` is the local GitForge
+  are not in the triaged baseline. The baseline is machine-regenerated, never
+  hand-edited: `packaging/aegis-baseline.sh` scans, normalizes
+  (`packaging/aegis-baseline.mjs` — findings sorted by file/line/column/pattern,
+  volatile timing and nonce fields dropped, so two scans of unchanged source
+  produce byte-identical files) and refuses to install a baseline whose finding
+  set drifted beyond line shifts; `--check` reports drift without writing.
+  `.gitforce.yml` is the local GitForge
   mirror (same gates; its runner image is `node:24-trixie-slim` and has
   no curl, which the script handles). Version bumps touch three files:
   `webos/package.json`,
