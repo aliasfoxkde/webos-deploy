@@ -480,3 +480,17 @@ Phases of [QUALITY-PROGRAM.md](QUALITY-PROGRAM.md), all committed and pushed:
   screenshots removed from `/var/tmp` (manifest-first, enumerated paths);
   artifacts from other workstreams (FireCraft dev, GitForge dev, Aegis
   dev) deliberately left untouched.
+
+## 2026-10-24 — v3.22.0 release & P11 closeout
+
+Released **v3.22.0** (quality-infrastructure hardening): reproducible Aegis
+baseline with drift-checked regeneration, Dependabot (weekly, grouped
+patch/minor, actions SHA-pin updates), e2e shell-state assertions,
+IPv4-loopback server pin, os/db.js error-path tests. 1349 specs / 89
+files green; coverage 98.64/94.33/98.32/99.92; GitForge CI green on the
+release commit; deployed to Cloudflare Pages and production-verified
+(bundle `index-Kc-_fsoa.js`, cache `webos-v3.22.0`). Dependabot opened
+its first batch on activation; the out-of-range majors (eslint 10,
+vite 8, plugin-react 6, happy-dom 21, react 19) fail `npm ci` on peer
+deps as expected and stay deferred — close them without merging unless
+the deferral reasons in SESSIONS.md 2026-10-21 change.
