@@ -130,56 +130,56 @@ JS
 # EffectCraft is absent on purpose: its upstream release ships its own PWA
 # glue (manifest.webmanifest, icons, sw.js precaching the build's file list),
 # so `inject_app` would only duplicate what is already there.
-inject_app cadcraft    "CADCraft"    "2D/3D CAD and drafting"                "#22d3ee" "0.10.0" '
+inject_app cadcraft    "CADCraft"    "2D/3D CAD and drafting"                "#22d3ee" "0.13.0" '
     <path d="M256 96 400 176 400 336 256 416 112 336 112 176 Z"/>
     <path d="M112 176 256 256 400 176"/>
     <path d="M256 256 256 416"/>'
 
-inject_app designcraft "DesignCraft" "Page layout and desktop publishing"    "#e879f9" "0.11.0" '
+inject_app designcraft "DesignCraft" "Page layout and desktop publishing"    "#e879f9" "0.13.0" '
     <rect x="112" y="112" width="120" height="288" rx="16"/>
     <rect x="264" y="112" width="136" height="120" rx="16"/>
     <path d="M264 280h136M264 336h136"/>'
 
-inject_app gridcraft   "GridCraft"   "Spreadsheets and data"                 "#34d399" "0.10.0" '
+inject_app gridcraft   "GridCraft"   "Spreadsheets and data"                 "#34d399" "0.12.1" '
     <path d="M112 128h288M112 226h288M112 324h288"/>
     <path d="M112 128v256M205 128v256M307 128v256M400 128v256"/>
     <rect x="205" y="226" width="102" height="98" fill="#34d399" stroke="none"/>'
 
-inject_app lightcraft  "LightCraft"  "Photo library and raw development"     "#fbbf24" "0.11.0" '
+inject_app lightcraft  "LightCraft"  "Photo library and raw development"     "#fbbf24" "0.14.0" '
     <circle cx="256" cy="176" r="64"/>
     <path d="M256 64v-8M256 296v8M152 176h-8M368 176h-8" stroke-width="20"/>
     <path d="M136 368h240M176 424h160"/>
     <circle cx="200" cy="368" r="18" fill="#fbbf24" stroke="none"/>
     <circle cx="320" cy="424" r="18" fill="#fbbf24" stroke="none"/>'
 
-inject_app pdfcraft    "PdfCraft"    "PDF documents"                          "#f87171" "0.11.0" '
+inject_app pdfcraft    "PdfCraft"    "PDF documents"                          "#f87171" "0.14.0" '
     <path d="M144 80h160l64 64v288H144 Z"/>
     <path d="M304 80v64h64"/>
     <path d="M192 240h128M192 292h128M192 344h80"/>'
 
-inject_app photocraft  "PhotoCraft"  "Image editing"                          "#60a5fa" "0.12.0" '
+inject_app photocraft  "PhotoCraft"  "Image editing"                          "#60a5fa" "0.16.0" '
     <circle cx="256" cy="256" r="144"/>
     <circle cx="256" cy="256" r="56"/>
     <path d="M256 112v88M370 190l-74 44M370 322l-74-44M256 400v-88M142 322l74-44M142 190l74 44"/>'
 
-inject_app vectorcraft "VectorCraft" "Vector illustration"                    "#a78bfa" "0.14.0" '
+inject_app vectorcraft "VectorCraft" "Vector illustration"                    "#a78bfa" "0.17.0" '
     <path d="M144 368C144 240 240 240 256 176 268 128 320 112 368 144"/>
     <rect x="120" y="344" width="48" height="48" rx="8" fill="#a78bfa" stroke="none"/>
     <rect x="344" y="120" width="48" height="48" rx="8" fill="#a78bfa" stroke="none"/>'
 
-inject_app wordcraft   "WordCraft"   "Word processing"                        "#818cf8" "0.9.0" '
+inject_app wordcraft   "WordCraft"   "Word processing"                        "#818cf8" "0.11.0" '
     <path d="M136 80h176l64 64v288H136 Z"/>
     <path d="M184 216h144M184 264h144M184 312h96"/>'
 
-inject_app deckcraft   "DeckCraft"   "Presentations and slide decks"             "#fb923c" "0.9.0" '
+inject_app deckcraft   "DeckCraft"   "Presentations and slide decks"             "#fb923c" "0.11.1" '
     <rect x="88" y="112" width="336" height="288" rx="28"/>
     <path d="M88 184h336"/>
     <path d="M136 240h120M136 296h96M136 352h144"/>'
 
-inject_app soundcraft  "SoundCraft"  "Audio workstation and multitrack recording" "#2dd4bf" "0.11.0" '
+inject_app soundcraft  "SoundCraft"  "Audio workstation and multitrack recording" "#2dd4bf" "0.13.1" '
     <path d="M144 192v128M208 144v224M272 112v288M336 160v192M400 208v96"/>'
 
-inject_app firecraft   "FireCraft"   "Web & screen design"                     "#f97316" "0.2.2" '
+inject_app firecraft   "FireCraft"   "Web & screen design"                     "#f97316" "0.2.3" '
     <path d="M256 80 C320 160 400 200 400 280 C400 360 320 400 256 440 C192 400 112 360 112 280 C112 200 192 160 256 80 Z"/>
     <path d="M256 160 C288 200 320 220 320 268 C320 316 288 336 256 356 C224 336 192 316 192 268 C192 220 224 200 256 160 Z" fill="#f97316" stroke="none"/>'
 

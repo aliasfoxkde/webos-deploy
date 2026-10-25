@@ -29,18 +29,18 @@ done
 # app version pairs — keep in sync with webos/src/os/registry.js
 # Each entry: "<name> <ver>" or "<name> <ver> <org>" (default org = storytold)
 APPS_LIST=(
-  "cadcraft 0.10.0"
-  "deckcraft 0.9.0"
-  "designcraft 0.11.0"
-  "effectcraft 0.14.0"
-  "firecraft 0.2.2 aliasfoxkde"
-  "gridcraft 0.10.0"
-  "lightcraft 0.11.0"
-  "pdfcraft 0.11.0"
-  "photocraft 0.12.0"
-  "soundcraft 0.11.0"
-  "vectorcraft 0.14.0"
-  "wordcraft 0.9.0"
+  "cadcraft 0.13.0"
+  "deckcraft 0.11.1"
+  "designcraft 0.13.0"
+  "effectcraft 0.17.0"
+  "firecraft 0.2.3 aliasfoxkde"
+  "gridcraft 0.12.1"
+  "lightcraft 0.14.0"
+  "pdfcraft 0.14.0"
+  "photocraft 0.16.0"
+  "soundcraft 0.13.1"
+  "vectorcraft 0.17.0"
+  "wordcraft 0.11.0"
 )
 # NOTE: DeckCraft, SoundCraft and EffectCraft joined this list on 2026-10-21 —
 # upstream now publishes a web zip for each, and their source checkouts moved
