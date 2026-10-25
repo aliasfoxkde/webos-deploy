@@ -370,6 +370,56 @@ from the app directory.
 
 ---
 
+
+---
+
+## Phase P12 — Coverage Deepening & Repo Polish (2026-10-24)
+
+**Owner**: this repo · **Exit gate**: branch ≥ 95%, stmts/funcs ≥ 99%,
+`npm run ci` green, e2e sweep PASS, Aegis clean, deployed + released.
+
+Measured 2026-10-24 (89 files / 1349 specs): stmts 98.65, branch 94.33,
+funcs 98.37, lines 99.92. 60 files carry a branch gap; 9 carry a
+function gap. Aegis PASS, lint clean, all quality gates hold from
+v3.22.0. Dependabot triaged: action bumps merged (checkout/setup-node/
+upload-artifact → v7), the five deferred majors closed with reasons.
+
+### P12.1 — Branch gaps, worst-first (target: 95%+ overall)
+
+| File | Branch | What to cover |
+|---|---|---|
+| `src/apps/chat/adapters.js` | 50.0% | one uncovered branch arm; read the file, drive both sides |
+| `src/apps/chat/Chat.jsx` | 78.0% | send-state machine, role-render branches, error paths |
+| `src/apps/terminal/coreutils.js` | 78.9% | argument-validation and error arms of the core utils |
+| `src/apps/calculator/modes/Converter.jsx` | 82.1% | unit-conversion edge branches |
+| `src/apps/calculator/Display.jsx` | 83.3% | display formatting branches |
+| `src/shell/SaverPreview.jsx` | 83.3% | preview lifecycle branches |
+| `src/os/lens.js` | 84.0% | lens probe assertion branches |
+| `src/apps/editor/Editor.jsx` | 85.7% | remaining editor branches (see also P12.2) |
+| `src/shell/watergl.js` | 86.4% | WebGL-fallback branches (mock the GL context) |
+| `src/apps/taskmgr/TaskManager.jsx` | 86.5% | process-table edge branches |
+
+Method per file: `npx vitest run <related-test> --coverage`, read the
+uncovered line numbers from the text report, write the minimal spec that
+drives the branch, re-measure. **Do not lower a floor to pass; do not
+chase the 4 settled uncovered lines (QUALITY-PROGRAM.md).**
+
+### P12.2 — Function hotspots (target: 99%+ overall)
+
+`StartMenu.jsx` 85.3%, `Taskbar.jsx` 90.9%, `Chat.jsx` 91.7%,
+`WaterWallpaper.jsx` 92.3%, `TaskManager.jsx` 94.0%. Each uncovered
+function is a handler no test invokes; render-and-click through the
+existing shell-low-branches pattern.
+
+### P12.3 — Floor raise + release
+
+1. Re-measure after P12.1/P12.2; raise the four floors in
+   `vitest.config.js` to measured − tolerance.
+2. `node packaging/e2e/webos-sweep.mjs` — PASS, 0 page errors.
+3. `bash packaging/aegis-scan.sh` — PASS.
+4. Release + deploy per H6 checklist (user-facing? no → patch bump
+   3.22.1 unless new surfaces land, then minor).
+---
 ## Task Index
 
 | # | Task | Phase | Status |
