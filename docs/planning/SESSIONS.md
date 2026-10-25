@@ -505,3 +505,6 @@ five out-of-range npm majors closed with the documented deferral reasons.
 Aegis scan PASS. E2E sweep: one DevTools-port timeout on first run
 (transient — Chromium startup raced the 30s probe), retried. Remaining
 branch gap (94.91%) documented as the practical ceiling in PHASES.md P12.
+
+Release: v3.22.1 (patch — test/coverage hardening only, no app-surface
+change). Version bumped ×3, built, deployed, production-verified.
