@@ -12,8 +12,8 @@ of every working session. Plan-of-record for open work:
 | Production | https://artcraft-webos.pages.dev — served bundle hash matches local `webos/dist`, `sw.js` cache `webos-v3.22.0` |
 | Craft apps | all twelve on their current upstream web release (2026-10-22): cadcraft 0.10.0, deckcraft 0.9.0, designcraft 0.11.0, effectcraft 0.14.0, firecraft 0.2.2, gridcraft 0.10.0, lightcraft 0.11.0, pdfcraft 0.11.0, photocraft 0.12.0, soundcraft 0.11.0, vectorcraft 0.14.0, wordcraft 0.9.0 — seven of them served from the R2 `craftweb` route |
 | FireCraft | https://firecraft-web.pages.dev — **v0.2.2**, served from the upstream release zip (`firecraft-web-71ff69a0cf973bce`, wasm `0820a445…`) on the standard `fetch-apps.sh` pipeline; bridge autosave/open-with/exportPng→Photos + export-to-Files (2026-10-21) |
-| Tests | 1349 specs / 89 files, `npm run ci` green |
-| Coverage | 98.64% stmts / 94.33% branches / 98.32% funcs / **99.92% lines**; floors 98.3/94.0/98.1/99.85 in `webos/vitest.config.js` (89 files / 1349 tests, measured − tolerance) |
+| Tests | ~1416 specs / 91 files, `npm run ci` green |
+| Coverage | 98.89% stmts / 94.91% branches / 99.05% funcs / **99.92% lines**; floors 98.6/94.6/98.8/99.85 in `webos/vitest.config.js` (91 files, measured − tolerance) |
 | Lint | strictest ruleset, zero warnings |
 | Accessibility | WCAG 2.1 AAA token gates incl. wallpaper-extreme flattening + desktop scrim pills |
 | Docs coverage | ARCHITECTURE.md Module index ⇄ src/ enforced by `tests/docs-coverage.test.js` — now in GitForge CI pipeline |

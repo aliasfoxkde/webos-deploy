@@ -494,3 +494,14 @@ its first batch on activation; the out-of-range majors (eslint 10,
 vite 8, plugin-react 6, happy-dom 21, react 19) fail `npm ci` on peer
 deps as expected and stay deferred — close them without merging unless
 the deferral reasons in SESSIONS.md 2026-10-21 change.
+
+## 2026-10-25 — P12 coverage push
+
+Branch/function coverage deepening across 12 hotspot files; ~67 new specs.
+Coverage 98.65/94.33/98.37/99.92 → **98.89/94.91/99.05/99.92**; floors
+raised to 98.6/94.6/98.8/99.85. Dependabot's first batch triaged: three
+Actions bumps merged (checkout/setup-node/upload-artifact v7, green),
+five out-of-range npm majors closed with the documented deferral reasons.
+Aegis scan PASS. E2E sweep: one DevTools-port timeout on first run
+(transient — Chromium startup raced the 30s probe), retried. Remaining
+branch gap (94.91%) documented as the practical ceiling in PHASES.md P12.

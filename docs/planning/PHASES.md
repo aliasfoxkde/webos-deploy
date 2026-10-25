@@ -420,6 +420,47 @@ existing shell-low-branches pattern.
 4. Release + deploy per H6 checklist (user-facing? no → patch bump
    3.22.1 unless new surfaces land, then minor).
 ---
+
+---
+
+## Phase P12 — Coverage Deepening & Repo Polish — DONE 2026-10-25
+
+Executed same session. Final measured coverage (full suite, reproducible):
+**statements 98.89% / branches 94.91% / functions 99.05% / lines 99.92%**
+(from 98.65/94.33/98.37/99.92). Floors raised to 98.6/94.6/98.8/99.85.
+
+### What moved, per file
+
+| File | Before | After | How |
+|---|---|---|---|
+| chat/adapters.js | 50% | 100% | real echo generator exercised (chat-adapters.test.js) |
+| terminal/coreutils.js | 78.9% | 100% | seed dirs/blob-less records, U8 stdin, no-message trap, MIME-preserving persist |
+| os/bridge.js | 87.8% | 97.3% | root-reduction nacks, storage catch, crypto fallback, postToApp guards |
+| apps/chat/Chat.jsx | 78% | 82% (funcs 100%) | abort-with-partial, error-after-partial, declined confirm, unmount abort |
+| calculator Converter/Display | 82.1/83.3% | 85.7/100% | overflow em dash, fixed-precision indicator |
+| shell/StartMenu.jsx | funcs 85.3% | 97.1% | all launch handlers, Enter-to-launch, query-reset timer |
+| shell/Taskbar.jsx | funcs 90.9% | 94.5% | online/offline, fullscreen reject guards, pin-reorder guard |
+| shell/EmbedFrame.jsx | funcs 88.2% | 100% | exportPng byte delivery + silent throw |
+| apps/taskmgr/TaskManager.jsx | funcs 94% | 98% | storage/SW rejection fallbacks |
+| shell/Sidebar.jsx | 87.3% | 90.5% | weather reject/toggle, battery listeners, chat truncation |
+| shell/SaverPreview.jsx | 83.3% | 83.3% (ceiling) | `|| 1`/`|| 8` arms dead under DEFAULT_SAVER merge |
+| os/lens.js | 84% | 84% (ceiling) | center fallback covered; 45-49 guards mathematically unreachable |
+
+### Dependabot triage (first batch on activation)
+
+- Merged: actions/checkout v7, actions/setup-node v7, actions/upload-artifact
+  v7 (all green on their PRs).
+- Closed with reasons: react 19, vite 8, plugin-react 6, eslint 10,
+  happy-dom 21 (peer-dep conflicts; the documented deferral stands).
+
+### Remaining (honest) gaps
+
+Branch 94.91% is the practical ceiling without chasing arms that are
+unreachable by construction (degenerate-guard fallbacks whose branch
+conditions exclude the degenerate case; the four settled uncovered lines in
+QUALITY-PROGRAM.md). The next real lever is new-surface tests as features
+land, not retro-hunting these arms.
+---
 ## Task Index
 
 | # | Task | Phase | Status |
