@@ -10,7 +10,7 @@ import ChatApp from '../src/apps/chat/Chat.jsx';
 
 // All adapters are defined in vi.hoisted so vi.mock can reference them
 // without "variable accessed before initialization" hoisting errors.
-const { failing, streaming, slow } = vi.hoisted(() => {
+const { failing, streaming, slow, abortable, partialFail } = vi.hoisted(() => {
   // Fails immediately — used for error-path coverage.
   const failing = {
     id: 'boom',
@@ -42,7 +42,33 @@ const { failing, streaming, slow } = vi.hoisted(() => {
     },
   };
 
-  return { failing, streaming, slow };
+  // Yields one chunk, then ends the stream only when the caller's abort
+  // signal fires — used to cover the "(stopped)" partial-save path.
+  const abortable = {
+    id: 'abortable',
+    label: 'Abortable model',
+    ready: () => true,
+    run: (_msgs, { signal }) => {
+      return (async function* () {
+        yield 'partial ';
+        await new Promise((resolve) => {
+          if (signal.aborted) resolve();
+          else signal.addEventListener('abort', () => resolve());
+        });
+      })();
+    },
+  };
+
+  // Yields one chunk, then throws — covers the error path where ai.text is
+  // already non-empty (the "\n" separator branch).
+  const partialFail = {
+    id: 'partialfail',
+    label: 'Partial failure model',
+    ready: () => true,
+    async *run() { yield 'so far'; throw new Error('stream died'); },
+  };
+
+  return { failing, streaming, slow, abortable, partialFail };
 });
 
 vi.mock('../src/apps/chat/adapters.js', async (importOriginal) => {
@@ -57,7 +83,11 @@ vi.mock('../src/apps/chat/adapters.js', async (importOriginal) => {
           ? streaming
           : id === 'slow'
             ? slow
-            : real.adapterById(id),
+            : id === 'abortable'
+              ? abortable
+              : id === 'partialfail'
+                ? partialFail
+                : real.adapterById(id),
   };
 });
 
@@ -256,5 +286,91 @@ describe('Chat branch coverage', () => {
     const history = JSON.parse(localStorage.getItem('webos.chat.history') || '[]');
     const userMessages = history.filter((m) => m.role === 'user');
     expect(userMessages).toHaveLength(1);
+  });
+});
+
+describe('Chat branch coverage — round two', () => {
+  /* ── Line 59: Clear with confirm=false keeps history ────────────────── */
+  it('Clear keeps history when the confirm is declined', async () => {
+    localStorage.setItem(
+      'webos.chat.history',
+      JSON.stringify([{ id: 'u1', role: 'user', text: 'keep me', t: 1 }]),
+    );
+    const confirmStub = vi.fn(() => false);
+    vi.stubGlobal('confirm', confirmStub);
+    const c = render(<ChatApp />);
+    const clearBtn = [...c.container.querySelectorAll('button')].find(
+      (b) => b.textContent === 'Clear',
+    );
+    await act(async () => { clearBtn.click(); });
+    const history = JSON.parse(localStorage.getItem('webos.chat.history'));
+    expect(history).toHaveLength(1);
+    expect(confirmStub).toHaveBeenCalledTimes(1);
+    vi.unstubAllGlobals();
+  });
+
+  /* ── Line 44: aborting mid-stream appends " (stopped)" and saves ───── */
+  it('appends "(stopped)" and saves partial text when aborted mid-stream', async () => {
+    localStorage.setItem('webos.chat.adapter', 'abortable');
+    const c = render(<ChatApp />);
+    type(c, 'cut it');
+    const ta = c.container.querySelector('[aria-label="Chat message"]');
+    await act(async () => { fireEvent.keyDown(ta, { key: 'Enter' }); });
+    // The abortable adapter yielded "partial " and is parked on the abort
+    // signal. The Stop button is the busy-state branch of the footer.
+    const stopBtn = [...c.container.querySelectorAll('button')].find(
+      (b) => b.textContent === 'Stop',
+    );
+    expect(stopBtn).not.toBeUndefined();
+    await act(async () => { stopBtn.click(); });
+    await act(async () => {});
+    const history = JSON.parse(localStorage.getItem('webos.chat.history'));
+    const ai = history.find((m) => m.role === 'assistant');
+    expect(ai.text).toBe('partial  (stopped)');
+    // Footer returned to the send branch after the abort.
+    expect([...c.container.querySelectorAll('button')].some((b) => b.textContent === 'Send')).toBe(true);
+  });
+
+  /* ── Line 76: message without id falls back to index key ───────────── */
+  it('renders a legacy message without an id (index key fallback)', () => {
+    localStorage.setItem(
+      'webos.chat.history',
+      JSON.stringify([{ role: 'user', text: 'no id here', t: 1 }]),
+    );
+    const c = render(<ChatApp />);
+    const bubble = c.container.querySelector('.c-msg.user .c-bubble');
+    expect(bubble).not.toBeNull();
+    expect(bubble.textContent).toBe('no id here');
+  });
+
+  /* ── Lines 17-18: unmount aborts in-flight run; history listener dies ─ */
+  it('aborts an in-flight adapter run on unmount', async () => {
+    localStorage.setItem('webos.chat.adapter', 'slow');
+    const c = render(<ChatApp />);
+    type(c, 'bye');
+    const ta = c.container.querySelector('[aria-label="Chat message"]');
+    await act(async () => { fireEvent.keyDown(ta, { key: 'Enter' }); });
+    // Unmount while the generator is hung — the cleanup effect must abort.
+    act(() => { c.unmount(); });
+    // The hang promise never resolves, but the abort must not throw and the
+    // component is gone. Persisted history holds the user message only (the
+    // partial assistant text is dropped because alive.current is false).
+    const history = JSON.parse(localStorage.getItem('webos.chat.history') || '[]');
+    expect(history.some((m) => m.role === 'user')).toBe(true);
+  });
+});
+
+describe('Chat branch coverage — error-with-prior-text', () => {
+  /* ── Line 41: error after partial output joins with "\n" and saves ── */
+  it('joins the failure notice with a newline when partial text streamed', async () => {
+    localStorage.setItem('webos.chat.adapter', 'partialfail');
+    const c = render(<ChatApp />);
+    type(c, 'go');
+    const ta = c.container.querySelector('[aria-label="Chat message"]');
+    await act(async () => { fireEvent.keyDown(ta, { key: 'Enter' }); });
+    await act(async () => {});
+    const history = JSON.parse(localStorage.getItem('webos.chat.history'));
+    const ai = history.find((m) => m.role === 'assistant');
+    expect(ai.text).toBe('so far\nThe adapter failed — stream died');
   });
 });

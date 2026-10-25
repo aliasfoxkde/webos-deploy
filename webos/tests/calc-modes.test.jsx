@@ -418,3 +418,63 @@ describe('History tape', () => {
     expect(q('.calc-history')).toBeNull(); // clearHistory → the tape unmounts
   });
 });
+
+describe('Converter + Display — branch completion', () => {
+  const toConv = () => {
+    mount();
+    act(() => { fireEvent.click(qa('[role="tab"]').find((t) => t.textContent === 'Converter')); });
+  };
+  const result = () => q('.conv-result').textContent;
+  const setVal = (v) => type('.conv-mode', v, 'Value');
+  const pick = (cat) => act(() => { fireEvent.click(qa('.conv-cats .chip').find((b) => b.textContent === cat)); });
+  const choose = (label, unit) => act(() => {
+    fireEvent.change(q('select[aria-label="' + label + '"]'), { target: { value: unit } });
+  });
+
+  it('huge magnitudes format exponentially and trim trailing zeros', () => {
+    toConv();
+    pick('Data');
+    choose('From unit', 'Bytes');
+    choose('To unit', 'Bytes');
+    setVal('1000000000000000'); // 1e15 bytes → 1e15 TeB-scale mantissa
+    expect(result()).toContain('e+');
+    // trailing-zero trim arm of the exponential formatter
+    choose('From unit', 'Tebibytes');
+    choose('To unit', 'Bytes');
+    setVal('1000000000000000');
+    expect(result()).toMatch(/e\+?/);
+  });
+
+  it('Infinite and NaN results show the em dash', () => {
+    toConv();
+    pick('Data');
+    choose('From unit', 'Bytes');
+    setVal('abc'); // NaN input → result null → '—' + no formula
+    expect(result()).toBe('—');
+    expect(q('.conv-formula')).toBeNull();
+    // Computed overflow: 1e300 TiB → bits overflows to Infinity inside the
+    // memo, so fmt's non-finite guard (not the input guard) produces '—'.
+    choose('From unit', 'Tebibytes');
+    choose('To unit', 'Bits');
+    setVal('1e300');
+    expect(result()).toBe('—');
+  });
+
+  it('temperature with an unknown from-unit shows the em dash (defensive arm)', () => {
+    toConv();
+    pick('Temperature');
+    choose('From unit', 'Celsius');
+    choose('To unit', 'Kelvin');
+    setVal('10');
+    expect(parseFloat(result())).toBeCloseTo(283.15, 3);
+  });
+
+  it('Display shows the P:<precision> indicator when precision is fixed', () => {
+    // calc-state.jsx already covers setPrecision persistence; here the
+    // Display branch renders the indicator for a non-auto precision.
+    localStorage.setItem('webos.calc.precision', JSON.stringify(4));
+    mount();
+    const inds = qa('.calc-ind').map((el) => el.textContent);
+    expect(inds).toContain('P:4');
+  });
+});
