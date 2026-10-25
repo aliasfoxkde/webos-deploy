@@ -75,7 +75,10 @@ let stderr = '';
 const wsPort = await new Promise((resolve, reject) => {
   const timer = setTimeout(
     () => reject(new Error(`chromium did not report a DevTools port\n${stderr.slice(-500)}`)),
-    30000,
+    // 60s: under concurrent load (coverage runs, CI pipelines) a cold
+    // Chromium start has been observed to exceed 30s before announcing
+    // the endpoint — the retry-then-pass flake on 2026-10-25.
+    60000,
   );
   chr.stderr.on('data', (d) => {
     stderr += d;
