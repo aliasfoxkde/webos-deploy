@@ -127,6 +127,27 @@ describe('EmbedFrame — uncovered branches', () => {
     await act(async () => { fireEvent(window, ev); });
     expect(onExportRequest).not.toHaveBeenCalled();
   });
+
+  it('exportPng with bytes AND a handler delivers the bytes to onExportRequest', async () => {
+    const bytes = new ArrayBuffer(8);
+    postToApp.mockResolvedValueOnce({ bytes });
+    const onExportRequest = vi.fn();
+    const c = mount(<EmbedFrame app={embedApp} onExportRequest={onExportRequest} />);
+    const frame = c.container.querySelector('iframe');
+    const ev = new MessageEvent('message', { data: { source: 'firecraft', type: 'exportPng' } });
+    Object.defineProperty(ev, 'source', { value: frame.contentWindow });
+    await act(async () => { fireEvent(window, ev); });
+    expect(onExportRequest).toHaveBeenCalledWith(bytes);
+  });
+
+  it('exportPng delegating a throwing postToApp is swallowed silently', async () => {
+    postToApp.mockRejectedValueOnce(new Error('bridge dead'));
+    const c = mount(<EmbedFrame app={embedApp} />);
+    const frame = c.container.querySelector('iframe');
+    const ev = new MessageEvent('message', { data: { source: 'firecraft', type: 'exportPng' } });
+    Object.defineProperty(ev, 'source', { value: frame.contentWindow });
+    await act(async () => { fireEvent(window, ev); }); // must not throw
+  });
 });
 
 // ------------------------------------------------------------------ //

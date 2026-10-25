@@ -1,7 +1,7 @@
 // File-storage bridge: path containment, trust checks, request dispatch.
 import { describe, it, expect, vi } from 'vitest';
 import {
-  appRoot, appOrigin, safeJoin, handleBridge, bridgeRequest, MAX_SAVE,
+  appRoot, appOrigin, safeJoin, handleBridge, bridgeRequest, postToApp, MAX_SAVE,
 } from '../src/os/bridge.js';
 
 const APP = { id: 'wordcraft', url: 'https://wordcraft-web.pages.dev/' };
@@ -174,5 +174,92 @@ describe('bridgeRequest', () => {
     expect(removeSpy).toHaveBeenCalledWith('message', expect.any(Function));
     vi.useRealTimers();
     removeSpy.mockRestore();
+  });
+});
+
+describe('bridge — residual defensive arms', () => {
+  function makeFrame() {
+    const handlers = {};
+    const contentWindow = {
+      addEventListener: (evt, h) => { handlers[evt] = h; },
+      removeEventListener: (evt, _h) => { delete handlers[evt]; },
+      postMessage: vi.fn(),
+    };
+    const frame = { contentWindow };
+    const fire = (data, source = 'firecraft') =>
+      handlers['message']?.({ data: { ...data, source } });
+    return { frame, contentWindow, fire };
+  }
+
+  it('safeJoin returns null for a path that reduces to the root itself', () => {
+    expect(safeJoin(appRoot('w'), '.')).toBeNull();
+    expect(safeJoin(appRoot('w'), './')).toBeNull();
+  });
+
+  it('file-save with an escaping path nacks before touching the blob', async () => {
+    const files = fakeFiles();
+    const r = await handleBridge(files, APP, evt({
+      source: 'webos-app', type: 'webos:file-save', path: '../escape', blob: saveBlob('x'),
+    }));
+    expect(r).toMatchObject({ ok: false, error: 'invalid path' });
+    expect(files.map.size).toBe(0);
+  });
+
+  it('file-delete of a missing file nacks with not found', async () => {
+    const files = fakeFiles();
+    const r = await handleBridge(files, APP, evt({
+      source: 'webos-app', type: 'webos:file-delete', path: 'ghost.txt',
+    }));
+    expect(r).toMatchObject({ ok: false, error: 'not found' });
+  });
+
+  it('a throwing files backend surfaces the error message in the nack', async () => {
+    const files = { get: async () => { throw new Error('idb closed'); } };
+    const r = await handleBridge(files, APP, evt({
+      source: 'webos-app', type: 'webos:file-open', path: 'a.txt',
+    }));
+    expect(r).toMatchObject({ ok: false, error: 'idb closed' });
+  });
+
+  it('bridgeRequest rejects with the generic message when ok is falsy without error', async () => {
+    const win = { postMessage: vi.fn() };
+    const p = bridgeRequest(win, { type: 'webos:file-list' }, 500);
+    const { requestId } = win.postMessage.mock.calls[0][0];
+    window.dispatchEvent(new MessageEvent('message', { data: { source: 'webos-host', requestId, ok: false } }));
+    await expect(p).rejects.toThrow('bridge error');
+  });
+
+  it('bridgeRequest falls back to a random id when crypto.randomUUID is absent', async () => {
+    const orig = globalThis.crypto?.randomUUID;
+    const desc = Object.getOwnPropertyDescriptor(globalThis.crypto, 'randomUUID');
+    try {
+      Object.defineProperty(globalThis.crypto, 'randomUUID', { value: undefined, configurable: true });
+    } catch {
+      // read-only builtin: stub the whole crypto object instead
+      vi.stubGlobal('crypto', { ...globalThis.crypto, randomUUID: undefined });
+    }
+    const win = { postMessage: vi.fn() };
+    const p = bridgeRequest(win, { type: 'webos:file-list' }, 500);
+    const sent = win.postMessage.mock.calls[0][0];
+    expect(sent.requestId).toMatch(/^req-[a-z0-9]+$/u); // Math.random slice: no dashes after the prefix
+    window.dispatchEvent(new MessageEvent('message', { data: { source: 'webos-host', requestId: sent.requestId, ok: true, payload: 1 } }));
+    await expect(p).resolves.toBe(1);
+    try {
+      if (desc) Object.defineProperty(globalThis.crypto, 'randomUUID', desc);
+      else if (orig) globalThis.crypto.randomUUID = orig;
+    } catch { /* stubbed global restored below */ }
+    vi.unstubAllGlobals();
+  });
+
+  it('postToApp ignores null-data and mismatched replies; error-less failures use the source in the message', async () => {
+    const { frame, contentWindow, fire } = makeFrame();
+    let sentId;
+    contentWindow.postMessage.mockImplementation((msg) => { sentId = msg.requestId; });
+    const p = postToApp(frame, { type: 'ping' }, 'firecraft', 5000);
+    window.dispatchEvent(new MessageEvent('message', { data: null })); // null-data guard
+    fire({ requestId: sentId, ok: true }, 'other-source'); // wrong source
+    fire({ requestId: 'nope', ok: true }, 'firecraft'); // wrong id
+    fire({ requestId: sentId, ok: false }, 'firecraft'); // ok:false with no error → source fallback
+    await expect(p).rejects.toThrow('firecraft error');
   });
 });

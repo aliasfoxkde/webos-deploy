@@ -174,3 +174,24 @@ describe('Notepad — remaining surfaces', () => {
     expect(h.files.size).toBe(0);
   });
 });
+
+describe('Notepad — empty-state branches', () => {
+  it('a filter matching nothing shows the no-match notice', async () => {
+    render(<Notepad />);
+    const filter = screen.getByLabelText('Search notes');
+    fireEvent.change(filter, { target: { value: 'zzz-no-match' } });
+    expect(screen.getByText(/No notes match/)).toBeTruthy();
+    // clearing restores the list
+    fireEvent.change(filter, { target: { value: '' } });
+    expect(screen.queryByText(/No notes match/)).toBeNull();
+  });
+
+  it('with zero notes the empty state offers Create', async () => {
+    localStorage.setItem('webos.notepad.v1', JSON.stringify({ notes: [], activeId: null, nextId: 1 }));
+    render(<Notepad />);
+    await act(async () => {});
+    expect(screen.getByText('No notes yet.')).toBeTruthy();
+    fireEvent.click(screen.getByText('Create one'));
+    expect(screen.queryByText('No notes yet.')).toBeNull();
+  });
+});
