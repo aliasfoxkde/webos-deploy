@@ -42,12 +42,11 @@ of every working session. Plan-of-record for open work:
       export-to-Files (shared SaveDialog component, 2026-10-19); H2.6 E2E probe
       open→apply→exportDocument round-trip verified.
 - [ ] **H3** Upstream adoption watch — H3.1 FireCraft app mark swap when
-      upstream ships one (waiting on aliasfoxkde/FireCraft#2); H3.2 done
-      2026-10-21 (firecraft 0.2.2 from aliasfoxkde org, fetched zip,
-      pwa-inject + icons done, deployed and probe-green); H3.3 registry
-      audit done 2026-10-21 — all 12 rows match deployment. Deck/sound/effect
-      upstream zips arrived and were adopted with P10 (2026-10-22); the watch
-      continues for the next upstream release of any of the twelve.
+      upstream ships one (waiting on aliasfoxkde/FireCraft#2, still open
+      2026-10-25). All twelve apps were re-adopted 2026-10-25 (P13, v3.23.0);
+      the watch continues for the next upstream release of any of the
+      twelve. H3.3 registry audit holds — pinned by
+      `tests/registry-versions.test.js`.
 - [x] **P9** Future-work items — P9.1 and P9.5 closed with the craft-app
       upgrade (2026-10-22); P9.2 preview server pinned to 127.0.0.1;
       P9.3 the sweep asserts internal state (window registry + IndexedDB);
