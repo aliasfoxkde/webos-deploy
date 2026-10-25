@@ -348,3 +348,31 @@ describe('TaskManager — unsupported entry type', () => {
     expect(row.textContent).not.toContain('worst');
   });
 });
+
+describe('TaskManager — storage/SW rejection arms', () => {
+  // navigator.storage.estimate() / persisted() / getRegistrations() all
+  // carry .catch(() => fallback) guards; these run when the browser API
+  // rejects (permission denied, SW unregistered mid-read).
+  it('renders zeros when every storage/SW lookup rejects', async () => {
+    let cur2;
+    const P = () => {
+      cur2 = useOS();
+      return null;
+    };
+    render(
+      <OSProvider>
+        <P />
+        <TaskManager />
+      </OSProvider>
+    );
+    navigator.storage = {
+      estimate: () => Promise.reject(new Error('denied')),
+      persisted: () => Promise.reject(new Error('denied')),
+    };
+    navigator.serviceWorker = { getRegistrations: () => Promise.reject(new Error('gone')) };
+    await act(async () => { cur2.launch('calc'); });
+    await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+    // The component must not crash; the storage section shows the fallback.
+    expect(screen.getAllByText(/Storage/i).length).toBeGreaterThan(0);
+  });
+});

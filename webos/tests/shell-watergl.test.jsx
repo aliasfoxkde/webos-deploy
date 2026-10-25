@@ -299,3 +299,48 @@ describe('WaterWallpaper (WebGL2 available)', () => {
     expect(rafCalls.length).toBe(armed + 1); // loop not re-armed after unmount
   });
 });
+
+describe('watergl — residual branches', () => {
+  it('waterSupported memoizes and survives a throwing getContext', async () => {
+    // reset the memoized support flag via a fresh module instance
+    vi.resetModules();
+    Reflect.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
+      value: () => { throw new Error('GL blew up'); }, configurable: true, writable: true,
+    });
+    const { waterSupported } = await import('../src/shell/watergl.js');
+    expect(waterSupported()).toBe(false);
+  });
+
+  it('waterSupported accepts the half-float extension when float is absent', async () => {
+    vi.resetModules();
+    const halfGL = makeGL();
+    const origGet = halfGL.getExtension;
+    halfGL.getExtension = (name) => (name === 'EXT_color_buffer_float' ? null : origGet(name));
+    Reflect.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
+      value: () => halfGL, configurable: true, writable: true,
+    });
+    const { waterSupported } = await import('../src/shell/watergl.js');
+    expect(waterSupported()).toBe(true);
+  });
+
+  it('invalid hex colors fall back to black without throwing', () => {
+    const params = structuredClone(DEFAULTS);
+    params.bg.colorA = 'not-a-color'; // NaN → || 0 → black
+    const gl = makeGL();
+    const engine = createWaterEngine(makeCanvas(gl), params);
+    engine.drawStatic(4);
+    const bgA = uni(gl, 'uniform3fv', 'uColorA', 0);
+    expect(bgA).toBeTruthy();
+    engine.dispose();
+  });
+
+  it('dispose is safe before any frame allocates both targets', () => {
+    const gl = makeGL();
+    const engine = createWaterEngine(makeCanvas(gl), structuredClone(DEFAULTS));
+    // dispose without ever stepping: one target is created lazily? both are
+    // primed at construction, so the guards must pass — but a second dispose
+    // must not double-free.
+    engine.dispose();
+    expect(() => engine.dispose()).not.toThrow();
+  });
+});

@@ -37,6 +37,9 @@ describe('lens profile + geometry', () => {
     expect(cy).toBeLessThan(0);
     // unit length in the corner sector
     expect(Math.hypot(cx, cy)).toBeCloseTo(1, 12);
+    // dead-center point: both half-width offsets are exactly 0, so the
+    // else arm runs and the `|| 1` guard makes ny point +y (downward).
+    expect(edgeNormal(50, 30, 100, 60, 10)).toEqual([0, 1]);
   });
 });
 

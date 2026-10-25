@@ -334,3 +334,52 @@ describe('useContextMenu', () => {
     expect(Number.parseInt(m.style.left, 10)).toBeLessThanOrEqual(window.innerWidth - 8);
   });
 });
+
+describe('Taskbar — residual branches', () => {
+  const setup = (startOpen = false) => mount(
+    <Taskbar
+      openStart={() => {}}
+      startOpen={startOpen}
+      openSettings={() => {}}
+      toggleWidgets={() => {}}
+      widgetsOpen={false}
+    />
+  );
+
+  it('online/offline events flip the network panel status; connection change re-renders', () => {
+    const c = setup();
+    fireEvent.click(c.container.querySelector('[data-tray="net"]'));
+    const pop = document.querySelector('.net-pop');
+    expect(pop.textContent).toContain('Connected');
+    act(() => { window.dispatchEvent(new Event('offline')); });
+    expect(document.querySelector('.net-pop').textContent).not.toContain('Connected');
+    act(() => { window.dispatchEvent(new Event('online')); });
+    expect(document.querySelector('.net-pop').textContent).toContain('Connected');
+  });
+
+  it('a rejected fullscreen request is swallowed by the .catch guard', () => {
+    setup();
+    document.documentElement.requestFullscreen = () => Promise.reject(new Error('denied'));
+    expect(() => act(() => {
+      document.dispatchEvent(new Event('webos:fullscreen'));
+    })).not.toThrow();
+    // and the exit path: fullscreenElement present → exitFullscreen rejects
+    Reflect.defineProperty(document, 'fullscreenElement', { value: document.documentElement, configurable: true });
+    document.exitFullscreen = () => Promise.reject(new Error('denied'));
+    expect(() => act(() => {
+      document.dispatchEvent(new Event('webos:fullscreen'));
+    })).not.toThrow();
+    delete document.fullscreenElement;
+  });
+
+  it('pin drag with an unknown appId (from < 0) leaves the pinned list untouched', () => {
+    setup();
+    const before = cur.taskbar.pinned.join();
+    // dispatch the reorder handler with an id that is not pinned — the
+    // `from < 0` guard returns without writing settings.
+    expect(() => act(() => {
+      document.dispatchEvent(new CustomEvent('webos:pin-reorder', { detail: { appId: 'not-pinned', target: 0 } }));
+    })).not.toThrow();
+    expect(cur.taskbar.pinned.join()).toBe(before);
+  });
+});

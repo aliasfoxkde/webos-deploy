@@ -321,3 +321,125 @@ describe('StartMenu — uncovered branches', () => {
     expect(c.container.querySelector('.sm-links').textContent).toContain('App Store');
   });
 });
+
+describe('StartMenu — launch handlers and nav wraparound', () => {
+  const openStore = vi.fn();
+  const openSettings = vi.fn();
+  const onClose = vi.fn();
+  const onPower = vi.fn();
+  let cur;
+
+  const P = () => {
+    // eslint-disable-next-line react-hooks/globals
+    cur = useOS();
+    return null;
+  };
+  const mountMenu = () => render(
+    <OSProvider>
+      <P />
+      <StartMenu
+        open={true}
+        onClose={onClose}
+        openStore={openStore}
+        openSettings={openSettings}
+        onPower={onPower}
+      />
+    </OSProvider>
+  );
+
+  beforeEach(() => {
+    localStorage.clear();
+    onClose.mockClear(); openStore.mockClear(); openSettings.mockClear(); onPower.mockClear();
+  });
+
+  it('app results, settings results and Ask AI launch through the real store', () => {
+    const c = mountMenu();
+    const input = c.container.querySelector('.sm-search');
+    // app-result launch
+    fireEvent.change(input, { target: { value: 'calc' } });
+    const appHit = c.container.querySelector('.sm-results .sm-app');
+    fireEvent.click(appHit);
+    expect(cur.windows.some((w) => w.appId === 'calc')).toBe(true);
+    // settings-result launch
+    fireEvent.change(input, { target: { value: 'appearance' } });
+    const secHit = c.container.querySelector('.sm-results .sm-app');
+    fireEvent.click(secHit);
+    expect(cur.windows.some((w) => w.appId === 'settings')).toBe(true);
+    // Ask AI launches chat
+    fireEvent.change(input, { target: { value: 'anything' } });
+    fireEvent.click(c.container.querySelector('.sm-ai'));
+    expect(cur.windows.some((w) => w.appId === 'chat')).toBe(true);
+  });
+
+  it('no-match CTA launches the App Store through openStore', () => {
+    const c = mountMenu();
+    const input = c.container.querySelector('.sm-search');
+    fireEvent.change(input, { target: { value: 'zzzznope' } });
+    expect(c.container.textContent).toContain('No matches');
+    fireEvent.click(c.container.querySelector('.sm-results .sm-link:not(.sm-ai)'));
+    expect(onClose).toHaveBeenCalled();
+    expect(openStore).toHaveBeenCalled();
+  });
+
+  it('browse-mode tiles, all-apps rows, recommendations and links launch', () => {
+    // seed recents so the Recommended section renders
+    seed('recents', ['calc', 'notepad']);
+    const c = mountMenu();
+    // pinned tile
+    fireEvent.click(c.container.querySelector('.sm-tile'));
+    expect(cur.windows.length).toBeGreaterThan(0);
+    // recommended row
+    const recBtn = [...c.container.querySelectorAll('.sm-rowset .sm-app')]
+      .find((b) => b.textContent.includes('Calculator'));
+    if (recBtn) fireEvent.click(recBtn);
+    // App Store + Settings links close the menu
+    const links = c.container.querySelectorAll('.sm-links .sm-link');
+    fireEvent.click(links[0]);
+    expect(openStore).toHaveBeenCalled();
+    fireEvent.click(links[1]);
+    expect(openSettings).toHaveBeenCalled();
+  });
+
+  it('Enter launches the top app hit; Enter on a settings-only query opens settings', () => {
+    const c = mountMenu();
+    const input = c.container.querySelector('.sm-search');
+    fireEvent.change(input, { target: { value: 'calc' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(cur.windows.some((w) => w.appId === 'calc')).toBe(true);
+    expect(onClose).toHaveBeenCalled();
+    // settings-only query: no app matches, section hit wins
+    fireEvent.change(input, { target: { value: 'network' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(cur.windows.some((w) => w.appId === 'settings')).toBe(true);
+  });
+
+  it('reopening the menu resets the query and refocuses the search box', () => {
+    vi.useFakeTimers();
+    const c = mountMenu();
+    const input = c.container.querySelector('.sm-search');
+    fireEvent.change(input, { target: { value: 'calc' } });
+    // Close → reopen: the open-transition effect clears q after 30ms.
+    act(() => { c.rerender(<OSProvider><P /><StartMenu open={false} onClose={onClose} openStore={openStore} openSettings={openSettings} onPower={onPower} /></OSProvider>); });
+    act(() => { c.rerender(<OSProvider><P /><StartMenu open={true} onClose={onClose} openStore={openStore} openSettings={openSettings} onPower={onPower} /></OSProvider>); });
+    act(() => { vi.advanceTimersByTime(31); });
+    expect(c.container.querySelector('.sm-search').value).toBe('');
+    vi.useRealTimers();
+  });
+
+  it('Escape closes the menu from the search input', () => {
+    const c = mountMenu();
+    const input = c.container.querySelector('.sm-search');
+    fireEvent.keyDown(input, { key: 'Escape' });
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('ArrowDown walks forward from the search input', () => {
+    const c = mountMenu();
+    const input = c.container.querySelector('.sm-search');
+    act(() => { input.focus(); });
+    fireEvent.keyDown(input, { key: 'ArrowDown' });
+    const all = [...c.container.querySelectorAll('button, input')];
+    expect(all).toContain(document.activeElement);
+    expect(document.activeElement).not.toBe(input); // moved off the search box
+  });
+});

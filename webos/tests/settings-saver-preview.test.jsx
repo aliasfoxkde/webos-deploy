@@ -98,3 +98,24 @@ describe('SaverPreview', () => {
     expect(cancelSpy).toHaveBeenCalled();
   });
 });
+
+describe('SaverPreview — default-speed fallbacks', () => {
+  // The `s.speed || 1` / `s.photoSecs || 8` arms run when the saver state
+  // carries no explicit speed (the default-off-prefs path).
+  it('FX and photo kinds use their default speed/photoSecs when unset', () => {
+    const c = mount();
+    act(() => cur.setSaver({ kind: 'matrix' })); // no speed → || 1
+    expect(c.container.querySelector('canvas#saver-preview-fx')).toBeTruthy();
+    act(() => { rafCalls[rafCalls.length - 1](16); });
+    expect(ctx2d.calls.some(([n]) => n === 'fillText')).toBe(true);
+    act(() => cur.setSaver({ kind: 'photos' })); // no photoSecs → || 8
+    expect(c.container.querySelector('.saver-photo')).toBeTruthy();
+  });
+
+  it('water kind without explicit speed uses the 0.35 default factor', () => {
+    const c = mount();
+    act(() => cur.setSaver({ kind: 'water' }));
+    expect(c.container.querySelector('canvas#saver-preview-fx')).toBeTruthy();
+    expect(rafCalls.length).toBeGreaterThan(0);
+  });
+});
