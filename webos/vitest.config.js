@@ -22,9 +22,9 @@ export default defineConfig({
       // Ratchet. The floors are the measured baseline minus a tolerance;
       // a real regression still fails the gate.
       //
-      // Measured 2026-10-21 (full suite, 87 files / 1339 tests):
-      //   statements 98.59% (7110/7211)   branches 94.20% (4425/4697)
-      //   functions  98.16% (1874/1909)   lines    99.92% (5544/5548)
+      // Measured 2026-10-25 (full suite, 91 files / 1370+ tests):
+      //   statements 98.89% (7131/7211)   branches 94.91% (4458/4697)
+      //   functions  99.05% (1891/1909)   lines    99.92% (5544/5548)
       //
       // Confirmed unreachable lines (marked with // istanbul ignore next):
       //   programmer.js:121 — '(' already consumed by the includes() guard above
@@ -37,9 +37,11 @@ export default defineConfig({
       //   state.jsx:483 — unreachable switch default
       //
       // Remaining live gaps (environment-specific, not dead code):
-      //   Chat.jsx:38-48 — async stream/abort; happy-dom timers differ
-      //   coreutils.js — network-fetch/wasm paths; no network in test env
-      //   db.js:26,41,42 — same IndexedDB as above
+      //   db.js:26,41,42 — IndexedDB error handlers fake-indexeddb never fires
+      //   lens.js:45-49 — `|| 1` guards for degenerate inputs the branch
+      //     conditions exclude (documented in P12 of PHASES.md)
+      //   SaverPreview.jsx:29-37 — `|| 1`/`|| 8` fallbacks dead under the
+      //     DEFAULT_SAVER merge (speed/photoSecs always truthy)
       //
       // Those numbers are REPRODUCIBLE: two consecutive full runs measured
       // them exactly. Before 2026-10-20 they were not — three one-second
@@ -54,9 +56,9 @@ export default defineConfig({
       // Raise the floors as tests land; a regression in any metric fails
       // `npm run coverage`.
       thresholds: {
-        statements: 98.3,
-        branches: 94.0,
-        functions: 98.1,
+        statements: 98.6,
+        branches: 94.6,
+        functions: 98.8,
         lines: 99.85,
       },
     },
