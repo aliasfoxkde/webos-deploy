@@ -508,3 +508,27 @@ branch gap (94.91%) documented as the practical ceiling in PHASES.md P12.
 
 Release: v3.22.1 (patch — test/coverage hardening only, no app-surface
 change). Version bumped ×3, built, deployed, production-verified.
+
+## 2026-10-25 — docs audit + P13: all twelve craft apps upgraded (v3.23.0)
+
+Audit pass over HANDOFF/PROGRESS: synced stale checkboxes (H4.1/H4.2/H5.1/H5.2
+marked done with evidence; H6 header to 3.22.1), confirmed CI green, R1
+(FireCraft icon) still open upstream. Found every craft app had a newer
+upstream web release than deployed → executed the P10 pipeline again as P13:
+
+- fetch-apps.sh versions bumped ×12, `--force` fetch of all twelve
+  (cad 0.13.0, deck 0.11.1, design 0.13.0, effect 0.17.0, fire 0.2.3,
+  grid 0.12.1, light 0.14.0, pdf 0.14.0, photo 0.16.0, sound 0.13.1,
+  vector 0.17.0, word 0.11.0); pwa-inject + icons rendered.
+- Registry rows + pwa-inject SW stamps re-pinned; shell 3.22.1→3.23.0 (×3).
+- Gate green (98.91/94.91/99.16/99.92), sweep 31/31 with 0 page errors,
+  CI green on dc5b91c.
+- All 8 oversized wasms re-published to R2 `craftweb` (r2-publish.sh), and
+  all twelve apps redeployed to their `<app>-web.pages.dev` projects;
+  production verified per app (HTTP 200, application/wasm, new hashes).
+- v3.23.0 released; shell deployed; production serves index-DnEPcEpy.js ⇄
+  local dist, sw.js webos-v3.23.0.
+
+Gotcha: vectorcraft's Pages project domain is `vectorcraft-web-9y7.pages.dev`
+(disambiguation suffix) — checking the bare name 404s; always take the
+deploy URL from wrangler output.

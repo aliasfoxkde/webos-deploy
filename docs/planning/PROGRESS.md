@@ -4,16 +4,16 @@ Live status board. Update this (and [SESSIONS.md](SESSIONS.md)) at the end
 of every working session. Plan-of-record for open work:
 [HANDOFF.md](HANDOFF.md).
 
-## Snapshot (verified 2026-10-24)
+## Snapshot (verified 2026-10-25)
 
 | Dimension | State |
 |---|---|
-| Released / deployed version | **3.22.1** ([v3.22.1](https://github.com/aliasfoxkde/webos-deploy/releases/tag/v3.22.1)) → next: TBD |
-| Production | https://artcraft-webos.pages.dev — served bundle hash matches local `webos/dist`, `sw.js` cache `webos-v3.22.1` |
-| Craft apps | all twelve on their current upstream web release (2026-10-22): cadcraft 0.10.0, deckcraft 0.9.0, designcraft 0.11.0, effectcraft 0.14.0, firecraft 0.2.2, gridcraft 0.10.0, lightcraft 0.11.0, pdfcraft 0.11.0, photocraft 0.12.0, soundcraft 0.11.0, vectorcraft 0.14.0, wordcraft 0.9.0 — seven of them served from the R2 `craftweb` route |
-| FireCraft | https://firecraft-web.pages.dev — **v0.2.2**, served from the upstream release zip (`firecraft-web-71ff69a0cf973bce`, wasm `0820a445…`) on the standard `fetch-apps.sh` pipeline; bridge autosave/open-with/exportPng→Photos + export-to-Files (2026-10-21) |
+| Released / deployed version | **3.23.0** ([v3.23.0](https://github.com/aliasfoxkde/webos-deploy/releases/tag/v3.23.0)) → next: TBD |
+| Production | https://artcraft-webos.pages.dev — served bundle hash matches local `webos/dist`, `sw.js` cache `webos-v3.23.0` |
+| Craft apps | all twelve on their current upstream web release (2026-10-25): cadcraft 0.13.0, deckcraft 0.11.1, designcraft 0.13.0, effectcraft 0.17.0, firecraft 0.2.3, gridcraft 0.12.1, lightcraft 0.14.0, pdfcraft 0.14.0, photocraft 0.16.0, soundcraft 0.13.1, vectorcraft 0.17.0, wordcraft 0.11.0 — eight of them served from the R2 `craftweb` route |
+| FireCraft | https://firecraft-web.pages.dev — **v0.2.3**, served from the upstream release zip (wasm `firecraft-web-d13f1a83e8a1a76f`) on the standard `fetch-apps.sh` pipeline; bridge autosave/open-with/exportPng→Photos + export-to-Files (2026-10-21) |
 | Tests | ~1416 specs / 91 files, `npm run ci` green |
-| Coverage | 98.89% stmts / 94.91% branches / 99.05% funcs / **99.92% lines**; floors 98.6/94.6/98.8/99.85 in `webos/vitest.config.js` (91 files, measured − tolerance) |
+| Coverage | 98.91% stmts / 94.91% branches / 99.16% funcs / **99.92% lines**; floors 98.6/94.6/98.8/99.85 in `webos/vitest.config.js` (91 files, measured − tolerance) |
 | Lint | strictest ruleset, zero warnings |
 | Accessibility | WCAG 2.1 AAA token gates incl. wallpaper-extreme flattening + desktop scrim pills |
 | Docs coverage | ARCHITECTURE.md Module index ⇄ src/ enforced by `tests/docs-coverage.test.js` — now in GitForge CI pipeline |
@@ -75,7 +75,7 @@ of every working session. Plan-of-record for open work:
       export-to-Files path got component-level tests, and the E2E sweep's
       FireCraft open-with phase was repaired (it imported a module URL the
       production build does not serve) — the sweep is green 27/27.
-- [x] **H6** Releases — v3.18.0 shipped 2026-10-19 (its gate was red; fixed in v3.19.0), v3.19.0 shipped 2026-10-20 with a green gate, v3.20.0 shipped 2026-10-21 (FireCraft v0.2.2 sync, coverage sprint, Aegis gate repaired), v3.21.0 shipped 2026-10-22 (all craft apps upgraded to their current upstream releases; R2 publish automated), v3.22.0 shipped 2026-10-24 (reproducible Aegis baseline, Dependabot, e2e shell-state assertions, os/db error-path coverage). Checklist in HANDOFF.md.
+- [x] **H6** Releases — v3.18.0 shipped 2026-10-19 (its gate was red; fixed in v3.19.0), v3.19.0 shipped 2026-10-20 with a green gate, v3.20.0 shipped 2026-10-21 (FireCraft v0.2.2 sync, coverage sprint, Aegis gate repaired), v3.21.0 shipped 2026-10-22 (all craft apps upgraded to their current upstream releases; R2 publish automated), v3.22.0 shipped 2026-10-24 (reproducible Aegis baseline, Dependabot, e2e shell-state assertions, os/db error-path coverage), v3.22.1 shipped 2026-10-25 (e2e DevTools-port timeout fix), v3.23.0 shipped 2026-10-25 (all twelve craft apps upgraded to current upstream releases — P13). Checklist in HANDOFF.md.
 
 ## Deliberately closed (do not reopen without new evidence)
 
