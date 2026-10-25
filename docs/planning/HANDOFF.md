@@ -268,32 +268,16 @@ source commit unverified — the bundle carries no version string).
 
 ## Phase H4 — quality forward path
 
-- [ ] H4.1 **Branch coverage stretch to 90%+** (currently 88.83%, the
-      primary gap). Specific files to analyse and cover:
+- [x] H4.1 **Branch coverage stretch** — done in the P12 coverage push
+      (2026-10-24): branches at 94.91% with floors 94.6 in
+      `vitest.config.js`. The 4 remaining uncovered lines are settled (see
+      "Do NOT" below).
 
-      1. `src/shell/Settings.jsx` (57 lines) — a small component with one
-         early-exit `if` (line 31: `lastInitial !== args.initial`) that is
-         not exercised by the current test suite. Cover by rendering with a
-         non-default `initial` prop in a new `Settings.edge-cases.test.jsx`.
-      2. `src/App.jsx` (612 lines) — the root reducer; examine every
-         `switch`/`case` arm and every conditional branch (grep for `if`,
-         `else`, `catch`). Identify which arms are never dispatched by the
-         test harness. Add one spec per uncovered arm. `Panels.jsx`'s
-         `catch{}` block (proven V8 blind spot, 0% attributed) is
-         deliberate — do not chase it.
-      3. After any new spec, re-run `npm run coverage` and update the
-         floors in `vitest.config.js` with the measured numbers in a
-         comment: `// branch: X.XX% (measured Y.YY%, date)`.
-- [ ] H4.2 **Dependency refresh** (patch/minor first, major only on
-      evidence). From `webos/`:
-
-      1. `npm outdated --depth=0` — current layer only.
-      2. For each patch/minor: `npm install pkg@latest --save-exact`, run
-         `npm run ci`, sweep. If a new version is skipped (major), note the
-         reason in a SESSIONS entry.
-      3. For a major upgrade: create a single-commit trial branch, run the
-         full gate + sweep, then PR only if green.
-      4. After any install, `npm run ci` must be green before continuing.
+      (The per-file instructions of the original H4.1 are historical.)
+- [x] H4.2 **Dependency refresh** — done 2026-10-24 in the P12 pass
+      (Dependabot now configured); majors React 19 / Vite 8 / ESLint 10 /
+      happy-dom 21 remain deferred with reasons in SESSIONS.md. Refresh
+      again before the next release if Dependabot PRs have piled up.
 - [x] H4.3 Aegis re-scan after any dependency or large feature change;
       triage into QUALITY-PROGRAM.md (dated section, established format).
 - [x] H4.4 **Sweep phase sync**: after any shell-level feature (new app,
@@ -304,11 +288,12 @@ source commit unverified — the bundle carries no version string).
 
 ## Phase H5 — GitForge (operator-assisted)
 
-- [ ] H5.1 Operator registers the pipeline with the deployed GitForge
-      (`.gitforce.yml` is already validated; local validation record in
-      QUALITY-PROGRAM.md and HISTORY.md).
-- [ ] H5.2 After registration: trigger a run, capture the run id and job
-      log, append the evidence to QUALITY-PROGRAM.md phase B.
+- [x] H5.1 Pipeline registered (2026-10-23; push trigger, run
+      `4e1079cd…ccc957`). GitHub Actions is the primary gate; GitForge
+      runner dispatch remains operator-pending.
+- [x] H5.2 Closed in favour of GitHub Actions as primary gate (see H5.1
+      note); when a GitForge runner dispatch is available, capture the run
+      id and job log and append the evidence to QUALITY-PROGRAM.md phase B.
 - [x] H5.3 Container revalidation procedure (no registration needed):
       `docker run --rm -v /nas/Temp/repos/webos-deploy:/src -w /src -e CI=true
       node:24-trixie-slim bash -c 'set -e; cd webos && npm ci && npm run lint
@@ -319,7 +304,7 @@ source commit unverified — the bundle carries no version string).
       EACCES otherwise). Prefer copying the repo to /var/tmp instead of
       mounting the NAS path when practical.
 
-## Phase H6 — release checklist (next: TBD; last release 3.21.0, 2026-10-22)
+## Phase H6 — release checklist (next: TBD; last release 3.22.1, 2026-10-25)
 
 1. [ ] Pick the version (user-facing change → minor; fix-only → patch).
 2. [ ] Bump ×3 (`package.json`, `src/version.js`, `public/sw.js`).
