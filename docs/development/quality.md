@@ -16,8 +16,11 @@ the working summary.
 | Registry versions | `webos/tests/registry-versions.test.js` | 12/12 craft-app rows match the deployed bundle |
 | E2E sweep | `packaging/e2e/webos-sweep.mjs` | 27 phases in CI, console errors attributed per phase |
 | Shellcheck + Aegis | CI | shell scripts linted; scanner pinned to `aliasfoxkde/aegis` (baseline-gated) |
+| CodeQL | `.github/workflows/codeql.yml` | pinned JavaScript/TypeScript security-extended scan on pull requests, main pushes, and weekly |
 
-CI mirrors these in `.github/workflows/ci.yml` and `.gitforce.yml`.
+Application and repository gates run in `.github/workflows/ci.yml` and
+`.gitforce.yml`. CodeQL runs separately because GitHub's active Safeguards
+ruleset requires its code-scanning results before merge.
 
 ## Principles
 

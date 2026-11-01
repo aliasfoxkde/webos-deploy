@@ -54,8 +54,9 @@ is intermittent infra, but:
 
 1. Add `.github/workflows/dependency-review.yml` (`actions/dependency-review`
    on PRs) — free, standard, zero maintenance.
-2. Add CodeQL JS analysis workflow (weekly cron + PR) — the repo is pure JS;
-   the Safeguards no-codeql template applies only if CodeQL is ruled out.
+2. [x] Add a pinned CodeQL JS/TS analysis workflow (weekly cron + PR). This
+   satisfies the active Safeguards code-scanning requirement; confirm the
+   first PR analysis completes and is visible before merging.
 3. Adopt release-please (or a minimal tag-on-merge chore) so versions in
    `package.json`, tags, and Pages deploys stay mechanically linked.
 4. Wiki: add an "Audio/Video codecs supported" page (frequent question class
