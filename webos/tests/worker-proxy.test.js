@@ -1,6 +1,6 @@
 // Legacy proxy routes must fail closed. Remote HTML is no longer fetched
 // or returned under the WebOS origin; this protects shell storage and APIs.
- // @vitest-environment node
+// @vitest-environment node
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import worker from '../public/_worker.js';
 
