@@ -299,7 +299,8 @@ sections above and below; this index is the complete file-level map.
 - `src/os/wallpapers.js` — CSS-art wallpaper pack (clean-room by construction) + upload/URL dimming math
 - `src/os/waterfx.js` — parameter model for the water wallpaper (wave-equation sim params, presets) shared by UI and GL engine
 - `src/os/wpcompose.js` — composite wallpaper model: layered base/pattern/effect/floats spec + pure layout math
-- `src/shell/AddApp.jsx` — Add-app dialog: custom URL/name/icon persisted as a user app- `src/shell/AppStore.jsx` — App Store window: catalog, ratings, detail view, install/uninstall
+- `src/shell/AddApp.jsx` — Add-app dialog: custom URL/name/icon persisted as a user app
+- `src/shell/AppStore.jsx` — App Store window: catalog, ratings, detail view, install/uninstall
 - `src/shell/Calendar.jsx` — tray calendar popup (month navigation, today highlight, day selection)
 - `src/shell/CompositeWallpaper.jsx` — renders the composited wallpaper layer from wpcompose specs (base, pattern, effect, floats)
 - `src/shell/ContextMenu.jsx` — global right-click system (data-cm="kind:arg" targets; the item builder is read at dispatch time via a ref mirror)
