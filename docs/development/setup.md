@@ -9,9 +9,13 @@
 
 ## Run
 
+Clone the public repository, then install the locked WebOS dependencies:
+
 ```bash
+git clone https://github.com/aliasfoxkde/ArtCraft-WebOS.git
+cd ArtCraft-WebOS
 cd webos
-npm install
+npm ci
 npm run dev        # Vite dev server on 127.0.0.1
 ```
 
