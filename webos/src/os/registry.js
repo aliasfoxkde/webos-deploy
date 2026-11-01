@@ -105,7 +105,7 @@ export const DEFAULT_APPS = [
     description: 'Streaming music library and player. This one opens in its own tab — the site forbids embedding, so the OS gives it an honest launch panel.',
   },
   // 'browser' is a bundled plugin now (src/apps/browser/) — a real tabbed
-  // browser with an embed/proxy rendering stack. The old entry pointed at a
+  // browser with an embed/direct rendering stack. The old entry pointed at a
   // Firefox-in-WASM experiment (browserinbrowser.pages.dev); it is retired.
   // Native editors (Lapce/Zed) cannot be compiled for the web today — the
   // bundled Editor plugin is the OS IDE. Fork release notes document this:

@@ -4,7 +4,7 @@ export default {
   singleInstance: true,
   category: 'Tools',
   name: 'Browser',
-  tagline: 'Tabs, address bar, embeds, and a framing proxy',
+  tagline: 'Tabs, address bar, embeds, and honest framing',
   version: '1.0',
   icon: 'icons/browser.svg',
   accent: '#9580ff',

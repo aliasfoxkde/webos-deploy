@@ -1,9 +1,9 @@
 // Browser URL intelligence: address normalization, embed rewrites for sites
-// that publish official embed endpoints, and the embed/direct/proxy/external
+// that publish official embed endpoints, and the embed/direct/external
 // classification that decides how a site renders inside a WebOS window.
 import { describe, it, expect } from 'vitest';
 import {
-  SEARCH_URL, normalizeAddress, rewriteEmbed, classify, proxyWrap, displayUrl, hostOf, titleFor,
+  SEARCH_URL, normalizeAddress, rewriteEmbed, classify, displayUrl, hostOf, titleFor,
 } from '../src/apps/browser/urls.js';
 
 describe('normalizeAddress', () => {
@@ -64,31 +64,27 @@ describe('classify', () => {
     expect(classify('https://x.com/home').mode).toBe('external');
   });
 
-  it('known frame-friendly hosts go direct; search engines go through the proxy', () => {
+  it('frame-friendly hosts go direct; frame-hostile hosts (search engines) explain themselves', () => {
     expect(classify('https://excalidraw.com/').mode).toBe('direct');
     expect(classify('https://en.wikipedia.org/wiki/Frame').mode).toBe('direct');
+    expect(classify('https://some-random.blog/post').mode).toBe('direct');
     const s = classify(SEARCH_URL + 'cats');
-    expect(s.mode).toBe('proxy');
-    expect(s.src).toBe(proxyWrap(SEARCH_URL + 'cats'));
-    // every search host routes through the proxy, whichever way you get there
-    expect(classify('https://www.bing.com/search?q=cats').mode).toBe('proxy');
-    expect(classify('https://html.duckduckgo.com/html/?q=cats').mode).toBe('proxy');
+    expect(s.mode).toBe('external');
+    expect(s.reason).toMatch(/forbid iframe embedding/);
+    expect(classify('https://www.bing.com/search?q=cats').mode).toBe('external');
+    expect(classify('https://html.duckduckgo.com/html/?q=cats').mode).toBe('external');
   });
 
-  it('a per-host user override beats the tables; unknown hosts try direct first', () => {
-    expect(classify('https://github.com/trending', 'proxy').mode).toBe('proxy');
-    expect(classify('https://github.com/trending', 'proxy').src)
-      .toContain(encodeURIComponent('https://github.com/trending'));
-    expect(classify('https://discord.com/app', 'direct').mode).toBe('direct'); // user's call
-    expect(classify('https://some-random.blog/post').mode).toBe('direct');
+  it('there is no proxy mode — nothing classifies to proxy and no proxyWrap export exists', async () => {
+    const urls = await import('../src/apps/browser/urls.js');
+    expect(urls).not.toHaveProperty('proxyWrap');
+    for (const url of [
+      'https://github.com/trending', SEARCH_URL + 'cats', 'https://discord.com/app', 'https://a.b/',
+    ]) expect(classify(url).mode).not.toBe('proxy');
   });
 });
 
 describe('small helpers', () => {
-  it('proxyWrap encodes the target', () => {
-    expect(proxyWrap('https://a.b/?x=1')).toBe('/proxy?url=' + encodeURIComponent('https://a.b/?x=1'));
-  });
-
   it('displayUrl hides the scheme and trailing slash', () => {
     expect(displayUrl('https://example.com/')).toBe('example.com');
     expect(displayUrl('http://a.b/c/d')).toBe('a.b/c/d');
@@ -99,7 +95,6 @@ describe('small helpers', () => {
     expect(hostOf('https://www.example.com/x')).toBe('www.example.com');
     expect(titleFor('https://www.example.com/x')).toBe('example.com');
     expect(titleFor('')).toBe('New tab');
-    expect(hostOf('/proxy?url=x')).toBe(location.hostname); // same-origin proxy URL
   });
 });
 
