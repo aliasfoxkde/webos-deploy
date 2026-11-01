@@ -4,7 +4,7 @@ Live status board. Update this (and [SESSIONS.md](SESSIONS.md)) at the end
 of every working session. Plan-of-record for open work:
 [HANDOFF.md](HANDOFF.md).
 
-## Snapshot (verified 2026-10-25)
+## Snapshot (runtime baseline 2026-10-25; repository and CI verified 2026-11-01)
 
 | Dimension | State |
 |---|---|
@@ -18,7 +18,7 @@ of every working session. Plan-of-record for open work:
 | Accessibility | WCAG 2.1 AAA token gates incl. wallpaper-extreme flattening + desktop scrim pills |
 | Docs coverage | ARCHITECTURE.md Module index ⇄ src/ enforced by `tests/docs-coverage.test.js` — now in GitForge CI pipeline |
 | Registry versions | 12/12 craft-app rows match the deployed bundle (verified by asset + wasm hash); pinned by `tests/registry-versions.test.js` |
-| CI | GitHub Actions: lint, docs gate, WCAG audit, coverage ratchet, build, 27-phase e2e sweep, **shellcheck**, **Aegis scan**. GitForge pipeline mirrors the same gates. It had been red on every push from 2026-10-19 — see risk R2. The Aegis step added 2026-10-20 was itself broken (never scanned) and was repaired 2026-10-21 — see R3 |
+| CI | GitHub Actions: lint, docs gate, WCAG audit, coverage ratchet, build, E2E sweep, **Shellcheck**, **Aegis**, and **CodeQL**. GitHub Safeguards now requires both CodeQL results and the full WebOS CI check before merge. GitForge mirrors the application gates. Historical GitForge trigger issue remains in R2. |
 | Aegis | scanner pinned to `aliasfoxkde/aegis` **v0.6.4** (checksum-verified) via `packaging/aegis-scan.sh`; baseline regenerated with that binary (1809 findings / 111 files / 22 categories); the gate fails only on findings outside the baseline |
 
 ## Done (evidence in HISTORY.md / SESSIONS.md)
@@ -31,6 +31,11 @@ of every working session. Plan-of-record for open work:
 - [x] Docs-reference gate (`tests/docs-references.test.js`) + full-docs
       staleness pass — 18+ stale references fixed, superseded plans
       (PROGRAM-3, QUALITY-PLAN) bannered (2026-10-15).
+- [x] OSS readiness merged in PR #14 (2026-11-01): public repository,
+      prototype scope and product vision documented, MIT license for
+      first-party shell/tooling, security-reporting guidance, clone/setup
+      instructions, and pinned CodeQL workflow. GitHub CI and CodeQL passed;
+      Pages was not redeployed because no runtime code changed.
 
 ## Open (ordered; atomic tasks in HANDOFF.md)
 

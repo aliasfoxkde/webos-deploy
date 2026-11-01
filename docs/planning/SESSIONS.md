@@ -532,3 +532,26 @@ upstream web release than deployed → executed the P10 pipeline again as P13:
 Gotcha: vectorcraft's Pages project domain is `vectorcraft-web-9y7.pages.dev`
 (disambiguation suffix) — checking the bare name 404s; always take the
 deploy URL from wrangler output.
+
+## 2026-11-01 — OSS README/docs and merge-gate hardening
+
+PR #14 (`605e0a9`) made the existing public repository clearly identify
+ArtCraft WebOS as an experimental browser desktop, separate current
+capabilities from the longer-term user-owned OS vision, and link a phased
+product roadmap. It added a first-party MIT license, security policy,
+Sponsors metadata, community/setup/architecture docs, and a pinned CodeQL
+workflow. No runtime code changed and Cloudflare Pages was not redeployed.
+
+Validation: local docs-reference and docs-coverage tests passed (4 tests);
+GitHub CI run 41343478209 passed all stages, including E2E; CodeQL run
+41343478261 passed for JavaScript/TypeScript. The README was verified from
+the public `main` branch. Issues #12 (proxy isolation) and #13 (product
+roadmap) remain open.
+
+Learning: the active Safeguards ruleset required CodeQL but did not require
+the full CI status. Auto-merge therefore ran when CodeQL completed while CI
+was still running; CI eventually passed. Added the exact GitHub Actions CI
+status to Safeguards, with strict up-to-date testing, so future merges wait
+for both. Code Quality remains unenabled by this work because it is a
+separately billed GitHub feature. The linked-issue auto-close toggle remains
+unverified through the available API.
