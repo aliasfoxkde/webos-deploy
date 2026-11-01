@@ -22,8 +22,10 @@ describe('Page Agent provider configuration', () => {
   it('requires a model identifier', () => {
     expect(() => savePageAgentConfig({ baseURL: 'https://api.example.com/v1', model: ' ' })).toThrow(/model/i);
   });
-  it('falls back when stored settings are malformed', () => {
+  it('falls back when stored JSON or stored field types are malformed', () => {
     localStorage.setItem('webos.pageAgent.config', '{');
+    expect(loadPageAgentConfig()).toEqual({ baseURL: '', model: '' });
+    localStorage.setItem('webos.pageAgent.config', JSON.stringify({ baseURL: 42, model: null }));
     expect(loadPageAgentConfig()).toEqual({ baseURL: '', model: '' });
   });
 });
@@ -36,10 +38,28 @@ describe('Page Agent extension authorization', () => {
     clearPageAgentToken();
     expect(hasPageAgentToken()).toBe(false);
   });
-  it('detects only the official execute/stop methods', () => {
+  it('detects the official API and uses its version when the global version is absent', () => {
     expect(pageAgentExtensionStatus({})).toEqual({ available: false, version: '' });
+    expect(pageAgentExtensionStatus({ PAGE_AGENT_EXT: { execute: vi.fn() } })).toEqual({ available: false, version: '' });
+    expect(pageAgentExtensionStatus({ PAGE_AGENT_EXT: { execute: vi.fn(), stop: vi.fn(), version: 'api-version' } }))
+      .toEqual({ available: true, version: 'api-version' });
     expect(pageAgentExtensionStatus({ PAGE_AGENT_EXT_VERSION: '1.2.3', PAGE_AGENT_EXT: { execute: vi.fn(), stop: vi.fn() } }))
       .toEqual({ available: true, version: '1.2.3' });
+  });
+
+  it('rejects empty extension tokens and propagates storage write errors', () => {
+    expect(() => savePageAgentToken('  ')).toThrow(/authorization token/i);
+    const brokenStorage = { setItem: () => { throw new Error('quota'); } };
+    expect(() => savePageAgentToken('token', brokenStorage)).toThrow('quota');
+  });
+
+  it('handles unavailable storage when checking or clearing tokens', () => {
+    const brokenStorage = {
+      getItem: () => { throw new Error('blocked'); },
+      removeItem: () => { throw new Error('blocked'); },
+    };
+    expect(hasPageAgentToken(brokenStorage)).toBe(false);
+    expect(() => clearPageAgentToken(brokenStorage)).not.toThrow();
   });
   it('excludes the WebOS shell tab and disables all-tabs access', async () => {
     const execute = vi.fn().mockResolvedValue({ success: true, data: 'Done', history: [] });
@@ -52,11 +72,29 @@ describe('Page Agent extension authorization', () => {
       includeInitialTab: false, experimentalIncludeAllTabs: false,
     }));
   });
-  it('rejects empty/oversized tasks and missing extension', async () => {
+  it('rejects empty/oversized tasks, missing models, and missing extension', async () => {
     const config = { baseURL: 'https://api.example.com/v1', model: 'm' };
     await expect(executePageAgentTask(' ', config, {})).rejects.toThrow(/describe/i);
     await expect(executePageAgentTask('x'.repeat(4001), config, {})).rejects.toThrow(/4,000/i);
+    await expect(executePageAgentTask('Run task', { ...config, model: ' ' }, {})).rejects.toThrow(/model/i);
     await expect(executePageAgentTask('Run task', config, {})).rejects.toThrow(/not connected/i);
+  });
+
+  it('omits the API key when absent and invokes the extension with its own receiver', async () => {
+    const extension = {
+      execute: vi.fn(function execute() {
+        expect(this).toBe(extension);
+        return Promise.resolve({ success: true });
+      }),
+      stop: vi.fn(),
+    };
+    await executePageAgentTask('Read a page', {
+      baseURL: 'https://api.example.com/v1', model: 'model-id',
+    }, { PAGE_AGENT_EXT: extension });
+    const options = extension.execute.mock.calls[0][1];
+    expect(options).not.toHaveProperty('apiKey');
+    expect(options.includeInitialTab).toBe(false);
+    expect(options.experimentalIncludeAllTabs).toBe(false);
   });
   it('stops a running extension task', () => {
     const stop = vi.fn();
