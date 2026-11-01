@@ -184,7 +184,9 @@ await settleAnim();
 
 /* ================ A. boot + welcome ================ */
 await phase('boot-welcome', async () => {
-  if (!await evalJs(`!!document.querySelector('.wl-enter')`)) throw new Error('welcome landing missing');
+  // Cold-start flake (2026-11-01): polling #start-btn does not guarantee the
+  // welcome overlay has mounted yet — assert with a poll, not a one-shot.
+  if (!await poll(`!!document.querySelector('.wl-enter')`, 15000)) throw new Error('welcome landing missing');
   await shot('welcome');
   await evalJs(`document.querySelector('.wl-enter').click()`);
   await wait(1200);
