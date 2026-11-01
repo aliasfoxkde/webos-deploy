@@ -1,175 +1,65 @@
 # ArtCraft WebOS
 
-A browser desktop ("WebOS") for the 12 ArtCraft craft apps, plus bundled
-first-party apps, an App Store of curated external web apps, and a
-customizable widget sidebar. Everything is **100% client-side rendered** —
-the shell is a Vite + React SPA, app builds are static WASM sites, and no
-Cloudflare Workers compute runs on the main path.
+A browser desktop environment — window manager, taskbar, start menu, app
+store, settings — hosting twelve embedded **ArtCraft** craft apps:
+clean-room, pure-Rust reimaginations of classic creative software,
+compiled to WebAssembly.
 
-> **Prototype status:** ArtCraft WebOS is an experimental browser desktop,
-> not a native operating system or a replacement for Windows/Linux yet. It
-> does not boot from an ISO, provide user accounts or cross-device sync, or
-> accept arbitrary WASM binaries as a general-purpose runner. Current WASM
-> support comes from bundled utilities and curated app builds. See the
-> [product direction](#product-direction) for the longer-term vision.
->
-> **Security notice:** the optional Browser proxy currently serves remote
-> HTML from the WebOS origin after stripping browser security headers. Do not
-> sign into sensitive accounts through proxied pages. The isolation work is
-> tracked in [issue #12](https://github.com/aliasfoxkde/webos-deploy/issues/12).
-
-## Product direction
-
-The long-term goal is a user-owned, AI-first workspace that can follow the
-person across devices, support a native bootable image, and make community
-apps and customizations easy to install and contribute. AI-assisted changes
-could help users turn an idea into an app, issue, or reviewable pull request.
-Those capabilities are **future direction only**; the current prototype is a
-client-side browser application with local browser storage and curated app
-integrations. The phased vision is tracked in
-[issue #13](https://github.com/aliasfoxkde/webos-deploy/issues/13).
-
-The project is open source under the MIT License for first-party code and
-original assets. Third-party assets keep their individual licenses; see
-[`docs/ATTRIBUTION.md`](docs/ATTRIBUTION.md).
-
-The craft app builds are **never committed to this repo** — they are synced
-from upstream GitHub releases (`storytold/<app>`, asset
-`{app}-web-<version>.zip`) by `packaging/fetch-apps.sh`. Exceptions:
-deckcraft/soundcraft/effectcraft deploy from their `apps/<name>/` source
-checkouts — none of the three has upstream release zips yet (see
-`CLAUDE.md`). FireCraft releases live under the `aliasfoxkde` org rather
-than `storytold`, but from v0.2.2 they include a web zip, so it syncs
-through the same `fetch-apps.sh` pipeline.
-
-## Layout
-
-```
-webos/          the OS shell (Vite + React) → deploys to artcraft-webos.pages.dev
-apps/           fetched upstream builds, one dir per app   [gitignored]
-zips/           release zip cache                          [gitignored]
-r2-blobs/       >25 MiB wasm blobs, uploaded to R2         [gitignored]
-packaging/      fetch-apps.sh, pwa-inject.sh, r2-publish.sh, icons-*.sh
-docs/           architecture + planning notes
-cadcraft/ … zed/   sibling independent source repos (NOT part of this repo)
-```
-
-## Live URLs
-
-| Project | URL |
+| | |
 |---|---|
-| artcraft-webos (the desktop) | https://artcraft-webos.pages.dev/ |
-| craft apps | `https://<app>-web.pages.dev/` (vectorcraft: `vectorcraft-web-9y7`) |
-| firecraft | https://firecraft-web.pages.dev/ (synced from the `aliasfoxkde/firecraft` release zip) |
-| deckcraft | https://deckcraft-web.pages.dev/ (synced from the upstream release zip) |
-| soundcraft | https://soundcraft-web.pages.dev/ (synced from the upstream release zip) |
-| effectcraft | https://effectcraft-web.pages.dev/ (synced from the upstream release zip) |
-| Browser in Browser (Firefox WASM) | https://browserinbrowser.pages.dev/ |
+| | **▶ [Launch ArtCraft WebOS](https://artcraft-webos.pages.dev)** — free, no account, runs entirely in your browser. A full desktop in a tab: terminal, code editor, files, browser, plus CADCraft (AutoCAD), PhotoCraft (Photoshop), VectorCraft (Illustrator), GridCraft (Excel), WordCraft (Word), DeckCraft (PowerPoint), SoundCraft (Pro Tools), EffectCraft (After Effects), LightCraft (Lightroom), DesignCraft (InDesign), PdfCraft (Acrobat), and FireCraft. Your desktop, files, and settings persist locally. |
 
-## Quickstart
+![ArtCraft WebOS desktop](docs/screenshot-desktop.png)
 
-```bash
-# 1. fetch the craft app builds from upstream releases
-packaging/fetch-apps.sh                 # or --app photocraft, --force to refetch
+*The WebOS desktop — start menu, taskbar, widgets, and embedded craft-app
+windows.*
 
-# 2. work on the shell
-cd webos && npm install
-npm run dev                             # vite dev server
-npm run build                           # → webos/dist/
+## Status
 
-# 3. deploy (craft apps deploy from apps/<name>/; each repo's
-#    packaging/web/README.md holds its hosting notes)
-cd webos && npx wrangler pages deploy dist --project-name artcraft-webos --branch main
+[![CI](https://github.com/aliasfoxkde/webos-deploy/actions/workflows/ci.yml/badge.svg)](https://github.com/aliasfoxkde/webos-deploy/actions/workflows/ci.yml)
+License: MIT · ~1400 specs, 99%+ coverage (ratcheted), WCAG 2.1 AAA
+contrast gates, 27-phase e2e sweep in CI.
+
+## Documentation
+
+Everything lives in [`docs/`](docs/README.md), layered so you can dig as
+deep as you need without scrolling a wall of text:
+
+| I want to… | Start here |
+|---|---|
+| Use the desktop | [Quickstart](docs/getting-started/quickstart.md) · [The craft apps](docs/getting-started/apps.md) |
+| Understand the system | [Architecture overview](docs/architecture/overview.md) · [Browser & proxy](docs/architecture/browser.md) · [Bridge protocol](docs/architecture/bridge.md) |
+| Develop / contribute | [Setup](docs/development/setup.md) · [Quality gates](docs/development/quality.md) · [Contributing](.github/CONTRIBUTING.md) · [Agent rules](docs/AGENTS.md) |
+| Ship a release | [Packaging & release](docs/development/release.md) · [Craft app registry](docs/reference/craft-apps.md) |
+| Follow the project | [Planning & status](docs/planning/PROGRESS.md) · [Handoff](docs/planning/HANDOFF.md) · [Attribution](docs/ATTRIBUTION.md) |
+
+## Repository layout
+
+```
+webos/        the WebOS shell (Vite + React, no Rust) — all source here
+packaging/    release tooling: fetch craft-app builds, deploy, e2e sweep
+apps/         fetched craft-app builds (gitignored, never committed)
+docs/         documentation + planning + agent workspace (see docs/README.md)
+cadcraft/ …   sibling craft-app source repos — independent git repos,
+wordcraft/    gitignored here, never committed
 ```
 
-Craft app builds deploy as static sites to Cloudflare Pages
-(`<app>-web.pages.dev`), which caps static files at 25 MiB. Bundles over the
-cap (deckcraft, designcraft, effectcraft, lightcraft, pdfcraft, vectorcraft,
-wordcraft — 29–74 MiB) keep only a `_worker.js` in the Pages deploy — any
-`.wasm` request streams from the R2 bucket `craftweb` (binding `CRAFTWEB`,
-key = the bare filename) and everything else falls through to static assets.
-`packaging/r2-publish.sh <app>` does that: it moves the wasm out of the
-deploy directory into `r2-blobs/`, writes the `_worker.js` and the
-`wrangler.toml` with the R2 binding, and uploads the blob with
-`wrangler r2 object put craftweb/<file>.wasm --file <f> --remote` (`--remote`
-is required — plain `wrangler r2 object put` writes to a local simulator).
-Then deploy from the app directory, so wrangler picks up its config:
+## The craft apps
 
-```bash
-packaging/r2-publish.sh pdfcraft
-cd apps/pdfcraft && npx wrangler pages deploy . --project-name pdfcraft-web --branch main
-```
+Each embedded app is also a standalone site at `<name>-web.pages.dev`,
+built from its own repository under `github.com/aliasfoxkde/<app>` and
+synced into this repo via `packaging/fetch-apps.sh` — versions and routes
+in [docs/reference/craft-apps.md](docs/reference/craft-apps.md).
 
-## Quality gates (webos/)
+## Contributing & community
 
-```bash
-cd webos
-npm run test            # vitest suite (1000+ specs, happy-dom + RTL)
-npm run coverage        # suite + v8 coverage, enforced ratchet floors
-npm run lint            # eslint, --max-warnings 0 in CI
-npm run build           # production bundle → dist/
-npm run ci              # lint → coverage → build, all three
-node ../packaging/e2e/webos-sweep.mjs   # headless-Chrome e2e sweep (27 phases)
-```
+- [Contributing](.github/CONTRIBUTING.md) — gates, conventions, PR process
+- [Code of Conduct](.github/CODE_OF_CONDUCT.md)
+- [Security policy](SECURITY.md) — private vulnerability reporting enabled
+- [Support](.github/SUPPORT.md) · [Funding](.github/FUNDING.yml)
 
-- **Coverage ratchet** — `webos/vitest.config.js` carries floors just under
-  the measured baseline; any coverage regression fails `npm run coverage`.
-  Raise the floors as tests land, never lower them. The baseline must be
-  *reproducible*: timers are driven with fake timers so the number does not
-  depend on machine speed (see `docs/planning/QUALITY-PROGRAM.md`).
-- **WCAG contrast auditor** — `webos/tests/contrast-audit.test.js` enforces
-  token-level ratios per theme preset (danger ink ≥7:1 on paper, focused
-  window ring ≥3:1, accent ink ≥7:1 on every accent swatch) and fails if app
-  CSS hardcodes a preset palette color. Persona/preset text AAA lives in
-  `webos/tests/personas-theme.test.js`; shared WCAG math in
-  `webos/tests/theme-math.js`.
-- **CI** — `.github/workflows/ci.yml` (GitHub, push/PR/manual dispatch) runs
-  install → lint → docs-coverage gate → WCAG contrast audit → tests +
-  coverage ratchet → build → **e2e sweep (hard gate)** → **shellcheck** →
-  **Aegis security scan**. The Aegis step is
-  `packaging/aegis-scan.sh`, which downloads the pinned release binary
-  (`aliasfoxkde/aegis` v0.6.4, checksum-verified) and scans `webos/src`
-  against `webos/.aegis-baseline.json`; it fails only on findings that
-  are not in the triaged baseline. The baseline is machine-regenerated, never
-  hand-edited: `packaging/aegis-baseline.sh` scans, normalizes
-  (`packaging/aegis-baseline.mjs` — findings sorted by file/line/column/pattern,
-  volatile timing and nonce fields dropped, so two scans of unchanged source
-  produce byte-identical files) and refuses to install a baseline whose finding
-  set drifted beyond line shifts; `--check` reports drift without writing.
-  `.gitforce.yml` is the local GitForge
-  mirror (same gates; its runner image is `node:24-trixie-slim` and has
-  no curl, which the script handles). Version bumps touch three files:
-  `webos/package.json`,
-  `webos/src/version.js`, `webos/public/sw.js` (cache key).
-- **Pre-commit** — `.husky/pre-commit` (husky, committed at the repo root)
-  lints `webos/src` and `webos/tests` with `--max-warnings 0` when source or
-  test files are staged.
+## License
 
-## The Browser
-
-WebOS ships a real browser, not a shortcut: `webos/src/apps/browser/` is a
-Chromium-style plugin window (tabs, per-tab history, address bar, Ctrl+T/W/L/R)
-with a four-mode rendering stack — official embeds (YouTube/Spotify), direct
-frames, a same-origin proxy (Cloudflare Pages Function stripping framing
-headers server-side), and an honest "can't run in any frame" hand-off for
-sites like Discord whose APIs are CORS-locked to their own origin. Details and
-limits: `docs/planning/webos-apps/BROWSER.md`.
-
-## Shell design
-
-The WebOS shell (`webos/`) is plain Vite + React — no Rust. Its win/mac
-personas implement a four-phase **Liquid Glass** design language (frost
-tokens + specular window rims, anchored rise/drop motion, and Chromium-only
-edge refraction via an SVG feDisplacementMap behind a `CSS.supports`
-probe — other engines keep the base frost). The design is documented in
-`docs/planning/webos-apps/LIQUID-GLASS.md` and
-`docs/planning/webos-apps/ARCHITECTURE.md`.
-
-## Rules that hold across this project
-
-- **Clean-room** — the parity apps are observed black-box only; every
-  icon/image/font is original artwork, CC0, or properly licensed.
-- **Rust/WASM apps** (the craft apps) build to the browser via trunk; this
-  repo only packages and hosts their release output.
-- **No builds in git** — `apps/`, `zips/`, `r2-blobs/` are reproducible from
-  upstream releases; keep them out of history.
+[MIT](LICENSE) for this repo's shell and tooling. Each craft app carries
+its own `LICENSE.txt` (Apache-2.0 OR MIT). Third-party assets are
+catalogued in [docs/ATTRIBUTION.md](docs/ATTRIBUTION.md).
