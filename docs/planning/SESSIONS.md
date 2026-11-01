@@ -555,3 +555,20 @@ status to Safeguards, with strict up-to-date testing, so future merges wait
 for both. Code Quality remains unenabled by this work because it is a
 separately billed GitHub feature. The linked-issue auto-close toggle remains
 unverified through the available API.
+
+## 2026-11-01 — P14 e2e hardening + v3.24.0
+
+Landed PR #23 (`codex/sweep-assertpoll-hardening`): the P14.1 cold-start
+flake fixed by polling `.wl-enter` (635b1f1) was generalized — an
+`assertPoll` helper now backs every DOM/async assertion in
+`packaging/e2e/webos-sweep.mjs` that previously ran one-shot after a fixed
+`wait()` (welcome close, window max/min/close, autosave, editor typing,
+files folder count, browser navigation, taskmgr/weather/chat text, mobile
+FAB/drawer/launch, tiling snaps, group lifecycle). The tiling phase's
+half-width check became a poll and a dangling `left.w` reference from the
+first cut was repaired. `npm run sweep` added to `webos/package.json`
+(P14.3). Verified: `npm run sweep` PASS 31/31 phases, 0 page errors, 46
+screenshots. OSS readiness plan recorded at
+`docs/planning/OSS-READINESS-PLAN.md`; P15/P16 refinements
+(dependency-review workflow, branch-coverage floor ratchet, strictest-lint
+trial) remain open there.
