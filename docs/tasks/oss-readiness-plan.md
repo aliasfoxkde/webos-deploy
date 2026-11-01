@@ -1,8 +1,9 @@
-# OSS-Readiness Plan — post-368861f (2026-11-01)
+# OSS-Readiness Plan — closeout (2026-11-01)
 
-Status of this branch (`codex/artcraft-open-source-readiness`) after the
-community-files/README/docs-restructure landing. Baseline verified green on
-2026-11-01:
+Status after [PR #14](https://github.com/aliasfoxkde/ArtCraft-WebOS/pull/14)
+merged as `605e0a9` on 2026-11-01. The public default branch now contains
+the README, product vision, onboarding, community, licensing, and security
+documentation described here.
 
 | Gate | State |
 |---|---|
@@ -13,18 +14,21 @@ community-files/README/docs-restructure landing. Baseline verified green on
 | GitForge CI (`webos-deploy-ci`) | latest run (6764c00, 2026-11-01 18:55) **succeeded**; store-verified |
 | ESLint | 127 rules incl. jsx-a11y recommended, react-hooks, strict set — clean |
 
-## Phase R1 — Merge readiness (small, do now)
+## Phase R1 — Merge readiness
 
-1. `git push` branch -> open PR -> merge to `main` (safeguards hooks already
-   enforce the gate checklist).
-2. Verify the GitHub-side toggle "auto-close issues with merged linked PRs"
-   in Settings -> General -> Issues (REST does not expose it; record result).
-3. Confirm repo settings match scaffolding defaults: auto-delete head
-   branches, auto-merge enabled, Suggestions-for-PR-branches on.
-4. Tag `v3.23.1` (docs/community release — no runtime change) -> GitHub
-   release with the screenshot in the body.
-5. Deploy: `npm run build && wrangler pages deploy webos/dist --project-name
-   artcraft-webos` (or confirm Pages CI did it on merge).
+1. [x] PR #14 merged to `main` after its CodeQL result succeeded. The full
+   WebOS CI run subsequently passed, including lint, Aegis, Shellcheck, docs
+   gates, tests/coverage, build, and E2E.
+2. [ ] Verify the GitHub-side toggle "auto-close issues with merged linked
+   PRs" in Settings → General → Issues. REST does not expose it; remains
+   unverified.
+3. [x] Public visibility, Issues, Discussions, Wiki, auto-merge,
+   auto-delete-head-branches, private vulnerability reporting, and
+   secret-scanning push protection are enabled. Update-branch suggestions
+   and release immutability were verified during repository setup.
+4. [x] No release/tag was cut: this PR changes docs and repository metadata,
+   not the runtime. Record a docs-only release separately if desired.
+5. [x] No Pages deployment was triggered; the live prototype was unchanged.
 
 ## Phase R2 — GitForge trigger hygiene (infra fix, not repo defect)
 
@@ -54,9 +58,8 @@ is intermittent infra, but:
 
 1. Add `.github/workflows/dependency-review.yml` (`actions/dependency-review`
    on PRs) — free, standard, zero maintenance.
-2. [x] Add a pinned CodeQL JS/TS analysis workflow (weekly cron + PR). This
-   satisfies the active Safeguards code-scanning requirement; confirm the
-   first PR analysis completes and is visible before merging.
+2. [x] Add a pinned CodeQL JS/TS analysis workflow (weekly cron + PR). Its
+   first analysis passed (Actions run 41343478261).
 3. Adopt release-please (or a minimal tag-on-merge chore) so versions in
    `package.json`, tags, and Pages deploys stay mechanically linked.
 4. Wiki: add an "Audio/Video codecs supported" page (frequent question class
@@ -73,3 +76,18 @@ is intermittent infra, but:
 
 Re-baseline after each phase; update PROGRESS.md + HISTORY.md per the
 session protocol in `docs/AGENTS.md`.
+
+## Merge-gating finding
+
+PR #14 auto-merged after CodeQL passed while the broader CI job was still in
+progress. That CI job later passed (Actions run 41343478209). The active
+Safeguards ruleset originally required CodeQL but not the repository's full
+CI status check, so the merge could happen early. A required-status-check
+rule now requires the GitHub Actions check named `webos — lint, test,
+coverage gate, contrast audit, build, e2e`, with strict up-to-date testing.
+This is a repository-specific rule added without removing any Safeguards.
+
+GitHub Code Quality did not run on this PR. It is a separately billed
+feature; do not enable it without explicit cost authorization. The inherited
+ruleset retains its Code Quality rule, which only evaluates when the feature
+is available and configured.

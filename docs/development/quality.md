@@ -19,8 +19,10 @@ the working summary.
 | CodeQL | `.github/workflows/codeql.yml` | pinned JavaScript/TypeScript security-extended scan on pull requests, main pushes, and weekly |
 
 Application and repository gates run in `.github/workflows/ci.yml` and
-`.gitforce.yml`. CodeQL runs separately because GitHub's active Safeguards
-ruleset requires its code-scanning results before merge.
+`.gitforce.yml`. CodeQL runs separately. The active GitHub Safeguards ruleset
+requires both CodeQL results and the full WebOS CI check before merge. GitHub
+Code Quality is a separate billed feature and was not enabled as part of this
+setup; the PR had no Code Quality analysis result.
 
 ## Principles
 
