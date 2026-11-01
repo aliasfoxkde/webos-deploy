@@ -619,7 +619,7 @@ await phase('window-tiling', async () => {
   await key('ArrowLeft');
   await wait(500);
   await assertPoll(`__os.windows[0] && __os.windows[0].rect.x === 0`, 'tiling: Meta+Left did not snap left');
-  if (Math.abs(left.w - vw / 2) > 60) throw new Error(`tiling: Meta+Left width ${left.w}, want about ${Math.round(vw / 2)}`);
+  await assertPoll(`__os.windows[0] && Math.abs(__os.windows[0].rect.w - ${vw / 2}) <= 60`, `tiling: Meta+Left width not about ${Math.round(vw / 2)}`);
   await shot('tiled-left');
   await key('ArrowUp');
   await wait(400);
