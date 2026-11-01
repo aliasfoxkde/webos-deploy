@@ -32,6 +32,8 @@ Nothing in this file requires scrolling past an index.
 
 ## Planning & agent workspace
 
+- [Product vision and roadmap](planning/product-vision.md) — current scope,
+  explicit gaps, and staged path toward a user-owned desktop environment.
 - [planning/](planning/) — plan of record: [HANDOFF.md](planning/HANDOFF.md)
   (continuation context), [PROGRESS.md](planning/PROGRESS.md) (status board),
   [PHASES.md](planning/PHASES.md) (work plan), [SESSIONS.md](planning/SESSIONS.md),

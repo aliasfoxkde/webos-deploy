@@ -1,7 +1,7 @@
 # AGENTS.md — working rules for AI agents in this repo
 
-This is `webos-deploy` / **ArtCraft WebOS**: a Vite + React browser desktop
-(`webos/`) that hosts twelve embedded ArtCraft craft apps, plus the
+This is **ArtCraft WebOS** (`github.com/aliasfoxkde/ArtCraft-WebOS`): a Vite + React browser
+desktop (`webos/`) that hosts twelve embedded ArtCraft craft apps, plus the
 packaging that fetches their release builds (`packaging/fetch-apps.sh`) and
 deploys them (`wrangler pages deploy`). Humans start at `README.md`; agents
 start here.

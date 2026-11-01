@@ -1,65 +1,83 @@
 # ArtCraft WebOS
 
-A browser desktop environment — window manager, taskbar, start menu, app
-store, settings — hosting twelve embedded **ArtCraft** craft apps:
-clean-room, pure-Rust reimaginations of classic creative software,
-compiled to WebAssembly.
+**An experimental, browser-based desktop for running creative apps and exploring a more user-owned operating system.**
 
-| | |
-|---|---|
-| | **▶ [Launch ArtCraft WebOS](https://artcraft-webos.pages.dev)** — free, no account, runs entirely in your browser. A full desktop in a tab: terminal, code editor, files, browser, plus CADCraft (AutoCAD), PhotoCraft (Photoshop), VectorCraft (Illustrator), GridCraft (Excel), WordCraft (Word), DeckCraft (PowerPoint), SoundCraft (Pro Tools), EffectCraft (After Effects), LightCraft (Lightroom), DesignCraft (InDesign), PdfCraft (Acrobat), and FireCraft. Your desktop, files, and settings persist locally. |
+[Open the live prototype](https://artcraft-webos.pages.dev/) · [Product vision and roadmap](docs/planning/product-vision.md) · [Report a bug](https://github.com/aliasfoxkde/ArtCraft-WebOS/issues/new/choose)
 
 ![ArtCraft WebOS desktop](docs/screenshot-desktop.png)
 
-*The WebOS desktop — start menu, taskbar, widgets, and embedded craft-app
-windows.*
+*The current browser desktop, with its taskbar, windows, and bundled apps.*
 
-## Status
+## What it is today
 
-[![CI](https://github.com/aliasfoxkde/webos-deploy/actions/workflows/ci.yml/badge.svg)](https://github.com/aliasfoxkde/webos-deploy/actions/workflows/ci.yml)
-License: MIT · ~1400 specs, 99%+ coverage (ratcheted), WCAG 2.1 AAA
-contrast gates, 27-phase e2e sweep in CI.
+ArtCraft WebOS is a useful prototype that runs in a modern web browser. It
+provides a desktop-like shell with windows, a taskbar, an app launcher,
+settings, and a virtual Files disk. It hosts a collection of bundled
+ArtCraft creative apps and includes a terminal with WebAssembly-based
+utilities. See the [app guide](docs/getting-started/apps.md) and
+[current app registry](docs/reference/craft-apps.md) for details.
 
-## Documentation
+You can try it without installing anything at
+[artcraft-webos.pages.dev](https://artcraft-webos.pages.dev/). The shell
+stores its files and settings in the browser on that device.
 
-Everything lives in [`docs/`](docs/README.md), layered so you can dig as
-deep as you need without scrolling a wall of text:
+### Prototype boundaries
 
-| I want to… | Start here |
-|---|---|
-| Use the desktop | [Quickstart](docs/getting-started/quickstart.md) · [The craft apps](docs/getting-started/apps.md) |
-| Understand the system | [Architecture overview](docs/architecture/overview.md) · [Browser & proxy](docs/architecture/browser.md) · [Bridge protocol](docs/architecture/bridge.md) |
-| Develop / contribute | [Setup](docs/development/setup.md) · [Quality gates](docs/development/quality.md) · [Contributing](.github/CONTRIBUTING.md) · [Agent rules](docs/AGENTS.md) |
-| Ship a release | [Packaging & release](docs/development/release.md) · [Craft app registry](docs/reference/craft-apps.md) |
-| Follow the project | [Planning & status](docs/planning/PROGRESS.md) · [Handoff](docs/planning/HANDOFF.md) · [Attribution](docs/ATTRIBUTION.md) |
+This is not yet a replacement for Windows or Linux, and it is not a
+bootable operating system. It does not currently provide user accounts,
+cloud sync, or a desktop that follows you between devices. The terminal's
+bundled WebAssembly utilities are not a general-purpose sandbox for
+uploading and running arbitrary WASM binaries. The bundled apps and shell
+also do not yet cover the full range of everyday work that a daily-driver
+OS needs.
 
-## Repository layout
+The browser app can display remote pages through a proxy. Until the
+[proxy isolation issue](https://github.com/aliasfoxkde/ArtCraft-WebOS/issues/12)
+is resolved, do not sign into sensitive sites through that feature; see the
+[security policy](SECURITY.md).
 
-```
-webos/        the WebOS shell (Vite + React, no Rust) — all source here
-packaging/    release tooling: fetch craft-app builds, deploy, e2e sweep
-apps/         fetched craft-app builds (gitignored, never committed)
-docs/         documentation + planning + agent workspace (see docs/README.md)
-cadcraft/ …   sibling craft-app source repos — independent git repos,
-wordcraft/    gitignored here, never committed
-```
+## Where it is heading
 
-## The craft apps
+The long-term goal is a user-owned computing environment that can follow a
+person across devices: a browser experience first, with a possible native
+or bootable installation later. The vision includes portable identity and
+settings, a safe app and WASM ecosystem, AI-assisted customization, and a
+community contribution path where people and agents can propose changes
+through reviewable issues and pull requests.
 
-Each embedded app is also a standalone site at `<name>-web.pages.dev`,
-built from its own repository under `github.com/aliasfoxkde/<app>` and
-synced into this repo via `packaging/fetch-apps.sh` — versions and routes
-in [docs/reference/craft-apps.md](docs/reference/craft-apps.md).
+Those capabilities are goals, not features available today. The
+[product vision and phased roadmap](docs/planning/product-vision.md) sets
+out the gaps, dependencies, and validation gates. The public
+[roadmap issue](https://github.com/aliasfoxkde/ArtCraft-WebOS/issues/13)
+tracks the larger direction.
 
-## Contributing & community
+## Get started
 
-- [Contributing](.github/CONTRIBUTING.md) — gates, conventions, PR process
-- [Code of Conduct](.github/CODE_OF_CONDUCT.md)
-- [Security policy](SECURITY.md) — private vulnerability reporting enabled
-- [Support](.github/SUPPORT.md) · [Funding](.github/FUNDING.yml)
+For the live demo, open [ArtCraft WebOS](https://artcraft-webos.pages.dev/).
+For local development, follow the [setup guide](docs/development/setup.md).
+Documentation is indexed in [`docs/README.md`](docs/README.md).
 
-## License
+## Contribute
 
-[MIT](LICENSE) for this repo's shell and tooling. Each craft app carries
-its own `LICENSE.txt` (Apache-2.0 OR MIT). Third-party assets are
-catalogued in [docs/ATTRIBUTION.md](docs/ATTRIBUTION.md).
+Issues and pull requests are welcome. Start with
+[contribution guidelines](.github/CONTRIBUTING.md), the
+[code of conduct](.github/CODE_OF_CONDUCT.md), and the
+[agent instructions](docs/AGENTS.md). Automated checks run for pull
+requests; changes to the browser shell also go through accessibility,
+coverage, build, and end-to-end gates.
+
+## Project status
+
+[![CI](https://github.com/aliasfoxkde/ArtCraft-WebOS/actions/workflows/ci.yml/badge.svg)](https://github.com/aliasfoxkde/ArtCraft-WebOS/actions/workflows/ci.yml)
+
+The project is experimental and may change. Browser storage is local to the
+browser profile; clearing site data removes it. Review the
+[security policy](SECURITY.md) before using the prototype with sensitive
+information.
+
+## License and attribution
+
+The first-party shell and repository tooling are licensed under
+[MIT](LICENSE). Bundled companion apps and third-party assets may have
+separate terms; see [attribution](docs/ATTRIBUTION.md) and each app's own
+license before redistributing those components.
