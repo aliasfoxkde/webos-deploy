@@ -12,8 +12,8 @@ of every working session. Plan-of-record for open work:
 | Production | https://artcraft-webos.pages.dev — served bundle hash matches local `webos/dist`, `sw.js` cache `webos-v3.23.0` |
 | Craft apps | all twelve on their current upstream web release (2026-10-25): cadcraft 0.13.0, deckcraft 0.11.1, designcraft 0.13.0, effectcraft 0.17.0, firecraft 0.2.3, gridcraft 0.12.1, lightcraft 0.14.0, pdfcraft 0.14.0, photocraft 0.16.0, soundcraft 0.13.1, vectorcraft 0.17.0, wordcraft 0.11.0 — eight of them served from the R2 `craftweb` route |
 | FireCraft | https://firecraft-web.pages.dev — **v0.2.3**, served from the upstream release zip (wasm `firecraft-web-d13f1a83e8a1a76f`) on the standard `fetch-apps.sh` pipeline; bridge autosave/open-with/exportPng→Photos + export-to-Files (2026-10-21) |
-| Tests | ~1416 specs / 91 files, `npm run ci` green |
-| Coverage | 98.91% stmts / 94.91% branches / 99.16% funcs / **99.92% lines**; floors 98.6/94.6/98.8/99.85 in `webos/vitest.config.js` (91 files, measured − tolerance) |
+| Tests | ~1390 specs / 91 files, `npm run ci` green |
+| Coverage | 98.92% stmts / 94.92% branches / 99.10% funcs / **99.92% lines**; floors 98.6/94.6/98.8/99.85 in `webos/vitest.config.js` (91 files, measured − tolerance) |
 | Lint | strictest ruleset, zero warnings |
 | Accessibility | WCAG 2.1 AAA token gates incl. wallpaper-extreme flattening + desktop scrim pills |
 | Docs coverage | ARCHITECTURE.md Module index ⇄ src/ enforced by `tests/docs-coverage.test.js` — now in GitForge CI pipeline |
@@ -39,6 +39,17 @@ of every working session. Plan-of-record for open work:
 
 ## Open (ordered; atomic tasks in HANDOFF.md)
 
+- [ ] **S1** Same-origin proxy removal (issue #12) — code complete on
+      branch `codex/disable-browser-proxy` (commit bf8148a): fail-closed
+      410 worker, proxy mode stripped from the browser, session
+      reclassification, fail-closed contract tests, docs rewritten. Open
+      the PR, merge, close #12, then release/deploy (v3.25.0).
+- [ ] **P15/P16** OSS-readiness refinements in
+      [OSS-READINESS-PLAN.md](OSS-READINESS-PLAN.md) — dependency-review
+      workflow, branch-coverage ratchet trial, P16.3 accessibility audit
+      beyond contrast.
+- [ ] **PR #25** Automated release workflow (`codex/release-workflow`) —
+      review, gate, merge.
 - [ ] **H1** Routine-change loop — standing procedure, apply per change.
 - [x] **H2** FireCraft: H2.0–H2.6 complete — v0.2.1 deployed, v3.17.0 shipped.
       H2.1 contract documented; H2.2 postToApp correlate implemented; H2.3

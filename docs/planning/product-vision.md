@@ -44,8 +44,10 @@ implementation. The live prototype is at
 - WebAssembly support is not an arbitrary binary upload-and-run sandbox.
 - The app collection does not yet replace the range of tools people need
   for everyday computing.
-- The browser proxy has an open isolation issue; sensitive sign-in through
-  proxied pages is not safe to recommend until that issue is resolved.
+- The same-origin browser proxy was removed for security (issue #12):
+  remote HTML must not execute with the WebOS origin. Frame-hostile sites
+  open in a normal browser tab; any future isolated-origin replacement
+  needs its own threat model.
 - AI-assisted app authoring and contribution workflows are not implemented.
 
 ## Phased roadmap
@@ -59,10 +61,12 @@ storage compatibility, browser support, and accessibility. Do not add
 account or sync features before the local data model and threat model are
 clear.
 
-**Exit evidence:** the proxy has a reviewed origin and content-isolation
-model; regression tests cover the boundary; users can understand and
-recover their local data; release checks record the tested browser and app
-versions.
+**Resolved:** the proxy was disabled rather than isolated (2026-11-01) —
+no remote page executes with the WebOS origin, and the fail-closed endpoint
+is pinned by regression tests. The browser security boundary is documented
+in [architecture/browser.md](../architecture/browser.md). Local data export
+and recovery, and the release checks for app provenance, browser support,
+and accessibility, remain standing requirements.
 
 ### 2. Grow useful daily workflows
 

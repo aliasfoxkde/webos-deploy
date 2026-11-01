@@ -572,3 +572,36 @@ screenshots. OSS readiness plan recorded at
 `docs/planning/OSS-READINESS-PLAN.md`; P15/P16 refinements
 (dependency-review workflow, branch-coverage floor ratchet, strictest-lint
 trial) remain open there.
+
+## 2026-11-01 — issue #12: same-origin browser proxy removed
+
+Continued (after a context-limit cutoff) the branch
+`codex/disable-browser-proxy`. The `/proxy` Pages Function fetched arbitrary
+remote HTML and served it from the WebOS origin with framing guards
+stripped, so untrusted scripts ran same-origin with shell localStorage and
+IndexedDB. Changes (commit bf8148a):
+
+- `public/_worker.js` replaced with a fail-closed endpoint: fixed 410 JSON,
+  `no-store`/`nosniff`, never fetches remote content on any path/method.
+- `urls.js`: proxy mode deleted (embed/direct/external only);
+  `proxyWrap` and the `DIRECT_HOSTS`/per-host-override machinery removed;
+  search engines moved to `EXTERNAL_HOSTS` (their SERPs send framing
+  guards, and without server-side fetch there is no way to render them).
+- `tabs.js`: the `renavigate` reducer action (shield toggle) removed;
+  restored sessions reclassify every entry from its original URL so old
+  stored `mode:'proxy'` rows cannot reactivate the mode.
+- `BrowserApp.jsx`: shield button became a static rendering-mode label;
+  `webos.browser.modes` persistence removed; new-tab copy/status hint
+  rewritten (frame-hostile sites get the external hand-off).
+- Tests: `worker-proxy.test.js` rewritten to pin the fail-closed contract
+  (410 on every path, never-touches-network, no target reflection);
+  proxy expectations in `browser-urls`/`browser-app`/`browser-tabs`
+  updated; a guard test asserts `proxyWrap` no longer exists.
+- Docs: BROWSER.md (both copies), README.md, quickstart.md, product-vision.md,
+  docs/README.md index updated.
+
+Validation: `npm run ci` green — lint zero warnings, coverage
+98.92/94.92/99.10/99.92 (91 files, 1390 tests, floors hold), build ok.
+Sweep PASS 31/31, 0 page errors. Docs gates green. Remaining: push branch,
+open PR, close #12 on merge; release + deploy is a separate user-facing
+step (v3.25.0).

@@ -2,8 +2,7 @@
 
 `src/apps/browser/` — a Chromium-style browser that runs as a bundled plugin
 window: tab strip with per-tab history, smart address bar, keyboard model,
-and a four-mode rendering stack that is honest about what the web platform
-allows.
+and a rendering stack that is honest about what the web platform allows.
 
 ## The X-Frame-Options question, answered precisely
 
@@ -14,63 +13,38 @@ client-side code — attributes, postMessage tricks, referrer surgery — can
 bypass it. Anyone claiming otherwise is selling a blocked frame that silently
 renders nothing.
 
-There is exactly one legitimate escape hatch: **fetch the page server-side
-and serve it from your own origin.** The framing guards are stripped before
-the user's browser ever evaluates them. WebOS does this with a Cloudflare
-Pages Function (`webos/public/_worker.js`, scoped to `/proxy` by
-`_routes.json` so every other request stays a free static-asset hit).
+There is exactly one technical escape hatch: **fetch the page server-side
+and serve it from your own origin.** WebOS deliberately does NOT do this.
+The historical `/proxy` Pages Function did, and it was removed (issue #12):
+serving remote HTML from the WebOS origin made untrusted scripts same-origin
+with the shell — they could read `localStorage`, IndexedDB, and any shell
+bridge in the page's origin. Stripping framing guards for a foreign origin
+is indistinguishable, from the sandbox model's point of view, from disabling
+the sandbox. The endpoint now fails closed (a fixed 410, no fetch, no
+rewrite); frame-hostile sites get the honest external hand-off instead. A
+future isolated-origin compatibility service would need its own origin, its
+own threat model, and adversarial validation before it could return.
 
-What the proxy honestly can and cannot do:
+## The three rendering modes
 
-| Works through the proxy | Does not |
-| --- | --- |
-| Reading/browsing server-rendered or statically-hosted sites (docs, news, wikis) | Clients whose API calls are CORS-gated to their own origin (Discord) — the page loads but every request it makes to `discord.com/api` from a foreign origin is blocked by the browser, not by us |
-| Relative subresources (CSS/JS/images), via injected `<base href>` | OAuth flows (Google sign-in etc.) — framebusting + COOP by design |
-| Sites that merely send framing headers but don't check origin | Cookies (not forwarded, by design — the proxy is stateless and anonymous) |
-| | Absolute-URL navigation inside the page (jumps out of the proxy; the frame then hits the real site's framing guard) |
-
-## The four rendering modes
-
-`urls.js` classifies every navigation into one mode (per-host user overrides
-from the toolbar shield beat the tables):
+`urls.js` classifies every navigation into one mode:
 
 1. **embed** — the site *publishes* an embed endpoint and wants to be framed.
    YouTube share links rewrite to `youtube-nocookie.com/embed/<id>`, Spotify
    to `open.spotify.com/embed/<type>/<id>`. Zero tricks; best fidelity.
 2. **direct** — plain iframe. Frame-friendly sites (Excalidraw, tldraw,
-   Photopea, Wikipedia, HN, …) and the default for unknown hosts.
-3. **proxy** — served through `/proxy?url=…`. One click on the address-bar
-   shield flips a blank direct frame to proxied; the per-host choice is
-   remembered in `webos.browser.modes`.
-4. **external** — structurally impossible in any frame (Discord is the
-   canonical case: its client is inseparable from its own-origin API). The
-   window shows *why*, with a real hand-off to a system tab — no fake
-   loading states, no silent blank frame.
+   Photopea, Wikipedia, HN, …) and the default for unknown hosts. When the
+   site answers with a framing guard the frame stays blank; the status bar
+   says so and suggests a real tab.
+3. **external** — cannot be framed from this origin: CORS-gated clients
+   (Discord), OAuth flows (Google sign-in), and sites that simply forbid
+   embedding (search engines — Bing and the DuckDuckGo HTML endpoints all
+   send framing guards on their result pages). The window shows *why*, with
+   a real hand-off to a system tab — no fake loading states, no silent
+   blank frame.
 
-Search defaults to Bing (`www.bing.com/search?q=`) fetched through the
-proxy — Bing serves real SERPs to datacenter fetches, while DuckDuckGo's
-HTML endpoint bot-challenges them with a captcha (DDG hosts still route
-through the proxy if you navigate there directly).
-
-### Staying inside the proxy
-
-A proxied page whose links point at the real origin would blank itself on
-the first click (the target's framing guards are still there). So
-`_worker.js` rewrites proxied HTML the classic CGI-proxy way:
-
-- `<a href>` — absolute, protocol-relative, and site-relative targets are
-  wrapped as `/proxy?url=…`; `#fragment` and non-http schemes stay as
-  authored. The author's quote character is preserved.
-- `<form action>` — rewritten to `/proxy/form?url=…`. GET form fields arrive
-  as sibling query params and the worker re-folds them into the target URL
-  (so searching again from inside a proxied Bing works); POST bodies are
-  forwarded with their content type.
-- `<base href>` (the post-redirect URL) is injected as the first element of
-  `<head>`, which is what makes relative subresources (CSS, images, scripts)
-  load from the real site — framing headers never apply to subresources.
-- What is NOT rewritten: API/XHR URLs inside page JavaScript, and
-  service workers. Sites whose client is inseparable from their origin API
-  remain `external`.
+Search defaults to Bing (`www.bing.com/search?q=`); since the proxy removal
+a search opens the external hand-off page with a one-click system tab.
 
 ## Chromium parity surface
 
@@ -86,9 +60,11 @@ the first click (the target's framing guards are still there). So
   tab, `Ctrl+L` focus address, `Ctrl+R`/`F5` reload, `Ctrl+Tab`/`Ctrl+Shift+Tab`
   cycle tabs, `Alt+←`/`Alt+→` back/forward.
 - Session restore: open tabs persist to `webos.browser.session` and come back
-  on relaunch.
-- Status bar shows the real current URL and, for direct frames, a hint about
-  the proxy shield.
+  on relaunch. Restored entries are reclassified from their original URLs —
+  sessions saved by older builds (which stored `mode: 'proxy'` rows) cannot
+  reactivate the removed mode.
+- Status bar shows the real current URL and, for direct frames, a hint that
+  a blank frame means the site forbids embedding.
 
 ## Launch integration
 
@@ -103,7 +79,8 @@ the first click (the target's framing guards are still there). So
 
 `_worker.js` + `_routes.json` live in `webos/public/` and ship verbatim into
 `dist/` on build; `wrangler pages deploy dist --project-name artcraft-webos`
-picks them up. Only `/proxy` invokes the Worker (see `_routes.json`) — the
-same-origin check inside the worker refuses cross-origin callers. Local dev
-against the proxy needs `wrangler pages dev` (vite dev serves no Functions);
-without it, proxy-mode tabs show the error JSON the worker would return.
+picks them up. Only `/proxy` and `/proxy/*` invoke the Worker (see
+`_routes.json`), and it answers every request with the same fixed 410 JSON —
+it never fetches remote content, so there is no same-origin check to bypass.
+`tests/worker-proxy.test.js` pins the fail-closed contract, including a
+never-touches-the-network assertion.

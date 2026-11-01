@@ -31,9 +31,11 @@ uploading and running arbitrary WASM binaries. The bundled apps and shell
 also do not yet cover the full range of everyday work that a daily-driver
 OS needs.
 
-The browser app can display remote pages through a proxy. Until the
-[proxy isolation issue](https://github.com/aliasfoxkde/ArtCraft-WebOS/issues/12)
-is resolved, do not sign into sensitive sites through that feature; see the
+The browser app no longer proxies remote pages: the same-origin proxy was
+removed for security (issue
+[#12](https://github.com/aliasfoxkde/ArtCraft-WebOS/issues/12)) — untrusted
+remote scripts must never run with the WebOS origin. Frame-hostile sites
+open in a normal browser tab instead. See the
 [security policy](SECURITY.md).
 
 ## Where it is heading

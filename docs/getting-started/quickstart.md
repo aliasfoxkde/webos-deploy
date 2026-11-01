@@ -36,7 +36,8 @@ Widgets and taskbar behave the same; windows maximize by default.
 
 ## Privacy
 
-No analytics, no telemetry, no accounts. The one network call the shell
-itself makes beyond static assets is the Browser app's optional `/proxy`
-reader (see [Browser & proxy](../architecture/browser.md)); it forwards no
-cookies and stores nothing.
+No analytics, no telemetry, no accounts. The shell itself makes no network
+calls beyond static assets: embedded sites (craft apps, embed players,
+frame-friendly pages) are fetched by your browser from their own origins,
+and the former `/proxy` reader was removed for security — see
+[Browser](../architecture/browser.md).

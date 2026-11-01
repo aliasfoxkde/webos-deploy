@@ -9,7 +9,7 @@ Nothing in this file requires scrolling past an index.
 |---|---|
 | [Quickstart](getting-started/quickstart.md) | Open the app, launch apps, keyboard basics |
 | [The craft apps](getting-started/apps.md) | The twelve bundled ArtCraft apps and how embedding works |
-| [Browser & proxy](architecture/browser.md) | What the bundled browser can and cannot load, and why |
+| [Browser](architecture/browser.md) | What the bundled browser can and cannot load, and why |
 
 ## For developers
 
