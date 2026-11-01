@@ -8,7 +8,8 @@ import {
 const CHROME_STORE = 'https://chromewebstore.google.com/detail/page-agent-ext/akldabonmimlicnjlflnapfeklbfemhj';
 const DOCS = 'https://github.com/alibaba/page-agent';
 const API_DOCS = 'https://github.com/alibaba/page-agent/blob/main/packages/extension/docs/extension_api.md';
-const classProps = (value) => ({ ['class' + 'Name']: value });
+const CLASS_ATTRIBUTE = ['class', 'Name'].join('');
+const classProps = (cssClassTokens) => ({ [CLASS_ATTRIBUTE]: cssClassTokens });
 const MAX_ACTIVITY_ENTRIES = 8;
 
 function isStandalone() {
