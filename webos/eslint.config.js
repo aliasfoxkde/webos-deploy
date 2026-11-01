@@ -46,6 +46,12 @@ export default [
       'prefer-object-has-own': 'error',
       'no-lonely-if': 'error',
       'prefer-exponentiation-operator': 'error',
+      // 2026-11-01 strictest-lint pass (P16.2): trial run clean on src/.
+      // react/no-array-index-key was tried and stays OFF — 38 legitimate
+      // uses (static list rendering), a blanket disable would be worse.
+      'react/jsx-key': 'error',
+      'no-eval': 'error',
+      'no-extend-native': 'error',
     },
   },
   {

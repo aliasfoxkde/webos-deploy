@@ -1,7 +1,7 @@
 {
   "name": "artcraft-webos",
   "private": true,
-  "version": "3.23.0",
+  "version": "3.24.0",
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
@@ -11,6 +11,7 @@
     "coverage": "vitest run --coverage",
     "lint": "eslint . --max-warnings 0",
     "ci": "npm run lint && npm run coverage && npm run build",
+    "sweep": "npm run build && node ../packaging/e2e/webos-sweep.mjs",
     "prepare": "cd .. && husky .husky"
   },
   "dependencies": {
