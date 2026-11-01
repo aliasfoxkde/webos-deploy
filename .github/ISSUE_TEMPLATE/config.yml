@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/aliasfoxkde/ArtCraft-WebOS/security/advisories/new
+    about: Report privately — never in a public issue.
+  - name: Craft app help (CADCraft, PhotoCraft, …)
+    url: https://github.com/aliasfoxkde
+    about: File in that app's own repository — this repo is only the WebOS shell.
+  - name: Documentation index
+    url: https://github.com/aliasfoxkde/ArtCraft-WebOS/blob/main/docs/README.md
+    about: Quickstart, architecture, development, reference.

@@ -1,148 +1,83 @@
 # ArtCraft WebOS
 
-A browser desktop ("WebOS") for the 12 ArtCraft craft apps, plus bundled
-first-party apps, an App Store of curated external web apps, and a
-customizable widget sidebar. Everything is **100% client-side rendered** —
-the shell is a Vite + React SPA, app builds are static WASM sites, and no
-Cloudflare Workers compute runs on the main path.
+**An experimental, browser-based desktop for running creative apps and exploring a more user-owned operating system.**
 
-The craft app builds are **never committed to this repo** — they are synced
-from upstream GitHub releases (`storytold/<app>`, asset
-`{app}-web-<version>.zip`) by `packaging/fetch-apps.sh`. Exceptions:
-deckcraft/soundcraft/effectcraft deploy from their `apps/<name>/` source
-checkouts — none of the three has upstream release zips yet (see
-`CLAUDE.md`). FireCraft releases live under the `aliasfoxkde` org rather
-than `storytold`, but from v0.2.2 they include a web zip, so it syncs
-through the same `fetch-apps.sh` pipeline.
+[Open the live prototype](https://artcraft-webos.pages.dev/) · [Product vision and roadmap](docs/planning/product-vision.md) · [Report a bug](https://github.com/aliasfoxkde/ArtCraft-WebOS/issues/new/choose)
 
-## Layout
+![ArtCraft WebOS desktop](docs/screenshot-desktop.png)
 
-```
-webos/          the OS shell (Vite + React) → deploys to artcraft-webos.pages.dev
-apps/           fetched upstream builds, one dir per app   [gitignored]
-zips/           release zip cache                          [gitignored]
-r2-blobs/       >25 MiB wasm blobs, uploaded to R2         [gitignored]
-packaging/      fetch-apps.sh, pwa-inject.sh, r2-publish.sh, icons-*.sh
-docs/           architecture + planning notes
-cadcraft/ … zed/   sibling independent source repos (NOT part of this repo)
-```
+*The current browser desktop, with its taskbar, windows, and bundled apps.*
 
-## Live URLs
+## What it is today
 
-| Project | URL |
-|---|---|
-| artcraft-webos (the desktop) | https://artcraft-webos.pages.dev/ |
-| craft apps | `https://<app>-web.pages.dev/` (vectorcraft: `vectorcraft-web-9y7`) |
-| firecraft | https://firecraft-web.pages.dev/ (synced from the `aliasfoxkde/firecraft` release zip) |
-| deckcraft | https://deckcraft-web.pages.dev/ (synced from the upstream release zip) |
-| soundcraft | https://soundcraft-web.pages.dev/ (synced from the upstream release zip) |
-| effectcraft | https://effectcraft-web.pages.dev/ (synced from the upstream release zip) |
-| Browser in Browser (Firefox WASM) | https://browserinbrowser.pages.dev/ |
+ArtCraft WebOS is a useful prototype that runs in a modern web browser. It
+provides a desktop-like shell with windows, a taskbar, an app launcher,
+settings, and a virtual Files disk. It hosts a collection of bundled
+ArtCraft creative apps and includes a terminal with WebAssembly-based
+utilities. See the [app guide](docs/getting-started/apps.md) and
+[current app registry](docs/reference/craft-apps.md) for details.
 
-## Quickstart
+You can try it without installing anything at
+[artcraft-webos.pages.dev](https://artcraft-webos.pages.dev/). The shell
+stores its files and settings in the browser on that device.
 
-```bash
-# 1. fetch the craft app builds from upstream releases
-packaging/fetch-apps.sh                 # or --app photocraft, --force to refetch
+### Prototype boundaries
 
-# 2. work on the shell
-cd webos && npm install
-npm run dev                             # vite dev server
-npm run build                           # → webos/dist/
+This is not yet a replacement for Windows or Linux, and it is not a
+bootable operating system. It does not currently provide user accounts,
+cloud sync, or a desktop that follows you between devices. The terminal's
+bundled WebAssembly utilities are not a general-purpose sandbox for
+uploading and running arbitrary WASM binaries. The bundled apps and shell
+also do not yet cover the full range of everyday work that a daily-driver
+OS needs.
 
-# 3. deploy (craft apps deploy from apps/<name>/; each repo's
-#    packaging/web/README.md holds its hosting notes)
-cd webos && npx wrangler pages deploy dist --project-name artcraft-webos --branch main
-```
+The browser app can display remote pages through a proxy. Until the
+[proxy isolation issue](https://github.com/aliasfoxkde/ArtCraft-WebOS/issues/12)
+is resolved, do not sign into sensitive sites through that feature; see the
+[security policy](SECURITY.md).
 
-Craft app builds deploy as static sites to Cloudflare Pages
-(`<app>-web.pages.dev`), which caps static files at 25 MiB. Bundles over the
-cap (deckcraft, designcraft, effectcraft, lightcraft, pdfcraft, vectorcraft,
-wordcraft — 29–74 MiB) keep only a `_worker.js` in the Pages deploy — any
-`.wasm` request streams from the R2 bucket `craftweb` (binding `CRAFTWEB`,
-key = the bare filename) and everything else falls through to static assets.
-`packaging/r2-publish.sh <app>` does that: it moves the wasm out of the
-deploy directory into `r2-blobs/`, writes the `_worker.js` and the
-`wrangler.toml` with the R2 binding, and uploads the blob with
-`wrangler r2 object put craftweb/<file>.wasm --file <f> --remote` (`--remote`
-is required — plain `wrangler r2 object put` writes to a local simulator).
-Then deploy from the app directory, so wrangler picks up its config:
+## Where it is heading
 
-```bash
-packaging/r2-publish.sh pdfcraft
-cd apps/pdfcraft && npx wrangler pages deploy . --project-name pdfcraft-web --branch main
-```
+The long-term goal is a user-owned computing environment that can follow a
+person across devices: a browser experience first, with a possible native
+or bootable installation later. The vision includes portable identity and
+settings, a safe app and WASM ecosystem, AI-assisted customization, and a
+community contribution path where people and agents can propose changes
+through reviewable issues and pull requests.
 
-## Quality gates (webos/)
+Those capabilities are goals, not features available today. The
+[product vision and phased roadmap](docs/planning/product-vision.md) sets
+out the gaps, dependencies, and validation gates. The public
+[roadmap issue](https://github.com/aliasfoxkde/ArtCraft-WebOS/issues/13)
+tracks the larger direction.
 
-```bash
-cd webos
-npm run test            # vitest suite (1000+ specs, happy-dom + RTL)
-npm run coverage        # suite + v8 coverage, enforced ratchet floors
-npm run lint            # eslint, --max-warnings 0 in CI
-npm run build           # production bundle → dist/
-npm run ci              # lint → coverage → build, all three
-node ../packaging/e2e/webos-sweep.mjs   # headless-Chrome e2e sweep (27 phases)
-```
+## Get started
 
-- **Coverage ratchet** — `webos/vitest.config.js` carries floors just under
-  the measured baseline; any coverage regression fails `npm run coverage`.
-  Raise the floors as tests land, never lower them. The baseline must be
-  *reproducible*: timers are driven with fake timers so the number does not
-  depend on machine speed (see `docs/planning/QUALITY-PROGRAM.md`).
-- **WCAG contrast auditor** — `webos/tests/contrast-audit.test.js` enforces
-  token-level ratios per theme preset (danger ink ≥7:1 on paper, focused
-  window ring ≥3:1, accent ink ≥7:1 on every accent swatch) and fails if app
-  CSS hardcodes a preset palette color. Persona/preset text AAA lives in
-  `webos/tests/personas-theme.test.js`; shared WCAG math in
-  `webos/tests/theme-math.js`.
-- **CI** — `.github/workflows/ci.yml` (GitHub, push/PR/manual dispatch) runs
-  install → lint → docs-coverage gate → WCAG contrast audit → tests +
-  coverage ratchet → build → **e2e sweep (hard gate)** → **shellcheck** →
-  **Aegis security scan**. The Aegis step is
-  `packaging/aegis-scan.sh`, which downloads the pinned release binary
-  (`aliasfoxkde/aegis` v0.6.4, checksum-verified) and scans `webos/src`
-  against `webos/.aegis-baseline.json`; it fails only on findings that
-  are not in the triaged baseline. The baseline is machine-regenerated, never
-  hand-edited: `packaging/aegis-baseline.sh` scans, normalizes
-  (`packaging/aegis-baseline.mjs` — findings sorted by file/line/column/pattern,
-  volatile timing and nonce fields dropped, so two scans of unchanged source
-  produce byte-identical files) and refuses to install a baseline whose finding
-  set drifted beyond line shifts; `--check` reports drift without writing.
-  `.gitforce.yml` is the local GitForge
-  mirror (same gates; its runner image is `node:24-trixie-slim` and has
-  no curl, which the script handles). Version bumps touch three files:
-  `webos/package.json`,
-  `webos/src/version.js`, `webos/public/sw.js` (cache key).
-- **Pre-commit** — `.husky/pre-commit` (husky, committed at the repo root)
-  lints `webos/src` and `webos/tests` with `--max-warnings 0` when source or
-  test files are staged.
+For the live demo, open [ArtCraft WebOS](https://artcraft-webos.pages.dev/).
+For local development, follow the [setup guide](docs/development/setup.md).
+Documentation is indexed in [`docs/README.md`](docs/README.md).
 
-## The Browser
+## Contribute
 
-WebOS ships a real browser, not a shortcut: `webos/src/apps/browser/` is a
-Chromium-style plugin window (tabs, per-tab history, address bar, Ctrl+T/W/L/R)
-with a four-mode rendering stack — official embeds (YouTube/Spotify), direct
-frames, a same-origin proxy (Cloudflare Pages Function stripping framing
-headers server-side), and an honest "can't run in any frame" hand-off for
-sites like Discord whose APIs are CORS-locked to their own origin. Details and
-limits: `docs/planning/webos-apps/BROWSER.md`.
+Issues and pull requests are welcome. Start with
+[contribution guidelines](.github/CONTRIBUTING.md), the
+[code of conduct](.github/CODE_OF_CONDUCT.md), and the
+[agent instructions](docs/AGENTS.md). Automated checks run for pull
+requests; changes to the browser shell also go through accessibility,
+coverage, build, and end-to-end gates.
 
-## Shell design
+## Project status
 
-The WebOS shell (`webos/`) is plain Vite + React — no Rust. Its win/mac
-personas implement a four-phase **Liquid Glass** design language (frost
-tokens + specular window rims, anchored rise/drop motion, and Chromium-only
-edge refraction via an SVG feDisplacementMap behind a `CSS.supports`
-probe — other engines keep the base frost). The design is documented in
-`docs/planning/webos-apps/LIQUID-GLASS.md` and
-`docs/planning/webos-apps/ARCHITECTURE.md`.
+[![CI](https://github.com/aliasfoxkde/ArtCraft-WebOS/actions/workflows/ci.yml/badge.svg)](https://github.com/aliasfoxkde/ArtCraft-WebOS/actions/workflows/ci.yml)
 
-## Rules that hold across this project
+The project is experimental and may change. Browser storage is local to the
+browser profile; clearing site data removes it. Review the
+[security policy](SECURITY.md) before using the prototype with sensitive
+information.
 
-- **Clean-room** — the parity apps are observed black-box only; every
-  icon/image/font is original artwork, CC0, or properly licensed.
-- **Rust/WASM apps** (the craft apps) build to the browser via trunk; this
-  repo only packages and hosts their release output.
-- **No builds in git** — `apps/`, `zips/`, `r2-blobs/` are reproducible from
-  upstream releases; keep them out of history.
+## License and attribution
+
+The first-party shell and repository tooling are licensed under
+[MIT](LICENSE). Bundled companion apps and third-party assets may have
+separate terms; see [attribution](docs/ATTRIBUTION.md) and each app's own
+license before redistributing those components.

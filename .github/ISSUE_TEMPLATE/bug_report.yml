@@ -1,0 +1,63 @@
+name: Bug report
+description: Something in WebOS (the shell or its packaging) is broken
+labels: ["defect"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time. For security issues, use
+        [private vulnerability reporting](../SECURITY.md) instead.
+        For an embedded craft app's own behavior, file in that app's repo
+        (`github.com/aliasfoxkde/<app>`) — this repo is the WebOS shell.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction steps
+      placeholder: |
+        1. Open https://artcraft-webos.pages.dev
+        2. …
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Desktop shell (windows, taskbar, start menu)
+        - Settings / themes / accessibility
+        - Files / virtual disk
+        - Browser app or /proxy
+        - Embedded craft app (launching/embedding only)
+        - Packaging / deploy / CI
+        - Docs
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser & OS
+      placeholder: e.g. Chromium 142 / Linux
+    validations:
+      required: true
+  - type: textarea
+    id: console
+    attributes:
+      label: Console output
+      description: DevTools console errors, if any (screenshot fine).
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched existing issues for a duplicate
+          required: true
+        - label: I am not reporting a security vulnerability here
+          required: true

@@ -9,7 +9,7 @@ Quality-program record: [QUALITY-PROGRAM.md](QUALITY-PROGRAM.md).
 
 ## Release history
 
-GitHub releases: https://github.com/aliasfoxkde/webos-deploy/releases
+GitHub releases: https://github.com/aliasfoxkde/ArtCraft-WebOS/releases
 Commits and tags are the primary record; the notes below are one-line
 summaries (full notes live on each release page).
 

@@ -11,7 +11,7 @@ you complete them.
 
 ## First 30 minutes (cold start)
 
-1. `git -C /nas/Temp/repos/webos-deploy log --oneline -5` and
+1. `git -C /nas/Temp/repos/ArtCraft-WebOs log --oneline -5` and
    `git status` — see what (if anything) moved since this doc was written;
    if commits exist that POST-date 2026-10-15, read them before trusting
    this file's numbers.
@@ -78,14 +78,14 @@ you complete them.
   gitignored), sibling repos (`cadcraft/` … `zed/`, `BrowserInBrowser/`),
   or anything under `/nas/Temp/repos/FireCraft` (independent repo).
 - **This shell gotcha**: cwd resets between Bash commands — re-anchor
-  `cd /nas/Temp/repos/webos-deploy[...]/webos` every time; use
+  `cd /nas/Temp/repos/ArtCraft-WebOs/webos` every time; use
   `/usr/bin/grep` (plain `grep` misbehaves on some test files).
 
 ## Environment facts (verified 2026-10-13)
 
 | Thing | Value |
 |---|---|
-| Repo | `/nas/Temp/repos/webos-deploy` → `github.com/aliasfoxkde/webos-deploy`, branch `main` |
+| Repo | `/nas/Temp/repos/ArtCraft-WebOs` → `github.com/aliasfoxkde/ArtCraft-WebOS`, branch `main` |
 | Shell source | `webos/` (Vite + React, CSR-only) |
 | Production | https://artcraft-webos.pages.dev (`artcraft-webos` Pages project, branch `main`) |
 | FireCraft checkout | `/nas/Temp/repos/FireCraft` (independent repo, M12, wasm target) |
@@ -295,7 +295,7 @@ source commit unverified — the bundle carries no version string).
       note); when a GitForge runner dispatch is available, capture the run
       id and job log and append the evidence to QUALITY-PROGRAM.md phase B.
 - [x] H5.3 Container revalidation procedure (no registration needed):
-      `docker run --rm -v /nas/Temp/repos/webos-deploy:/src -w /src -e CI=true
+      `docker run --rm -v /nas/Temp/repos/ArtCraft-WebOs:/src -w /src -e CI=true
       node:24-trixie-slim bash -c 'set -e; cd webos && npm ci && npm run lint
       && npx vitest run tests/contrast-audit.test.js tests/personas-theme.test.js
       && npm run coverage && npm run build'` — then

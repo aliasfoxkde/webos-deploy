@@ -8,7 +8,7 @@ of every working session. Plan-of-record for open work:
 
 | Dimension | State |
 |---|---|
-| Released / deployed version | **3.23.0** ([v3.23.0](https://github.com/aliasfoxkde/webos-deploy/releases/tag/v3.23.0)) → next: TBD |
+| Released / deployed version | **3.23.0** ([v3.23.0](https://github.com/aliasfoxkde/ArtCraft-WebOS/releases/tag/v3.23.0)) → next: TBD |
 | Production | https://artcraft-webos.pages.dev — served bundle hash matches local `webos/dist`, `sw.js` cache `webos-v3.23.0` |
 | Craft apps | all twelve on their current upstream web release (2026-10-25): cadcraft 0.13.0, deckcraft 0.11.1, designcraft 0.13.0, effectcraft 0.17.0, firecraft 0.2.3, gridcraft 0.12.1, lightcraft 0.14.0, pdfcraft 0.14.0, photocraft 0.16.0, soundcraft 0.13.1, vectorcraft 0.17.0, wordcraft 0.11.0 — eight of them served from the R2 `craftweb` route |
 | FireCraft | https://firecraft-web.pages.dev — **v0.2.3**, served from the upstream release zip (wasm `firecraft-web-d13f1a83e8a1a76f`) on the standard `fetch-apps.sh` pipeline; bridge autosave/open-with/exportPng→Photos + export-to-Files (2026-10-21) |
