@@ -9,22 +9,20 @@ import { canBack, canForward, initialTabs, tabsReducer } from './tabs.js';
 
    - embed    official embed endpoints (YouTube /embed/, Spotify /embed/)
    - direct   plain iframe — best fidelity where sites allow framing
-   - proxy    same-origin /proxy (Pages Function) that strips framing headers
-              server-side for sites that send X-Frame-Options/CSP
    - external structurally impossible (Discord: their client's API calls are
               CORS-gated to their own origin) — we say so, offer a real tab
+
+   There is deliberately no same-origin proxy: serving remote HTML from this
+   origin let untrusted scripts reach shell storage (issue #12). Frame-hostile
+   sites get the external hand-off instead.
 
    Cross-origin frames keep their internals private from us, so tab titles
    come from the host, not the page's <title>. */
 
 const SESSION_KEY = 'webos.browser.session';
-const MODES_KEY = 'webos.browser.modes';
 
 const loadSession = () => {
   try { return JSON.parse(localStorage.getItem(SESSION_KEY)); } catch { return null; }
-};
-const loadModes = () => {
-  try { return JSON.parse(localStorage.getItem(MODES_KEY)) ?? {}; } catch { return {}; }
 };
 
 const TILE_DEFAULTS = [
@@ -32,7 +30,7 @@ const TILE_DEFAULTS = [
   { label: 'Spotify', url: 'https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M', hint: 'embed player' },
   { label: 'Wikipedia', url: 'https://en.wikipedia.org/wiki/Web_browser', hint: 'direct frame' },
   { label: 'Hacker News', url: 'https://news.ycombinator.com/', hint: 'direct frame' },
-  { label: 'GitHub', url: 'https://github.com/trending', hint: 'via proxy' },
+  { label: 'GitHub', url: 'https://github.com/trending', hint: 'direct frame' },
   { label: 'Excalidraw', url: 'https://excalidraw.com/', hint: 'direct frame' },
 ];
 
@@ -83,11 +81,9 @@ function NewTabPage({ onGo }) {
         ))}
       </div>
       <p className="dim bw-home-note">
-        Sites that publish embeds (YouTube, Spotify) play natively. Frame-hostile
-        sites load through the built-in proxy — flip the shield in the address bar
-        if a page stays blank. A few apps (Discord) call their own APIs from inside
-        the page and can’t run anywhere but their own origin; those get an honest
-        hand-off to a real tab.
+        Sites that publish embeds (YouTube, Spotify) play natively. Some other
+        sites allow plain framing; the rest forbid it for their own security —
+        those get an honest hand-off to a real tab.
       </p>
     </div>
   );
@@ -112,7 +108,6 @@ export default function BrowserApp({ args }) {
     undefined,
     () => initialTabs(args?.url, restore),
   );
-  const [modes, setModes] = useState(loadModes);
   const rootRef = useRef(null);
   const addressRef = useRef(null);
 
@@ -139,26 +134,11 @@ export default function BrowserApp({ args }) {
     try { localStorage.setItem(SESSION_KEY, JSON.stringify(compact)); } catch { /* private mode */ }
   }, [state]);
 
-  const go = useCallback((raw, tabId = state.active, override) => {
+  const go = useCallback((raw, tabId = state.active) => {
     const url = normalizeAddress(raw);
     if (!url) return;
-    const host = hostOf(url);
-    const resolved = classify(url, override ?? (host ? modes[host] : undefined));
-    dispatch({ type: 'navigate', tabId, raw, resolved });
-  }, [state.active, modes]);
-
-  const cycleMode = useCallback(() => {
-    if (!entry?.url || entry.mode === 'embed' || entry.mode === 'external') return;
-    const host = hostOf(entry.url);
-    const next = entry.mode === 'proxy' ? 'direct' : 'proxy';
-    const resolved = classify(entry.url, next);
-    setModes((m) => {
-      const nextModes = { ...m, [host]: next };
-      try { localStorage.setItem(MODES_KEY, JSON.stringify(nextModes)); } catch { /* private mode */ }
-      return nextModes;
-    });
-    dispatch({ type: 'renavigate', tabId: tab.id, resolved });
-  }, [entry, tab.id]);
+    dispatch({ type: 'navigate', tabId, raw, resolved: classify(url) });
+  }, [state.active]);
 
   const navigateHistory = useCallback((delta) => {
     dispatch({ type: delta < 0 ? 'back' : 'forward', tabId: tab.id });
@@ -208,7 +188,7 @@ export default function BrowserApp({ args }) {
 
   /* Every tab with a location keeps its frame mounted (hidden when inactive)
      so tabs preserve state like a real browser. */
-  const modeLabel = entry ? { embed: 'Embed', direct: 'Direct', proxy: 'Proxy' }[entry.mode] : '';
+  const modeLabel = entry ? { embed: 'Embed', direct: 'Direct' }[entry.mode] : '';
 
   return (
     <div className="bw" ref={rootRef}>
@@ -269,14 +249,13 @@ export default function BrowserApp({ args }) {
         >↻</button>
         <div className="bw-address">
           {entry && entry.mode !== 'external' && (
-            <button
-              type="button"
-              className={`bw-shield ${entry.mode === 'proxy' ? 'on' : ''}`}
-              title={`Rendering: ${modeLabel}. Click to switch to ${entry.mode === 'proxy' ? 'direct' : 'proxy'}.`}
-              onClick={cycleMode}
+            <span
+              className="bw-shield"
+              title={`Rendering: ${modeLabel}`}
+              aria-label={`Rendering mode: ${modeLabel}`}
             >
-              {entry.mode === 'proxy' ? '◆' : '◇'} {modeLabel}
-            </button>
+              {modeLabel}
+            </span>
           )}
           <form
             className="bw-address-form"
@@ -331,7 +310,7 @@ export default function BrowserApp({ args }) {
       <div className="bw-status">
         <span>{entry?.url ? displayUrl(entry.url) : 'Ready'}</span>
         {entry?.mode === 'direct' && (
-          <span className="dim">Blank frame? The site may forbid embedding — flip the shield to Proxy.</span>
+          <span className="dim">Blank frame? The site may forbid embedding — open it in a real tab.</span>
         )}
       </div>
     </div>
