@@ -6,6 +6,33 @@ customizable widget sidebar. Everything is **100% client-side rendered** —
 the shell is a Vite + React SPA, app builds are static WASM sites, and no
 Cloudflare Workers compute runs on the main path.
 
+> **Prototype status:** ArtCraft WebOS is an experimental browser desktop,
+> not a native operating system or a replacement for Windows/Linux yet. It
+> does not boot from an ISO, provide user accounts or cross-device sync, or
+> accept arbitrary WASM binaries as a general-purpose runner. Current WASM
+> support comes from bundled utilities and curated app builds. See the
+> [product direction](#product-direction) for the longer-term vision.
+>
+> **Security notice:** the optional Browser proxy currently serves remote
+> HTML from the WebOS origin after stripping browser security headers. Do not
+> sign into sensitive accounts through proxied pages. The isolation work is
+> tracked in [issue #12](https://github.com/aliasfoxkde/webos-deploy/issues/12).
+
+## Product direction
+
+The long-term goal is a user-owned, AI-first workspace that can follow the
+person across devices, support a native bootable image, and make community
+apps and customizations easy to install and contribute. AI-assisted changes
+could help users turn an idea into an app, issue, or reviewable pull request.
+Those capabilities are **future direction only**; the current prototype is a
+client-side browser application with local browser storage and curated app
+integrations. The phased vision is tracked in
+[issue #13](https://github.com/aliasfoxkde/webos-deploy/issues/13).
+
+The project is open source under the MIT License for first-party code and
+original assets. Third-party assets keep their individual licenses; see
+[`docs/ATTRIBUTION.md`](docs/ATTRIBUTION.md).
+
 The craft app builds are **never committed to this repo** — they are synced
 from upstream GitHub releases (`storytold/<app>`, asset
 `{app}-web-<version>.zip`) by `packaging/fetch-apps.sh`. Exceptions:
