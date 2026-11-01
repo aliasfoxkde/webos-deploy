@@ -142,6 +142,11 @@ const poll = async (expr, ms = 30000, step = 400) => {
   }
   return false;
 };
+// Regression class (P14.1/P14.2): an assertion on DOM/async state must poll,
+// never one-shot after a fixed wait() — a slow React mount or fetch fails the run.
+const assertPoll = async (expr, msg, ms = 8000) => {
+  if (!await poll(expr, ms)) throw new Error(msg);
+};
 const settleAnim = () => evalJs(`getAnimations().forEach(a => a.finish()); true`).catch(() => true);
 const clickAt = async (x, y, button = 'left') => {
   for (const t of ['mousePressed', 'mouseReleased'])
@@ -192,10 +197,10 @@ await phase('boot-welcome', async () => {
   await wait(1200);
   await settleAnim();
   await shot('desktop');
-  if (!await evalJs(`!!document.querySelector('#taskbar')`)) throw new Error('taskbar missing after enter');
+  await assertPoll(`!!document.querySelector('#taskbar')`, 'taskbar missing after enter');
   await evalJs(`document.querySelector('.win[aria-label="Welcome"] .tb-btn.close')?.click()`);
   await wait(400);
-  if (await evalJs(`document.querySelectorAll('.win').length`) !== 0) throw new Error('welcome window did not close');
+  await assertPoll(`document.querySelectorAll('.win').length === 0`, 'welcome window did not close');
 });
 
 /* ================ B. shell: start menu, calendar, context menu ================ */
@@ -244,20 +249,21 @@ await phase('shell-window-mgmt', async () => {
   // maximize
   await evalJs(`(() => { const b=[...document.querySelectorAll('.win .tb-btn')].find(b=>/max|□|▢/.test(b.title+b.className)); b?.click(); return true; })()`);
   await wait(400);
-  const maximized = await evalJs(`(() => { const w = document.querySelector('.win'); const r = w.getBoundingClientRect(); return r.width > 1300; })()`);
+  await assertPoll(`(() => { const w = document.querySelector('.win'); const r = w && w.getBoundingClientRect(); return r && r.width > 1300; })()`, 'window did not maximize');
+  const maximized = true;
   await shot('window-maximized');
   // minimize via titlebar button
   await evalJs(`(() => { const b=[...document.querySelectorAll('.win .tb-btn')].find(b=>/min|–/.test(b.title+b.className)); b?.click(); return true; })()`);
   await wait(400);
-  const minimized = await evalJs(`(() => { const w = document.querySelector('.win'); return !w || w.getBoundingClientRect().width < 50 || w.style.display === 'none'; })()`);
+  await assertPoll(`(() => { const w = document.querySelector('.win'); return !w || w.getBoundingClientRect().width < 50 || w.style.display === 'none'; })()`, 'window did not minimize');
+  const minimized = true;
   await shot('window-minimized');
   await evalJs(`__os.focus ? __os.focus(document.querySelector('.win')?.id || '', true) : true`);
   await wait(300);
   // close via api
   await evalJs(`(() => { const w = document.querySelector('.win'); __os.close(w?.dataset?.id || ''); return true; })()`);
   await wait(400);
-  const closed = await evalJs(`document.querySelectorAll('.win').length === 0`);
-  if (!closed) throw new Error('window did not close');
+  await assertPoll(`document.querySelectorAll('.win').length === 0`, 'window did not close');
   await shot('window-closed');
   results.push({ phase: 'shell-window-mgmt', ok: true, note: `maximized=${maximized} minimized=${minimized}` });
 });
@@ -294,8 +300,7 @@ const PLUGIN_CHECKS = {
       return true;
     })()`);
     await wait(1600); // autosave
-    const saved = await evalJs(`JSON.stringify(localStorage).includes('sweep note 12345')`);
-    if (!saved) throw new Error('notepad autosave missing from localStorage');
+    await assertPoll(`JSON.stringify(localStorage).includes('sweep note 12345')`, 'notepad autosave missing from localStorage', 4000);
   },
   editor: async () => {
     if (!await poll(`!!document.querySelector('.cm-content')`, 10000)) throw new Error('CodeMirror never mounted');
@@ -303,8 +308,7 @@ const PLUGIN_CHECKS = {
     await wait(200);
     await typeText('// sweep edit');
     await wait(600);
-    const has = await evalJs(`document.querySelector('.cm-editor')?.textContent?.includes('sweep edit')`);
-    if (!has) throw new Error('editor did not accept typing');
+    await assertPoll(`!!document.querySelector('.cm-editor') && document.querySelector('.cm-editor').textContent.includes('sweep edit')`, 'editor did not accept typing');
   },
   files: async () => {
     await poll(`!!document.querySelector('.f-grid')`, 8000);
@@ -322,8 +326,7 @@ const PLUGIN_CHECKS = {
       return true;
     })()`);
     await wait(500);
-    const dirs = await evalJs(`document.querySelectorAll('.f-grid .f-tile').length`);
-    if (dirs <= n0) throw new Error(`folder count did not grow (${n0} -> ${dirs})`);
+    await assertPoll(`document.querySelectorAll('.f-grid .f-tile').length > ${n0}`, `folder count did not grow (${n0} -> …)`);
   },
   browser: async () => {
     await poll(`!!document.querySelector('[aria-label="Address and search bar"]')`, 8000);
@@ -337,25 +340,21 @@ const PLUGIN_CHECKS = {
       return true;
     })()`);
     await wait(6000); // remote load
-    const tab = await evalJs(`document.querySelector('.bw-strip')?.textContent || ''`);
-    if (!/example/i.test(tab)) throw new Error(`browser tab did not navigate: "${tab.slice(0, 60)}"`);
+    await assertPoll(`/example/i.test(document.querySelector('.bw-strip')?.textContent || '')`, 'browser tab did not navigate');
   },
   taskmgr: async () => {
     await wait(800);
-    const text = await evalJs(`[...document.querySelectorAll('.win')].find(w => w.getAttribute('aria-label') === 'Task Manager')?.textContent || ''`);
-    if (!/Processes|Performance|Startup & storage/i.test(text)) throw new Error(`taskmgr shows no tabs: "${text.slice(0, 120)}"`);
+    await assertPoll(`/Processes|Performance|Startup & storage/i.test(([...document.querySelectorAll('.win')].find(w => w.getAttribute('aria-label') === 'Task Manager')?.textContent) || '')`, 'taskmgr shows no tabs');
   },
   photos: async () => { await poll(`!!document.querySelector('.win img, .ph-grid, .photos')`, 8000); },
   video: async () => { await poll(`!!document.querySelector('.win video, .video, .vp')`, 8000); },
   weather: async () => {
     await wait(2500); // forecast fetch
-    const t = await evalJs(`document.querySelector('.win')?.textContent?.slice(0, 300) || ''`);
-    if (!t.trim()) throw new Error('weather window empty');
+    await assertPoll(`(document.querySelector('.win')?.textContent || '').trim().length > 0`, 'weather window empty');
   },
   chat: async () => {
     await wait(1200);
-    const t = await evalJs(`document.querySelector('.win')?.textContent?.slice(0, 300) || ''`);
-    if (!t.trim()) throw new Error('chat window empty');
+    await assertPoll(`(document.querySelector('.win')?.textContent || '').trim().length > 0`, 'chat window empty');
   },
 };
 const PLUGIN_ORDER = ['terminal', 'calc', 'notepad', 'editor', 'files', 'browser', 'taskmgr', 'photos', 'video', 'weather', 'chat'];
@@ -596,17 +595,15 @@ await phase('mobile-layout', async () => {
   await evalJs(`(() => { [...document.querySelectorAll('.win')].forEach(w => __os.close(w.dataset.id)); return true; })()`);
   await evalJs(`__os.setUiMode('mobile')`);
   await wait(700);
-  if (!await evalJs(`!!document.querySelector('#home-fab')`)) throw new Error('mobile: no FAB in the dock');
+  await assertPoll(`!!document.querySelector('#home-fab')`, 'mobile: no FAB in the dock');
   await shot('mobile-fab');
   await evalJs(`document.querySelector('#home-fab').click()`);
   await wait(500);
-  const apps = await evalJs(`document.querySelectorAll('.drawer-app').length`);
-  if (!apps) throw new Error('mobile: the drawer lists no apps');
+  await assertPoll(`document.querySelectorAll('.drawer-app').length > 0`, 'mobile: the drawer lists no apps');
   await shot('mobile-drawer');
   await evalJs(`[...document.querySelectorAll('.drawer-app')].find(b => b.textContent.includes('Terminal'))?.click()`);
   await wait(900);
-  const wins = await evalJs(`__os.windows.length`);
-  if (!wins) throw new Error('mobile: launching from the drawer opened no window');
+  await assertPoll(`__os.windows.length >= 1`, 'mobile: launching from the drawer opened no window');
   await shot('mobile-app');
   await evalJs(`(() => { [...document.querySelectorAll('.win')].forEach(w => __os.close(w.dataset.id)); return true; })()`);
   await evalJs(`__os.setUiMode('auto')`);
@@ -616,23 +613,20 @@ await phase('mobile-layout', async () => {
 await phase('window-tiling', async () => {
   await evalJs(`(() => { [...document.querySelectorAll('.win')].forEach(w => __os.close(w.dataset.id)); return true; })()`);
   await evalJs(`__os.launch('notepad')`);
-  await wait(700);
+  await poll(`!!document.querySelector('.win')`, 8000);
   const vw = await evalJs(`window.innerWidth`);
   const key = (k) => evalJs(`window.dispatchEvent(new KeyboardEvent('keydown', { key: ${JSON.stringify(k)}, metaKey: true, bubbles: true }))`);
   await key('ArrowLeft');
   await wait(500);
-  const left = await evalJs(`(() => { const w = __os.windows[0]; return { x: w.rect.x, w: w.rect.w, snap: w.snap }; })()`);
-  if (left.x !== 0) throw new Error(`tiling: Meta+Left left x=${left.x}, want 0`);
-  if (Math.abs(left.w - vw / 2) > 60) throw new Error(`tiling: Meta+Left width ${left.w}, want about ${Math.round(vw / 2)}`);
+  await assertPoll(`__os.windows[0] && __os.windows[0].rect.x === 0`, 'tiling: Meta+Left did not snap left');
+  await assertPoll(`__os.windows[0] && Math.abs(__os.windows[0].rect.w - ${vw / 2}) <= 60`, `tiling: Meta+Left width not about ${Math.round(vw / 2)}`);
   await shot('tiled-left');
   await key('ArrowUp');
   await wait(400);
-  const up = await evalJs(`(() => { const w = __os.windows[0]; return { max: w.max, snap: w.snap }; })()`);
-  if (!up.max) throw new Error('tiling: Meta+Up did not maximize');
+  await assertPoll(`__os.windows[0] && __os.windows[0].max`, 'tiling: Meta+Up did not maximize');
   await key('ArrowDown');
   await wait(400);
-  const down = await evalJs(`(() => { const w = __os.windows[0]; return { max: w.max }; })()`);
-  if (down.max) throw new Error('tiling: Meta+Down did not unmaximize');
+  await assertPoll(`__os.windows[0] && !__os.windows[0].max`, 'tiling: Meta+Down did not unmaximize');
   await evalJs(`(() => { [...document.querySelectorAll('.win')].forEach(w => __os.close(w.dataset.id)); return true; })()`);
 });
 
@@ -643,22 +637,19 @@ await phase('taskbar-groups', async () => {
   await poll(`!!document.querySelector('.ctx-item')`, 6000);
   await evalJs(`[...document.querySelectorAll('.ctx-item')].find(b => b.textContent.includes('New group'))?.click()`);
   await wait(600);
-  const groups = await evalJs(`(__os.groups || []).length`);
-  if (!groups) throw new Error('groups: the context menu did not create one');
-  if (!await evalJs(`!!document.querySelector('.group-tile')`)) throw new Error('groups: no tile on the desktop');
+  await assertPoll(`(__os.groups || []).length >= 1`, 'groups: the context menu did not create one');
+  await assertPoll(`!!document.querySelector('.group-tile')`, 'groups: no tile on the desktop');
   const appId = await evalJs(`__os.apps[0].id`);
   await evalJs(`__os.groupAdd(__os.groups[0].id, ${JSON.stringify(appId)})`);
   await wait(500);
-  const members = await evalJs(`(__os.groups[0].appIds || []).length`);
-  if (members !== 1) throw new Error(`groups: ${members} members, want 1`);
+  await assertPoll(`(__os.groups[0]?.appIds || []).length === 1`, 'groups: member count is not 1');
   await evalJs(`document.querySelector('.group-tile')?.click()`);
   await wait(500);
-  const rows = await evalJs(`document.querySelectorAll('.gp-app').length`);
-  if (rows !== 1) throw new Error(`groups: the popup lists ${rows} members, want 1`);
+  await assertPoll(`document.querySelectorAll('.gp-app').length === 1`, 'groups: the popup does not list 1 member');
   await shot('group-popup');
   await evalJs(`__os.removeGroup(__os.groups[0].id)`);
   await wait(500);
-  if (await evalJs(`(__os.groups || []).length`)) throw new Error('groups: the group survived removal');
+  await assertPoll(`(__os.groups || []).length === 0`, 'groups: the group survived removal');
 });
 
 /* ================ I. persistence across reload ================ */
