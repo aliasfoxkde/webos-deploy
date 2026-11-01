@@ -17,7 +17,6 @@ const bridge = vi.hoisted(() => ({
 
 vi.mock('../src/apps/chat/pageAgentBridge.js', () => ({
   MAX_PAGE_AGENT_TASK_LENGTH: 4000,
-  MAX_PAGE_AGENT_TASK_LENGTH_UNUSED: 4000,
   clearPageAgentToken: bridge.clearPageAgentToken,
   executePageAgentTask: bridge.executePageAgentTask,
   hasPageAgentToken: bridge.hasPageAgentToken,
@@ -223,6 +222,15 @@ describe('Page Agent panel', () => {
     expect(container.textContent).toContain('does not support PWA app windows');
     expect(byId(container, 'pa-task').disabled).toBe(true);
     expect(button(container, 'Run browser task').disabled).toBe(true);
+    window.matchMedia = original;
+  });
+
+  it('handles standalone detection failures without enabling unsupported features', () => {
+    const original = window.matchMedia;
+    window.matchMedia = vi.fn(() => { throw new Error('unsupported'); });
+    const { container } = render(<PageAgentPanel />);
+    expect(container.querySelector('.pa-panel')).not.toBeNull();
+    expect(byId(container, 'pa-task').disabled).toBe(false);
     window.matchMedia = original;
   });
 });
