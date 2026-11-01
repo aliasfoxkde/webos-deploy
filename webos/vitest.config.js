@@ -22,9 +22,10 @@ export default defineConfig({
       // Ratchet. The floors are the measured baseline minus a tolerance;
       // a real regression still fails the gate.
       //
-      // Measured 2026-10-25 (full suite, 91 files / 1370+ tests):
-      //   statements 98.89% (7131/7211)   branches 94.91% (4458/4697)
-      //   functions  99.05% (1891/1909)   lines    99.92% (5544/5548)
+      // Measured 2026-11-01 (full suite, 91 files / 1397 tests; two
+      // consecutive runs agree — H7 protocol):
+      //   statements 98.89–98.90% (7131–7132/7211)  branches 94.91% (4458/4697)
+      //   functions  99.05–99.10% (1891–1892/1909)  lines    99.92% (5544/5548)
       //
       // Confirmed unreachable lines (marked with // istanbul ignore next):
       //   programmer.js:121 — '(' already consumed by the includes() guard above
@@ -57,7 +58,7 @@ export default defineConfig({
       // `npm run coverage`.
       thresholds: {
         statements: 98.6,
-        branches: 94.6,
+        branches: 94.85,
         functions: 98.8,
         lines: 99.85,
       },
