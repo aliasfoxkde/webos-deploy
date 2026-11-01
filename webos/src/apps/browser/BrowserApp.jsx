@@ -4,27 +4,14 @@ import {
 } from './urls.js';
 import { canBack, canForward, initialTabs, tabsReducer } from './tabs.js';
 
-/* A Chromium-style browser for WebOS. Tabs with real per-tab history, a smart
-   address bar, keyboard shortcuts, and an honest rendering stack:
-
-   - embed    official embed endpoints (YouTube /embed/, Spotify /embed/)
-   - direct   plain iframe — best fidelity where sites allow framing
-   - proxy    same-origin /proxy (Pages Function) that strips framing headers
-              server-side for sites that send X-Frame-Options/CSP
-   - external structurally impossible (Discord: their client's API calls are
-              CORS-gated to their own origin) — we say so, offer a real tab
-
-   Cross-origin frames keep their internals private from us, so tab titles
-   come from the host, not the page's <title>. */
+/* Browser-style browsing surface for WebOS. Tabs, per-tab history, address
+   shortcuts, official embeds, and cross-origin frames where permitted. It is
+   not an independent browser engine; blocked sites require a normal tab. */
 
 const SESSION_KEY = 'webos.browser.session';
-const MODES_KEY = 'webos.browser.modes';
 
 const loadSession = () => {
   try { return JSON.parse(localStorage.getItem(SESSION_KEY)); } catch { return null; }
-};
-const loadModes = () => {
-  try { return JSON.parse(localStorage.getItem(MODES_KEY)) ?? {}; } catch { return {}; }
 };
 
 const TILE_DEFAULTS = [
@@ -32,7 +19,7 @@ const TILE_DEFAULTS = [
   { label: 'Spotify', url: 'https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M', hint: 'embed player' },
   { label: 'Wikipedia', url: 'https://en.wikipedia.org/wiki/Web_browser', hint: 'direct frame' },
   { label: 'Hacker News', url: 'https://news.ycombinator.com/', hint: 'direct frame' },
-  { label: 'GitHub', url: 'https://github.com/trending', hint: 'via proxy' },
+  { label: 'GitHub', url: 'https://github.com/trending', hint: 'open in a system tab if blocked' },
   { label: 'Excalidraw', url: 'https://excalidraw.com/', hint: 'direct frame' },
 ];
 
@@ -83,11 +70,9 @@ function NewTabPage({ onGo }) {
         ))}
       </div>
       <p className="dim bw-home-note">
-        Sites that publish embeds (YouTube, Spotify) play natively. Frame-hostile
-        sites load through the built-in proxy — flip the shield in the address bar
-        if a page stays blank. A few apps (Discord) call their own APIs from inside
-        the page and can’t run anywhere but their own origin; those get an honest
-        hand-off to a real tab.
+        Official embeds (YouTube, Spotify) play here. Other sites load only when
+        they permit cross-origin framing. Sites that block embedding or require
+        their own origin open in a normal browser tab instead.
       </p>
     </div>
   );
@@ -96,7 +81,7 @@ function NewTabPage({ onGo }) {
 function ExternalPage({ entry }) {
   return (
     <div className="bw-external">
-      <h3>…can’t run inside any window — ours or anyone else’s</h3>
+      <h3>This site needs a normal browser tab</h3>
       <p>{entry.reason}</p>
       <button className="btn accent" onClick={() => window.open(entry.url, '_blank', 'noopener')}>
         Open {hostOf(entry.url)} in a system tab ↗
@@ -112,7 +97,6 @@ export default function BrowserApp({ args }) {
     undefined,
     () => initialTabs(args?.url, restore),
   );
-  const [modes, setModes] = useState(loadModes);
   const rootRef = useRef(null);
   const addressRef = useRef(null);
 
@@ -139,26 +123,11 @@ export default function BrowserApp({ args }) {
     try { localStorage.setItem(SESSION_KEY, JSON.stringify(compact)); } catch { /* private mode */ }
   }, [state]);
 
-  const go = useCallback((raw, tabId = state.active, override) => {
+  const go = useCallback((raw, tabId = state.active) => {
     const url = normalizeAddress(raw);
     if (!url) return;
-    const host = hostOf(url);
-    const resolved = classify(url, override ?? (host ? modes[host] : undefined));
-    dispatch({ type: 'navigate', tabId, raw, resolved });
-  }, [state.active, modes]);
-
-  const cycleMode = useCallback(() => {
-    if (!entry?.url || entry.mode === 'embed' || entry.mode === 'external') return;
-    const host = hostOf(entry.url);
-    const next = entry.mode === 'proxy' ? 'direct' : 'proxy';
-    const resolved = classify(entry.url, next);
-    setModes((m) => {
-      const nextModes = { ...m, [host]: next };
-      try { localStorage.setItem(MODES_KEY, JSON.stringify(nextModes)); } catch { /* private mode */ }
-      return nextModes;
-    });
-    dispatch({ type: 'renavigate', tabId: tab.id, resolved });
-  }, [entry, tab.id]);
+    dispatch({ type: 'navigate', tabId, raw, resolved: classify(url) });
+  }, [state.active]);
 
   const navigateHistory = useCallback((delta) => {
     dispatch({ type: delta < 0 ? 'back' : 'forward', tabId: tab.id });
@@ -208,7 +177,6 @@ export default function BrowserApp({ args }) {
 
   /* Every tab with a location keeps its frame mounted (hidden when inactive)
      so tabs preserve state like a real browser. */
-  const modeLabel = entry ? { embed: 'Embed', direct: 'Direct', proxy: 'Proxy' }[entry.mode] : '';
 
   return (
     <div className="bw" ref={rootRef}>
@@ -269,14 +237,7 @@ export default function BrowserApp({ args }) {
         >↻</button>
         <div className="bw-address">
           {entry && entry.mode !== 'external' && (
-            <button
-              type="button"
-              className={`bw-shield ${entry.mode === 'proxy' ? 'on' : ''}`}
-              title={`Rendering: ${modeLabel}. Click to switch to ${entry.mode === 'proxy' ? 'direct' : 'proxy'}.`}
-              onClick={cycleMode}
-            >
-              {entry.mode === 'proxy' ? '◆' : '◇'} {modeLabel}
-            </button>
+            <span className="bw-mode-label">{entry.mode === 'embed' ? 'Official embed' : 'Frame'}</span>
           )}
           <form
             className="bw-address-form"
@@ -331,7 +292,7 @@ export default function BrowserApp({ args }) {
       <div className="bw-status">
         <span>{entry?.url ? displayUrl(entry.url) : 'Ready'}</span>
         {entry?.mode === 'direct' && (
-          <span className="dim">Blank frame? The site may forbid embedding — flip the shield to Proxy.</span>
+          <span className="dim">Blank frame? The site may forbid embedding. Open it in a normal browser tab.</span>
         )}
       </div>
     </div>

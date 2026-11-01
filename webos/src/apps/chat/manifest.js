@@ -1,8 +1,8 @@
 export default {
   id: 'chat',
   category: 'Tools',
-  name: 'AI Chat',
-  tagline: 'Assistant · adapter-ready',
+  name: 'AI Workspace',
+  tagline: 'Chat · browser agent · AI tools',
   version: '1.0',
   icon: 'icons/chat.svg',
   accent: '#a78bfa',

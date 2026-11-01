@@ -30,3 +30,60 @@
 }
 .c-entry textarea:focus { outline: 1px solid var(--accent); }
 .c-entry .btn { align-self: flex-end; }
+
+
+.c-tabs { display: inline-flex; gap: 3px; padding: 3px; border: 1px solid var(--chrome-line); border-radius: 10px; }
+.c-tabs button { border: 0; border-radius: 7px; padding: 5px 9px; color: var(--text-dim); background: transparent; font: inherit; font-size: 0.72rem; cursor: pointer; }
+.c-tabs button:hover { background: rgba(255,255,255,0.06); color: var(--text); }
+.c-tabs button.active { background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--text); }
+.pa-panel { height: 100%; overflow: auto; padding: 14px; display: flex; flex-direction: column; gap: 12px; background: var(--paper); }
+.pa-heading { display: flex; align-items: flex-start; gap: 10px; }
+.pa-heading h2 { margin: 0; font-size: 0.98rem; }
+.pa-heading p { margin: 4px 0 0; color: var(--text-dim); font-size: 0.72rem; line-height: 1.5; }
+.pa-status { margin-left: auto; flex: none; color: var(--text-dim); border: 1px solid var(--chrome-line); border-radius: 20px; padding: 4px 8px; font-size: 0.64rem; }
+.pa-status.ready { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 55%, transparent); }
+.pa-callout, .pa-config, .pa-task, .pa-activity, .pa-result { border: 1px solid var(--chrome-line); border-radius: 11px; padding: 11px 12px; background: rgba(255,255,255,0.025); }
+.pa-callout strong, .pa-config > strong, .pa-section-head strong, .pa-task > label:first-child, .pa-activity strong, .pa-result strong { font-size: 0.76rem; }
+.pa-callout p { margin: 6px 0; color: var(--text-dim); font-size: 0.7rem; line-height: 1.55; }
+.pa-links, .pa-actions, .pa-section-head { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.pa-section-head { justify-content: space-between; }
+.pa-links { margin-top: 8px; }
+.pa-links a { color: var(--accent); font-size: 0.7rem; text-decoration: none; }
+.pa-links a:hover { text-decoration: underline; }
+.pa-config { display: flex; flex-direction: column; gap: 9px; }
+.pa-config label, .pa-task { display: flex; flex-direction: column; gap: 6px; }
+.pa-config label span { color: var(--text-dim); font-size: 0.68rem; }
+.pa-config input, .pa-task textarea {
+  width: 100%;
+  min-width: 0;
+  background: rgba(255,255,255,0.045);
+  border: 1px solid var(--chrome-line);
+  border-radius: 8px;
+  padding: 8px 9px;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.76rem;
+  user-select: text;
+  -webkit-user-select: text;
+}
+.pa-task textarea { resize: vertical; min-height: 76px; }
+.pa-config input:focus, .pa-task textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.pa-config small, .pa-subtle, .pa-note { color: var(--text-dim); font-size: 0.65rem; line-height: 1.45; }
+.pa-consent { display: flex; flex-direction: row; align-items: flex-start; gap: 8px; color: var(--text-dim); font-size: 0.68rem; line-height: 1.45; }
+.pa-consent input { margin-top: 2px; flex: none; accent-color: var(--accent); }
+.pa-notice, .pa-error { margin: 0; padding: 8px 10px; border: 1px solid var(--chrome-line); border-radius: 8px; font-size: 0.7rem; line-height: 1.45; }
+.pa-notice { color: var(--text); }
+.pa-error { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 45%, transparent); }
+.pa-activity p { margin: 5px 0 0; color: var(--text-dim); font-size: 0.68rem; }
+.pa-result pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 260px;
+  overflow: auto;
+  user-select: text;
+  -webkit-user-select: text;
+  font: inherit;
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+@media (max-width: 560px) { .pa-heading { flex-direction: column; } .pa-status { margin-left: 0; } .c-tabs button { padding: 5px 7px; } }

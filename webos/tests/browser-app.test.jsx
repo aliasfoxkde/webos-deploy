@@ -1,5 +1,5 @@
-// BrowserApp shell: tab strip lifecycle, address-bar navigation, per-host
-// mode overrides, and the Chromium keyboard model (capture-phase shortcuts).
+// BrowserApp shell: tab strip lifecycle, safe navigation hand-off, session restore,
+// and the Chromium keyboard model (capture-phase shortcuts).
 import React from 'react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, act, cleanup, fireEvent } from '@testing-library/react';
@@ -51,18 +51,16 @@ describe('tab strip', () => {
 });
 
 describe('navigation', () => {
-  it('address bar resolves through classify: embed for YouTube, proxy for search', () => {
+  it('address bar resolves embeds and hands search off to the normal browser', () => {
     const c = mount();
     const input = c.container.querySelector('.bw-address input');
     fireEvent.change(input, { target: { value: 'https://www.youtube.com/watch?v=abc12345678' } });
     fireEvent.submit(c.container.querySelector('.bw-address-form'));
     expect(iframeSrcs(c)).toEqual(['https://www.youtube-nocookie.com/embed/abc12345678']);
-    expect(c.container.querySelector('.bw-shield').textContent).toContain('Embed');
-
     fireEvent.change(input, { target: { value: 'tabby cats' } });
     fireEvent.submit(c.container.querySelector('.bw-address-form'));
-    expect(iframeSrcs(c)[0]).toContain('/proxy?url=');
-    expect(c.container.querySelector('.bw-shield').textContent).toContain('Proxy');
+    expect(iframeSrcs(c)).toHaveLength(0);
+    expect(c.container.querySelector('.bw-external')?.textContent).toMatch(/embedding/i);
   });
 
   it('external sites render the honest hand-off with the real reason', () => {
@@ -73,7 +71,7 @@ describe('navigation', () => {
     expect(page.textContent).toContain('discord.com');
   });
 
-  it('back/forward move through history and the shield flips proxy↔direct in place', () => {
+  it('back and forward move through history without changing origin policy', () => {
     const c = mount();
     const input = c.container.querySelector('.bw-address input');
     const form = c.container.querySelector('.bw-address-form');
@@ -81,18 +79,10 @@ describe('navigation', () => {
     fireEvent.submit(form);
     fireEvent.change(input, { target: { value: 'example.com' } });
     fireEvent.submit(form);
-    const back = c.container.querySelector('button[aria-label="Back"]');
-    expect(back.disabled).toBe(false);
-    fireEvent.click(back);
+    fireEvent.click(c.container.querySelector('[aria-label="Back"]'));
     expect(iframeSrcs(c)).toEqual(['https://news.ycombinator.com/']);
-    // flip the shield: same entry re-rendered through the proxy
-    fireEvent.click(c.container.querySelector('.bw-shield'));
-    expect(iframeSrcs(c)[0]).toContain('/proxy?url=');
-    // …and the choice sticks for the host on a later navigation
-    fireEvent.change(input, { target: { value: 'news.ycombinator.com/next' } });
-    fireEvent.submit(form);
-    expect(iframeSrcs(c)[0]).toContain('/proxy?url=');
-    expect(JSON.parse(localStorage.getItem('webos.browser.modes'))['news.ycombinator.com']).toBe('proxy');
+    fireEvent.click(c.container.querySelector('[aria-label="Forward"]'));
+    expect(iframeSrcs(c)).toEqual(['https://example.com/']);
   });
 
   it('persists the session and restores it on remount', () => {

@@ -1,9 +1,8 @@
-// Tab/window model for the Browser app — a pure reducer over plain data so
-// the tab lifecycle (open/close/activate, per-tab history, mode overrides,
-// reloads) is unit-testable without a DOM. Entry shape:
+// Tab model for the Browser app — a pure reducer over plain data so tab
+// lifecycle (open/close/activate, per-tab history and reloads) is unit-testable.
 //   { raw }              — what the user typed / the tile's target
 //   … plus, on navigation: { url, src, mode, reason? } from urls.classify
-import { classify } from './urls.js';
+import { classify, normalizeAddress } from './urls.js';
 
 let seq = 0;
 const freshId = () => `t${++seq}`;
@@ -34,7 +33,10 @@ export function initialTabs(argUrl, restore = null) {
       .filter((t) => t && Array.isArray(t.entries))
       .map((t) => ({
         id: freshId(),
-        entries: t.entries.filter((e) => e && typeof e.raw === 'string'),
+        entries: t.entries.filter((e) => e && typeof e.raw === 'string').map((e) => {
+          const url = e.url || normalizeAddress(e.raw);
+          return url ? { raw: e.raw, ...classify(url) } : { raw: e.raw };
+        }),
         index: Math.min(Math.max(t.index ?? 0, 0), Math.max(t.entries.length - 1, 0)),
         reloadKey: 0,
       }));
@@ -85,16 +87,6 @@ export function tabsReducer(state, action) {
         index: t.index + 1,
         reloadKey: t.reloadKey, // src change remounts via index; key bump not needed
       }));
-
-    /* Re-navigate the current entry under a different mode (toolbar toggle). */
-    case 'renavigate':
-      return updateTab(state, action.tabId, (t) => {
-        const cur = t.entries[t.index];
-        if (!cur || !cur.url) return t;
-        const entries = t.entries.slice();
-        entries[t.index] = { ...cur, ...action.resolved };
-        return { ...t, entries, reloadKey: t.reloadKey + 1 };
-      });
 
     case 'back':
       return updateTab(state, action.tabId, (t) => ({ ...t, index: Math.max(t.index - 1, 0) }));
