@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { adapterById } from './adapters.js';
 import { loadHistory, saveHistory, clearHistory, onHistory } from './store.js';
+import PageAgentPanel from './PageAgentPanel.jsx';
 import './chat.css';
 
 /* AI Chat — message thread over a streaming-ready adapter interface.
@@ -9,6 +10,7 @@ import './chat.css';
 export default function ChatApp() {
   const [msgs, setMsgs] = useState(loadHistory);
   const [draft, setDraft] = useState('');
+  const [activeView, setActiveView] = useState('chat');
   const [busy, setBusy] = useState(false);
   const adapter = adapterById(localStorage.getItem('webos.chat.adapter') || 'echo');
   const scroller = useRef(null);
@@ -53,11 +55,19 @@ export default function ChatApp() {
   return (
     <div className="chat">
       <header className="c-bar">
-        <span className="c-name">AI Chat</span>
-        <span className={`c-state ${adapter.ready() ? 'ok' : ''}`}>{adapter.label}</span>
+        <span className="c-name">AI Workspace</span>
+        <nav className="c-tabs" aria-label="AI workspace tools">
+          <button type="button" className={activeView === 'chat' ? 'active' : ''} onClick={() => setActiveView('chat')}>Chat</button>
+          <button type="button" className={activeView === 'browser-agent' ? 'active' : ''} onClick={() => setActiveView('browser-agent')}>Browser Agent</button>
+        </nav>
+        <span className={`c-state ${adapter.ready() ? 'ok' : ''}`}>{activeView === 'chat' ? adapter.label : 'Page Agent'}</span>
         <span className="flex1" />
-        <button className="btn slim" onClick={() => { if (msgs.length && window.confirm('Clear the whole conversation?')) clearHistory(); }} disabled={!msgs.length}>Clear</button>
+        {activeView === 'chat' && (
+          <button className="btn slim" onClick={() => { if (msgs.length && window.confirm('Clear the whole conversation?')) clearHistory(); }} disabled={!msgs.length}>Clear</button>
+        )}
       </header>
+      {activeView === 'chat' ? (
+      <>
       {!adapter.ready() && (
         <div className="c-note">
           No model is configured yet — the adapter API is wired for a later
@@ -93,6 +103,8 @@ export default function ChatApp() {
           ? <button className="btn" onClick={stop} title="Stop generating">Stop</button>
           : <button className="btn accent" onClick={send} disabled={!draft.trim()}>Send</button>}
       </footer>
+      </>
+      ) : <PageAgentPanel />}
     </div>
   );
 }

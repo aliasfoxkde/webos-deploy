@@ -1,109 +1,77 @@
-# The WebOS Browser
+# WebOS Browser Surface
 
-`src/apps/browser/` — a Chromium-style browser that runs as a bundled plugin
-window: tab strip with per-tab history, smart address bar, keyboard model,
-and a four-mode rendering stack that is honest about what the web platform
-allows.
+`webos/src/apps/browser/` is the browser-style browsing surface inside the
+WebOS desktop. It provides tabs, per-tab navigation history, an address bar,
+keyboard shortcuts, official embed endpoints, and cross-origin iframe
+rendering where the destination site permits it.
 
-## The X-Frame-Options question, answered precisely
+## Important runtime distinction
 
-When a site sends `X-Frame-Options: DENY` (or CSP `frame-ancestors`, which
-supersedes it), the *user's browser* refuses to paint that site inside an
-`<iframe>`. This is enforced client-side at render time; no amount of
-client-side code — attributes, postMessage tricks, referrer surgery — can
-bypass it. Anyone claiming otherwise is selling a blocked frame that silently
-renders nothing.
+The hosted WebOS shell is a browser application. Its in-window browser is
+currently an iframe-based browsing surface, **not an independent Chromium
+browser engine**. A web page cannot bypass the destination site's
+`X-Frame-Options`, CSP `frame-ancestors`, same-origin policy, or CORS rules.
 
-There is exactly one legitimate escape hatch: **fetch the page server-side
-and serve it from your own origin.** The framing guards are stripped before
-the user's browser ever evaluates them. WebOS does this with a Cloudflare
-Pages Function (`webos/public/_worker.js`, scoped to `/proxy` by
-`_routes.json` so every other request stays a free static-asset hit).
+TaskWizerOS is the native runtime track. Its CEF/Chromium-backed desktop is
+the correct place to deliver full browser-engine functionality, real browser
+profiles, unrestricted top-level navigation, native downloads, extension
+support, and system integration.
 
-What the proxy honestly can and cannot do:
+## Rendering modes
 
-| Works through the proxy | Does not |
-| --- | --- |
-| Reading/browsing server-rendered or statically-hosted sites (docs, news, wikis) | Clients whose API calls are CORS-gated to their own origin (Discord) — the page loads but every request it makes to `discord.com/api` from a foreign origin is blocked by the browser, not by us |
-| Relative subresources (CSS/JS/images), via injected `<base href>` | OAuth flows (Google sign-in etc.) — framebusting + COOP by design |
-| Sites that merely send framing headers but don't check origin | Cookies (not forwarded, by design — the proxy is stateless and anonymous) |
-| | Absolute-URL navigation inside the page (jumps out of the proxy; the frame then hits the real site's framing guard) |
+1. **embed** — official embed endpoints published by the destination, such as
+   YouTube's privacy-enhanced embed and Spotify's embed player.
+2. **direct** — a normal cross-origin iframe. It works only when the site
+   allows framing and its functionality does not require its own origin.
+3. **external** — an explicit hand-off to a normal browser tab when the site
+   blocks framing, requires its own origin, or cannot function inside a frame.
 
-## The four rendering modes
+There is deliberately no same-origin proxy mode.
 
-`urls.js` classifies every navigation into one mode (per-host user overrides
-from the toolbar shield beat the tables):
+## Why the same-origin proxy was removed
 
-1. **embed** — the site *publishes* an embed endpoint and wants to be framed.
-   YouTube share links rewrite to `youtube-nocookie.com/embed/<id>`, Spotify
-   to `open.spotify.com/embed/<type>/<id>`. Zero tricks; best fidelity.
-2. **direct** — plain iframe. Frame-friendly sites (Excalidraw, tldraw,
-   Photopea, Wikipedia, HN, …) and the default for unknown hosts.
-3. **proxy** — served through `/proxy?url=…`. One click on the address-bar
-   shield flips a blank direct frame to proxied; the per-host choice is
-   remembered in `webos.browser.modes`.
-4. **external** — structurally impossible in any frame (Discord is the
-   canonical case: its client is inseparable from its own-origin API). The
-   window shows *why*, with a real hand-off to a system tab — no fake
-   loading states, no silent blank frame.
+The previous Pages Function fetched arbitrary remote HTML, removed framing
+and isolation headers, and returned the result from the WebOS origin. That
+made untrusted remote scripts execute as same-origin code with access to the
+WebOS origin's storage. An Origin check alone cannot turn arbitrary remote
+HTML into trusted shell content; redirects, script execution, and navigation
+make the boundary unsafe.
 
-Search defaults to Bing (`www.bing.com/search?q=`) fetched through the
-proxy — Bing serves real SERPs to datacenter fetches, while DuckDuckGo's
-HTML endpoint bot-challenges them with a captcha (DDG hosts still route
-through the proxy if you navigate there directly).
+The proxy worker now returns HTTP 410 for every request and never fetches or
+returns remote content. URL classification no longer creates proxy URLs or
+honors saved proxy-mode overrides. Restored sessions are reclassified from
+their original destination URL, so legacy proxy entries cannot revive the old
+behavior.
 
-### Staying inside the proxy
+Do not reintroduce remote HTML rewriting on the WebOS origin. A future
+compatibility feature must use a separately isolated origin with a reviewed
+threat model, strict navigation policy, and adversarial tests. Otherwise use
+the native browser runtime or external hand-off.
 
-A proxied page whose links point at the real origin would blank itself on
-the first click (the target's framing guards are still there). So
-`_worker.js` rewrites proxied HTML the classic CGI-proxy way:
+## Chromium-style surface
 
-- `<a href>` — absolute, protocol-relative, and site-relative targets are
-  wrapped as `/proxy?url=…`; `#fragment` and non-http schemes stay as
-  authored. The author's quote character is preserved.
-- `<form action>` — rewritten to `/proxy/form?url=…`. GET form fields arrive
-  as sibling query params and the worker re-folds them into the target URL
-  (so searching again from inside a proxied Bing works); POST bodies are
-  forwarded with their content type.
-- `<base href>` (the post-redirect URL) is injected as the first element of
-  `<head>`, which is what makes relative subresources (CSS, images, scripts)
-  load from the real site — framing headers never apply to subresources.
-- What is NOT rewritten: API/XHR URLs inside page JavaScript, and
-  service workers. Sites whose client is inseparable from their origin API
-  remain `external`.
+- Tab strip with favicons and close/new-tab controls.
+- Per-tab history with forward-stack truncation.
+- Address bar: full URLs pass through, bare hosts upgrade to HTTPS,
+  localhost uses HTTP, and other text becomes a Bing search URL.
+- Keyboard: Ctrl/Meta+T opens a tab, Ctrl/Meta+W closes one, Ctrl/Meta+L
+  focuses the address bar, Ctrl/Meta+R and F5 reload, Ctrl/Tab cycles tabs,
+  and Alt+Left/Right navigates history.
+- Session restore stores tab URLs locally. Tab sessions remain device-local;
+  they are not intended to sync browsing history across devices.
+- A blocked frame offers a real top-level browser tab hand-off.
 
-## Chromium parity surface
+## AI browser integration
 
-- Tab strip: rounded active tab, favicons (site `/favicon.ico` with letter-chip
-  fallback), close buttons, `+` new tab; closing the last tab gives a fresh
-  new-tab page instead of closing the window.
-- Per-tab history with forward-stack truncation; every tab keeps its frame
-  mounted (hidden when inactive) so tab state survives switching.
-- Address bar: full URLs pass through, bare hosts upgrade to https,
-  `localhost` to http, anything else searches. Esc restores the entry.
-- Keyboard (capture-phase on the browser subtree; keys inside cross-origin
-  frames are the frame's, by platform rule): `Ctrl+T` new tab, `Ctrl+W` close
-  tab, `Ctrl+L` focus address, `Ctrl+R`/`F5` reload, `Ctrl+Tab`/`Ctrl+Shift+Tab`
-  cycle tabs, `Alt+←`/`Alt+→` back/forward.
-- Session restore: open tabs persist to `webos.browser.session` and come back
-  on relaunch.
-- Status bar shows the real current URL and, for direct frames, a hint about
-  the proxy shield.
+Alibaba Page Agent's official extension API can automate the user's normal
+browser tabs after explicit extension installation and token authorization.
+It is an optional integration; it does not gain access to the Browser app's
+cross-origin iframe contents. Its extension currently supports normal browser
+windows, not PWA app windows. See `docs/planning/AI-FIRST-ARCHITECTURE.md`
+for the capability boundary and privacy model.
 
 ## Launch integration
 
-- `os.launch('browser', { url })` deep-links (new window). Launching the
-  single-instance browser while it is open focuses it (args-passing to a
-  running instance is a known follow-up).
-- The App Store's web essentials (YouTube, Discord, Spotify, ChatGPT) keep
-  their honest launch panels; the panel now offers "Open in the WebOS
-  Browser" alongside the system-tab hand-off.
-
-## Deploy notes
-
-`_worker.js` + `_routes.json` live in `webos/public/` and ship verbatim into
-`dist/` on build; `wrangler pages deploy dist --project-name artcraft-webos`
-picks them up. Only `/proxy` invokes the Worker (see `_routes.json`) — the
-same-origin check inside the worker refuses cross-origin callers. Local dev
-against the proxy needs `wrangler pages dev` (vite dev serves no Functions);
-without it, proxy-mode tabs show the error JSON the worker would return.
+- `os.launch('browser', { url })` deep-links into a new Browser window.
+- Single-instance launch focuses the existing window. Passing arguments to a
+  running instance remains governed by the shell's launch lifecycle.

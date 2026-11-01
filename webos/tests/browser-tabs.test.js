@@ -48,6 +48,25 @@ describe('initialTabs', () => {
     expect(s.tabs[0].index).toBe(1);
   });
 
+  it('reclassifies legacy same-origin proxy sessions from their original URL', () => {
+    const restore = {
+      tabs: [{
+        entries: [{
+          raw: 'https://example.com/article',
+          url: 'https://example.com/article',
+          src: '/proxy?url=https%3A%2F%2Fexample.com%2Farticle',
+          mode: 'proxy',
+        }],
+        index: 0,
+      }],
+      active: 0,
+    };
+    const s = initialTabs(null, restore);
+    expect(s.tabs[0].entries[0].mode).toBe('direct');
+    expect(s.tabs[0].entries[0].src).toBe('https://example.com/article');
+    expect(s.tabs[0].entries[0].src).not.toContain('/proxy');
+  });
+
   it('ignores a restore with no valid tabs', () => {
     const restore = { tabs: [], active: 0 };
     const s = initialTabs(null, restore);
@@ -227,27 +246,6 @@ describe("'reload' action", () => {
     const id = s.tabs[0].id;
     const result = tabsReducer(s, RELOAD(id));
     expect(result.tabs[0].reloadKey).toBe(1);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// 'renavigate' (mode toggle)
-// ---------------------------------------------------------------------------
-describe("'renavigate' action", () => {
-  it('changes the mode and bumps reloadKey', () => {
-    const s = initialTabs('https://example.org');
-    const id = s.tabs[0].id;
-    const result = tabsReducer(s, { type: 'renavigate', tabId: id, resolved: { mode: 'proxy' } });
-    expect(result.tabs[0].entries[0].mode).toBe('proxy');
-    expect(result.tabs[0].reloadKey).toBe(1);
-  });
-
-  it('is a no-op when no entry at current index', () => {
-    // A blank tab (no entries, index -1) should not crash
-    const s = initialTabs();
-    const id = s.tabs[0].id;
-    const result = tabsReducer(s, { type: 'renavigate', tabId: id, resolved: { mode: 'proxy' } });
-    expect(result.tabs[0]).toEqual(s.tabs[0]);
   });
 });
 

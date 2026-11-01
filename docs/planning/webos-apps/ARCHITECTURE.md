@@ -70,8 +70,8 @@ webos/src/
     ├── components.js         component barrel (imported by shell/Window.jsx)
     ├── browser/   Chromium-style tabs + history + address bar (tabs.js urls.js
     │              BrowserApp.jsx);
-    │              four-mode render stack — embed / direct frame / same-origin
-    │              Pages-Function proxy / honest hand-off (see BROWSER.md)
+    │              safe rendering stack — official embed / cross-origin frame
+    │              / explicit browser-tab hand-off; no same-origin proxy (see BROWSER.md)
     ├── terminal/  { manifest.js, Terminal.jsx }
     ├── video/     { manifest.js, VideoApp.jsx }
     ├── files/     virtual-disk file manager (list/upload/rename/delete, device view
@@ -79,7 +79,7 @@ webos/src/
     ├── notepad/   notes store (notes.js) + autosaving editor, markdown preview
     ├── photos/    image viewer + transforms (rotate/flip/crop) over the Files disk
     ├── taskmgr/   task/performance manager (sysmon.js pure metrics)
-    ├── chat/      AI chat adapter seam (provider-configurable)
+    ├── chat/      AI Workspace: chat adapter plus optional Page Agent browser-agent view
     ├── editor/    CodeMirror 6 code editor
     │   ├── manifest.js
     │   ├── Editor.jsx      toolbar, buffer tabs, status bar, file IO
@@ -97,8 +97,7 @@ webos/src/
         ├── Calculator.jsx    mode tabs + provider
         ├── calcState.jsx     shared state: entry, history, memory, angle, precision
         ├── Display.jsx Keypad.jsx BasicKeys.jsx
-        ├── calculator.css    scoped styles (all colors via shell tokens — the
-        │                     preset-aware audit fails on palette hexes here)
+        ├── calculator.css    scoped styles (all colors via shell tokens — the        │                     preset-aware audit fails on palette hexes here)
         ├── engine/           pure expression engine (no React)
         │   ├── errors.js lexer.js parser.js functions.js evaluate.js format.js
         │   ├── programmer.js BigInt bitwise evaluator
@@ -130,7 +129,9 @@ defaults seeded from `DEFAULT_START_PINS`, cleaned on uninstall) · `widgets`
 `webos:volume` CustomEvent) · `uiMode` (auto|desktop|mobile) · `events` ·
 `notes` · `weather.loc` + `weather.units` (metric|imperial; app and sidebar
 widget flip together via the `webos:units` event) · plus per-app keys
-(`webos.calc.*`, `webos.editor.state`).
+(`webos.calc.*`, `webos.editor.state`, `webos.pageAgent.config`). The Page Agent
+extension authorization token uses its required origin-local storage slot and is
+not synced; provider API keys remain in memory only.
 
 ### Bulk storage: IndexedDB (`os/db.js`)
 
@@ -197,10 +198,9 @@ default too. Everything persists under `webos.ui` / `webos.taskbar` /
 
 ### Browser plugin
 
-`webos/src/apps/browser/` replaces the retired Firefox-in-WASM registry entry.
-Pure logic (`urls.js` classification/embed rewrites, `tabs.js` reducer) is
+`webos/src/apps/browser/` replaces the retired Firefox-in-WASM registry entry.Pure logic (`urls.js` classification/embed rewrites, `tabs.js` reducer) is
 separated from `BrowserApp.jsx` for unit tests. Framing politics and the
-`/proxy` Pages Function: see BROWSER.md in this directory.
+cross-origin framing limits and safe browser-tab hand-off: see BROWSER.md in this directory.
 
 ## Module index
 
@@ -243,9 +243,11 @@ sections above and below; this index is the complete file-level map.
 - `src/apps/calculator/modes/Scientific.jsx` — Scientific keypad (functions, powers, memory)
 - `src/apps/calculator/modes/Standard.jsx` — Standard keypad (BasicKeys + operators)
 - `src/apps/chat/Chat.jsx` — chat window UI: transcript, composer, adapter status; streams adapter output token by token
+- `src/apps/chat/PageAgentPanel.jsx` — optional Page Agent extension UI: provider setup, authorization, task consent, execution status and results
 - `src/apps/chat/adapters.js` — model integration seam — adapters are { id, label, ready, run } with AsyncGenerator streams
 - `src/apps/chat/chat.css` — chat window styles (theme tokens only)
-- `src/apps/chat/manifest.js` — Chat plugin manifest (id, name, icon, default window size)
+- `src/apps/chat/manifest.js` — AI Workspace plugin manifest (id, name, icon, default window size)
+- `src/apps/chat/pageAgentBridge.js` — validated adapter for the official Page Agent extension API; stores no provider API key
 - `src/apps/chat/store.js` — shared chat history (window + sidebar widget); localStorage-backed, capped, synced via the webos:chat window event
 - `src/apps/editor/Editor.jsx` — text/code editor window: CodeMirror, buffer tabs, open/save pipeline with honest failure status
 - `src/apps/editor/MarkdownView.jsx` — markdown preview renderer (token-walking React renderer — no raw HTML anywhere)
@@ -418,460 +420,3 @@ Apps that live on other domains are pure data rows in `os/registry.js`
 cross-origin isolation) gets a launch panel that opens a new tab.
 Store apps additionally carry `category` and appear in the App Store;
 installation state persists in `localStorage['webos.installed']`.
-
-### Window sizing
-
-`os/state.jsx` launch reducer clamps the manifest's `win.w/h` to the viewport;
-apps without a manifest fall back to the 1120×700 default.
-
-## Calculator engine notes
-
-- **No `eval()`** — a real pipeline: `lexer → parser (precedence climbing) →
-  AST evaluator`. Pretty glyphs (× ÷ − π) normalize in the lexer.
-- Precedence: `+ -` < `* / mod` < implicit multiplication & unary minus < `^`
-  (right-assoc) < postfix `! %`. Implicit multiplication binds tighter than
-  explicit `*`, so `1/2π = 1/(2π)` and `2x^2 = 2*(x^2)`.
-- `relaxed: true` evaluation returns `NaN` instead of throwing — the plotter
-  samples thousands of points and discontinuities are data, not failures.
-- Graphing compiles expressions once (`compile()`), evaluates per pixel.
-- Programmer mode is a separate BigInt evaluator (fixed word size 8/16/32/64,
-  two's complement, `| ^ & << >>` precedence ladder); digit parsing is
-  per-digit to avoid `parseInt` precision loss past 32 bits.
-- Persists under `webos.calc.*` (mode, angle, precision, history ≤ 60, memory).
-
-## Editor plugin notes
-
-- CodeMirror 6 (`codemirror` meta + `@codemirror/lang-*` for js/ts, html, css,
-  json, markdown, python, rust). Language picked by file extension.
-- Buffers are a pure reducer (`buffers.js`): new / edit / rename / close /
-  saved. Text persists to `localStorage['webos.editor.state']` (debounced,
-  1.5M-char cap); the File System Access `handle` is session-only — a restored
-  buffer shows "link lost" until re-opened.
-- Open/Save use `showOpenFilePicker`/`showSaveFilePicker` where available
-  (Chromium); elsewhere `<input type=file>` open and `<a download>` export.
-- Ctrl/Cmd+S saves; unsaved buffers confirm before close.
-- **Why not Lapce or Zed:** neither compiles for the web today. Lapce's floem
-  UI toolkit and winit windowing are native-only (no wasm32 target anywhere in
-  the tree); Zed has only an early `crates/gpui_web` experiment and the editor
-  crate itself has no web gating — `cargo check --target wasm32` fails at the
-  dep level. The bundled Editor is the WebOS IDE; the lapce fork carries a
-  notes-only release documenting this
-  (github.com/aliasfoxkde/lapce-ide/releases/tag/v0.4.6-webos).
-
-## DevOps
-
-- Quality gates (in `webos/`): `npm run lint` (zero warnings) →
-  `npm run coverage` (vitest + enforced ratchet floors in
-  `webos/vitest.config.js`, includes the WCAG contrast auditor) →
-  `npm run build`. `npm run ci` chains all three; CI runs them on GitHub
-  (`.github/workflows/ci.yml`, push/PR/manual) and locally via GitForge
-  (`.gitforce.yml`, single-ordered-job mirror).
-- Tests: `npm run test` (1015 specs across 67 files, happy-dom + Testing
-  Library); single file: `npx vitest run tests/<name>.test.jsx`.
-  `tests/docs-coverage.test.js` additionally pins the Module index to the
-  tree (every file under `src/` needs a row, and vice versa).
-- Build: `npm run build` in `webos/` → `dist/` (static, base `./`).
-- Deploy: `npx wrangler pages deploy dist --project-name artcraft-webos --branch main`
-  (see the root `README.md` and the deployment map in `docs/planning/HISTORY.md` for the full procedure and live URLs).
-- Preview locally: `npm run preview` (port 5180).
-- Icons: hand-written SVGs in `webos/public/icons/`, rasterized via
-  `packaging/icons-render.sh` (headless Chromium; ImageMagick cannot stroke SVG).
-- App Store additions: append a row to `STORE_APPS` in `os/registry.js`
-  (verify embeddability first: `curl -sI <url> | grep -i 'x-frame\|content-security'`),
-  plus a hand-drawn glyph at `public/icons/<id>.svg` — a registry test asserts
-  every icon path resolves on disk, so the row and the file land together.
-  Fourth wave (3.8.0): Piskel, BeepBox, CyberChef, Graphviz Online; SculptGL
-  now serves from `sculpt.cyopsys.com` (SAMEORIGIN → opens in its own tab).
-
-## Adding the next app — checklist
-
-1. `mkdir -p src/apps/<name>` + `manifest.js` + `<Name>.jsx`
-2. Register in `src/apps/manifests.js` + `src/apps/components.js`
-3. Icon at `public/icons/<name>.svg` (rounded square + accent glyph family)
-4. `npm run build`, screenshot-verify in `vite preview`, deploy
-
-## AI chat — the adapter seam (2.7.0)
-
-`src/apps/chat/` is a full plugin app (manifest/Chat.jsx/chat.css) plus a
-sidebar widget and a start-menu "✦ Ask AI" hook — but **it ships with no
-model and must never fake one**. The honesty rule is product-level: the app
-badges itself "No model configured", shows a `.c-note` banner, and the echo
-adapter's reply says exactly what is missing and where to wire a provider.
-
-- **Adapter contract** (`adapters.js`): `{ id, label, ready(): bool,
-  run(messages, { signal }): AsyncGenerator<string> }`. `run()` yields text
-  chunks; Chat.jsx renders them as they arrive and persists the finished
-  message once (not per chunk). `ADAPTERS` + `adapterById()` (selected via
-  `webos.chat.adapter`, default `echo`). Wiring a real provider = one new
-  file entry, no component changes.
-- **History** (`store.js`): `webos.chat.history` (localStorage, capped at
-  100 messages), written once per completed exchange; `saveHistory()`
-  broadcasts `webos:chat` so the sidebar widget and app window stay in sync
-  without a shared store. `onHistory(fn)` returns an unsubscribe.
-- **Sidebar widget** (Sidebar.jsx `ChatWidget`): last 3 messages truncated
-  to 90 chars, "Open AI Chat" + Clear (clears the whole thread — both
-  surfaces re-render from the same event).
-- Sending aborts cleanly: Stop uses an `AbortController`; aborted runs keep
-  the user message and mark partial assistant text "(stopped)". Errors append
-  an "The adapter failed — …" assistant message instead of throwing.
-
-## Start menu overhaul (2.8.0)
-
-Search-first Start (`shell/StartMenu.jsx`): search box on top; typing
-switches to a results view — the ✦ Ask AI row, matching apps (name/tagline/
-category), and matching Settings sections. Enter launches the first hit.
-The browse view (empty query) shows a Pinned grid (`DEFAULT_PINNED`,
-drag-reorder + persistence still open), a Recommended row driven by
-`webos.recents` (launch order, capped 8, persisted in the `launch` reducer
-case), All apps grouped by `app.category` (fixed `CATEGORY_ORDER` display
-order), an App Store/Settings links block, and a footer with the user chip
-+ power menu (Restart = `location.reload()`, Shut down = the `#halt`
-overlay in App.jsx — honest about being a browser page, "Power on" reloads).
-
-- **Launch args**: `os.launch(id, args)` stores `args` on the window record;
-  plugin windows render `<Plugin args={...} />`, virtual windows pass
-  `win.args` (Settings reads `args.initial` to deep-link a section —
-  `SECTIONS` is exported for the search index).
-- **Persona styling stays CSS-only**: `body[data-persona]` rules — win =
-  centered 580px panel, linux/bsd = left-anchored, mac = raised over the
-  dock, tui = full-width monospace column.
-
-## Terminal 3.0 — wosh on xterm.js (2.9.0)
-
-`src/apps/terminal/Terminal.jsx` is now an xterm.js frontend (MIT,
-`@xterm/xterm` + `@xterm/addon-fit`, imported by the already-lazy Terminal
-chunk — xterm downloads only on first launch) driving `wosh`, a real command
-language over the OS: `help apps open|launch close windows install|uninstall
-store settings [section] get/set <path> <value> persona[s] theme accent
-wallpaper volume os sqlite history fullscreen date echo uname whoami neofetch
-clear`, plus tab completion (commands, app ids, settings paths, personas,
-themes, settings sections), ↑/↓ history (last 100), Ctrl+C (cancel line) and
-Ctrl+L (clear). Unknown input still evaluates as JavaScript with the live OS
-context in scope — the escape hatch. Every command mutates real OS state;
-`set` echoes the coerced value returned by the setter (never a stale render
-read). Command execution is serialized (`busy` gate) so async commands like
-`sqlite` (sql.js, lazy) can't interleave with input.
-
-**Craft MCP bridge — audit result (3.1, blocked upstream):** the web craft
-builds have NO control surface today. `vectorcraft/apps/vectorcraft-web/src/
-main.rs` documents it: "no TCP control server (browsers can't listen on
-sockets)" — and there is no postMessage/JS bridge either. Until the craft
-repos add a web channel (a `window.postMessage` bridge in the eframe web
-runner is the natural shape), `craft <app> <command>` can't exist. The wosh
-command envelope is deliberately MCP-shaped (`{ method, params }` over
-`get/set` paths) so an external AI client can drive the same surface, and a
-future bridge drops in without changing the shell.
-
-**v86 Linux mode** stays tracked for 3.1 (CDN-fetched image at the user's
-request; keeps CSR purity).
-
-## Real assets — icons, photo wallpapers, FX wallpapers, store wave 3 (3.0.0)
-
-The "no half-assing" assets batch. Three asset classes moved from CSS-only to
-real content, plus a third App Store wave.
-
-**Craft app icons.** Each sibling craft repo ships `assets/app-icon/<app>-1024.png`
-(original artwork by the project owner, Apache-2.0 OR MIT). Those are resized
-to 256 px into `webos/public/icons/craft/<app>.png` and the registry
-rows now point at them instead of placeholder SVGs. They are the projects'
-own marks — used to launch the apps they identify. License rows live in
-`docs/ATTRIBUTION.md` (kept out of `public/` per the scaffolding rule; the
-bundle itself stays attribution-free).
-
-**Wallpaper photos.** Eight CC-licensed photographs from Wikimedia Commons
-lived in `webos/public/wallpapers/photos/*.jpg` at 1920 px (dunes, alpine
-lake, aurora, sea cliffs, misty forest, canyon, Milky Way, tropical beach).
-`WALLPAPERS` gained a `Photos` category whose entries carry
-`img: './wallpapers/photos/….jpg'` (relative — the site must work from any
-sub-path/iframe). Fetching script pattern: Commons API search →
-`imageinfo` license filter (public domain / CC0 / CC BY / CC BY-SA only) →
-1920 px thumb download; the shared-IP rate limit needs ~21 s between
-requests. Every photo has a row in `docs/ATTRIBUTION.md` — do not add a
-photo without adding its row in the same change.
-
-**FX wallpapers.** `theme.wallpaper = 'fx:<kind>'` mounts
-`shell/FxWallpaper.jsx`, a full-viewport canvas at z-index −1 with five
-code-drawn effects (starfield, aurora, tide, mesh, code rain) — deterministic
-per kind (seeded PRNG), pointer parallax, DPR capped at 1.5, paused on
-`visibilitychange`, a single static frame under `prefers-reduced-motion`.
-Gotcha that shaped the API: assigning an invalid inline CSS value through the
-CSSOM is a silent no-op, so `wallpaperLayer()` returns `null` for `fx:*` and
-the `#wallpaper` div unmounts instead of carrying a stale photo background
-over the canvas. The Appearance grid generalised to three kinds: `css`
-(CSS art), `img` (bundled photos), `fx` (interactive; swatch shows a static
-representative gradient).
-
-**Water wallpaper (`fx:water`).** A sixth, GPU-interactive FX: a wave-
-equation sim on two RGBA16F ping-pong targets — `shell/watergl.js`, a
-clean-room raw-WebGL2 port of the org's `webbg-demo` (same math, Three.js
-replaced by one fullscreen triangle per pass). The pointer brushes pressure
-into the sim (ripples follow the cursor), clicks drop gaussian impulses,
-`water.rain` schedules ambient drops; the output pass refracts a gradient
-background through the sim's pressure gradients with specular, chromatic
-aberration, grade and grain. The param tree (`os/waterfx.js`: bg / water /
-optics / grade / overlay groups, five presets) is validated on merge —
-unknown keys and wrong types from persisted state are dropped, so a stale
-blob can never poison the uniforms. Resolution: `theme.water` holds a user
-patch, `theme.waterPreset` a preset name; `resolveParams` layers
-DEFAULTS < patch < preset. The component bridges window-level pointer
-input (the wallpaper sits behind every window), scales the sim at
-`water.simScale` of the viewport, and falls back to the 2D Tide FX when
-WebGL2 or float render targets are missing (probed once, at first render).
-Settings → Appearance exposes the tuning surface: a search field over the
-picker, an FX animation-speed multiplier (`theme.fxSpeed`, all `fx:*`
-kinds), and — while `fx:water` is active — preset chips plus curated
-sliders/color pickers that write validated patches into `theme.water`
-(`mergeParams(DEFAULTS, {...patch, group})` — a partial stored patch
-normalizes on first edit instead of dropping edits).
-Reduced motion draws one calm static frame (`motion="gentle"` — the screen
-saver passes 0.35× speed instead of freezing). Driver hook:
-`?water-debug` exposes `window.__water` with live sim counters.
-
-**App Store wave 3.** Eight third-wave store entries: 2048 (the original
-Gabriele Cirulli MIT build), Hextris, Untrusted, HexGL, Excalidraw, tldraw,
-Squoosh, Photopea. Each URL was probed for `X-Frame-Options` /
-CSP `frame-ancestors` before being added — all eight allow framing, so they
-run embedded (`embed: true`). Icons are WebOS-drawn glyphs in the house style
-(64×64 rounded rect, dark gradient, accent line art) — never vendor marks;
-names and links are referential. Rejected: `play2048.co` (frame-ancestors
-allow-list blocks us).
-
-### 3.1.0 — systematic persona skins, chrome knobs, look & layout reset
-
-**Persona skins became systematic.** Every persona now sets four design
-tokens (`--radius`, `--chrome-blur`, `--ctl-radius`, `--menu-radius`) and a
-`.chip/.btn` + `.ctx-menu/.gp/#start-menu/#snap-preview` consumer pair turns
-them into per-persona control shaping. On top sit persona-specific chrome
-skins: mac (traffic-light dot buttons, absolutely centred title, floating
-centred dock), linux (GNOME headerbar: centred title, pill buttons, calm
-focus ring), bsd (hairline borders, zero radii, mono titles, no shadows),
-android (inset pill dock, round buttons, 999 px search/user pills), tui (flat
-mono panels, accent borders, CRT scanline overlay). Floating docks carry
-their own autohide transforms — the combined
-`translate(-50%, …)`/inset-pill variants must exist per persona because the
-generic `body[data-tb-autohide] #taskbar` rules would otherwise win or
-mis-place them.
-
-**Specificity contract (learned the hard way).** Persona skin rules wrap the
-persona attribute in `:where(...)` — `:where(body[data-persona="mac"]) .tb-btn`
-— so only the part OUTSIDE contributes specificity and explicit user-override
-rules (`body[data-tbside="left"] …`, `body[data-font="mono"]`, declared later
-in the file) always win ties. The trap: when the rule has NOTHING outside the
-`:where()` (e.g. `:where(body[data-persona="tui"]) { font-family: … }`) the
-whole selector is specificity **zero** and loses to the base `body` rule
-(0,0,1) regardless of source order — the tui mono UI font silently never
-applied until the attribute was moved outside (`body[data-persona="tui"] { …
-}`). Custom-property-only blocks keep the `:where()` form; anything that must
-outrank an element/class base rule does not.
-
-**Chrome knobs.** Four user knobs follow the empty-string-means-persona
-convention: `ui.tbSide` (window buttons left/right), `ui.titleAlign`,
-`ui.font` (rounded/mono/serif stacks), `ui.shadow` (off/soft/deep), each
-rendered as `data-*` on `<body>` and overridable per persona. All four are
-exposed in Settings → Appearance ("Window chrome") and as terminal
-`wosh` paths (`ui.tbSide`, `ui.titleAlign`, `ui.font`, `ui.shadow`), plus the
-pre-existing `volume.master`/`volume.mute` paths were fixed (they read/wrote
-nonexistent `master`/`mute` keys instead of `level`/`muted`).
-
-**Reset surfaces.** Settings → About gained "Reset look & layout"
-(persona, theme, ui, taskbar-position, desktop, widgets, volume slices back
-to their `DEFAULT_*` consts — installed apps, pins, groups, files kept) and
-"Factory reset…" (wipe every `webos.*` localStorage key + reload), the latter
-shared with the Storage panel via the exported `factoryReset()` in
-`state.jsx` — one implementation, two entries.
-
-Validation: `tests/personas-theme.test.js` asserts the six personas' dataset,
-`--radius` and computed font, the four knobs on a live window (flex-direction,
-title position, box-shadow, font), and that About → "Reset look & layout"
-lands the state slices back on defaults. The deprecated
-`scripts/screenshot-drive.mjs` steps 34–35 also swept all six personas with
-screenshots, but that driver is no longer the gate — see
-`packaging/e2e/webos-sweep.mjs`.
-
-### 3.2.0 — taskbar grouping, window placement, single-instance apps
-
-**One taskbar button per app.** The old split (pinned buttons + one button
-per running unpinned window) became a unified list: pinned apps first (pin
-order), then running unpinned apps in launch order. A click launches when
-nothing is running, toggles minimize/focus with a single window, and cycles
-focus across several. `Taskbar.jsx` renders `data-cm="app:<id>"` on every
-button; only pinned buttons carry `data-pin` (drag-to-reorder unchanged).
-
-**One context menu for every taskbar app.** `App.jsx` replaces the divergent
-`pin:`/`taskapp:` menus with a single `app:` case whose shape is the same
-whether or not the app is pinned — the gap this fixes: a pinned app's
-running windows previously had no close affordance at all. Items: one entry
-per window (activate/restore), "Open in new tab" (url apps), "New window"
-(omitted for single-instance apps), pin/unpin, Properties, and
-"Close (all) window(s)".
-
-**Window placement.** The old global cascade (every new window +28 px from
-top-left regardless of app) became: the first window of an app opens
-centred; each further window of the SAME app cascades by a constant +28 px
-step from the previous (wraps after 7 so the chain never walks off-screen).
-Different apps all centre. Computed against `innerHeight - 52` so the
-taskbar doesn't cover a centred window.
-
-**`singleInstance` app property.** Registry/plugin manifests can declare
-`singleInstance: true`; `launch` then focuses and un-minimises the running
-window instead of opening a second one (mobile path included). Marked on
-mail, editor, weather, video, discord, spotify, chatgpt; user-created apps
-get a "Single instance" checkbox in the Add/Edit dialog, and Properties
-shows a "Windows: Single instance/Multiple" row.
-
-**Taskbar right-click → Taskbar settings.** The taskbar's own context menu
-gained a direct deep link: `os.launch('settings', { initial: 'taskbar' })`
-(Settings resolves `args.initial` against its section ids).
-
-Validation: driver step 35 groups two calc windows (one button, dot, both
-windows), reads the menu items, closes all from the menu, asserts the
-centred first rect and the +28/+28 second rect, launches weather twice
-(1 window, 1 button), and drives the deep link into the Taskbar section.
-
-### DeckCraft joins the desktop (3.2.0)
-
-DeckCraft 0.4.0 (clean-room presentation suite) is now a default app: registry
-row → `https://deckcraft-web.pages.dev/`, icon `icons/craft/deckcraft.png`
-(256 px downscale of its `assets/app-icon/deckcraft-1024.png`, Apache-2.0 OR
-MIT, attributed in `docs/ATTRIBUTION.md`). Unlike the other eight craft apps
-it has no upstream release zip yet — the site was built locally from the
-source checkout at `apps/deckcraft/` (`trunk build --release`, own
-`CARGO_TARGET_DIR` on NVMe) and deployed to a dedicated Pages project
-`deckcraft-web`. The 24 MB wasm sits just under the 25 MiB Pages per-file
-limit, so no R2 pass-through is needed. Two guards recorded:
-`packaging/fetch-apps.sh` deliberately does NOT list deckcraft (its
-`--force` path does `rm -rf apps/<name>`, which would delete the checkout —
-add the entry only after the checkout is gone and releases exist), and the
-Pages project needed `wrangler pages project create` first (newer wrangler
-no longer auto-creates on deploy). Boot verified headlessly: wasm binds,
-loading screen clears, zero console errors.
-
-### Screen saver (3.3.0)
-
-New `Screensaver` shell component (mounted last in `App.jsx`, overlay
-`#screensaver` z 1900 — above modals (950) and persona scanlines (1500),
-below the halt screen (2000); `cursor: none`). State slice `os.saver` =
-`{ kind, timeoutMin, speed, photoSecs }` (default off / 10 min), edited in
-Settings → Screen saver and included in Reset look & layout. Kinds: the five
-FX canvases (reusing `FxWallpaper`, which gained `id` and `speed` props so
-the saver canvas doesn't collide with `#fx-wallpaper`), a photo slideshow
-over the bundled CC wallpapers (key-remount fade-through-black — no stacked
-layers), and a big clock following the taskbar's 12/24-h setting.
-
-Idle model: a ref timestamp bumped by passive window listeners
-(pointermove/down, keydown, wheel); a 1 s interval activates after
-`timeoutMin` minutes (skips while `document.hidden`); `webos:saver-preview`
-(CustomEvent) activates immediately for the Settings "Preview now" button and
-the driver. Dismissal while active: pointerdown/keydown instantly;
-pointermove only after 24 px of travel from the first-seen point, so the
-settling jitter that activated it can't instantly dismiss it.
-
-### App Store persona skins (3.3.0)
-
-One JSX tree, per-persona layout via a `body[data-persona="…"] .store-*` CSS
-block (attribute OUTSIDE `:where()` — these rules must outrank the base
-`.store-*` class rules; same contract as the persona token block):
-
-- **win → Microsoft Store**: 10 px hero, squared "Get" buttons (4 px, min
-  width), cards lift on hover with an accent-tinted border.
-- **mac → Mac App Store**: 1.55 rem title, soft 16 px cards, pill (999 px)
-  uppercase GET/OPEN/DELETE buttons.
-- **linux → GNOME Software**: flat 12 px tiles, quiet accent left-border hero
-  ("Editor's pick").
-- **android → Play**: pill search (999 px, wider), 20 px cards, 26 px hero,
-  pill Install buttons.
-- **bsd/tui → dense list**: hero hidden, grid becomes a single-column
-  bordered list, tag chips hidden, buttons become accent-outlined bracket
-  verbs.
-
-Wording follows each platform's store convention via a `LABELS` map in
-`AppStore.jsx` (MS "Get", Apple "GET", terminals speak `[ install ]`); a
-featured hero (highest-rated listing, stable by name) shows the full
-description + rating above the grid, hidden when searching or filtering.
-Driver step 37 asserts per-persona hero radius/display, kicker, button label
-and radius for all five skins; step 36 drives the saver (section deep link,
-FX preview + z-index + pointerdown dismissal, clock preview, and the photos
-kind is probed separately: slider gating, slideshow advance, dismissal).
-
-### Real utilities in wosh: coreutils.wasm (3.4.0)
-
-The terminal gains a real-utility layer: `webos/vendor/coreutils.wasm` is the
-uutils coreutils multicall binary (wasm32-wasip1, MIT — attribution row in
-`docs/ATTRIBUTION.md`), 78 utilities (`ls`, `cat`, `wc`, `seq`, `sort`,
-`sha256sum`, …) listed by the new `utils` help command. `rustybox` (the other
-candidate) was audited and rejected: it is a c2rust mechanical transpile of
-GPL-2.0 BusyBox with `llvm_asm!` and a Linux syscall layer — no wasm target
-and a license conflict with the clean-room rules.
-
-Layers (all in `src/apps/terminal/`):
-
-- **wasi.js** — hand-rolled WASI preview1 shim over an in-memory disk
-  (`MemFS`, ~300 lines, no deps): preopen root at fd 3, fd table, stat/dirent
-  layouts, `poll_oneoff` fires immediately (sleep is a no-op), fd_write caps
-  at 128 KB stdout / 16 KB stderr (`{wasiCap}` throw traps runaway streams
-  like `yes`; the runner reports `truncated`). Preview1 gotcha encoded in a
-  comment at `path_open`: oflags/fdflags are **scalar** parameters — only the
-  opened-fd out-param is a memory pointer.
-- **coreutils.js** — one lazy fetch + `WebAssembly.compile`, then **async
-  `WebAssembly.instantiate` per run** (Chrome forbids sync
-  `new WebAssembly.Instance` on the main thread once wire bytes exceed 8 MB;
-  this module is ~10.3 MB). Fresh instance per invocation resets globals; a
-  wasm trap surfaces as exit 134 with the trap text on stderr. The disk is
-  seeded from the Files store before the first run and written back after
-  any run that mutated it — reference comparison against the seeded byte
-  arrays decides exactly which files/dirs to put or delete.
-- **Terminal.jsx** — dispatch order: wosh builtins first (echo/date/pwd stay
-  OS-wired), then the wasm utility, then the JS-eval fallback.
-  `coreutils <util> …` forces the wasm path past a shadowing builtin.
-
-Path model (v1, documented in the shell help): the disk root `/` **is** the
-Files store root, so relative arguments resolve there and absolute paths
-(`/Home/notes.txt`) always work; there is no `cd`/`pwd` state yet. stdin is
-empty (reads hit EOF), unix-gated utilities (chmod, df, du, env, kill, stat)
-are absent from the default-features build. Driver step 38 seeds files via
-IndexedDB, types real keystrokes at xterm, and asserts wasm output
-(`seq`, `ls`, `cat`, `wc`), the builtin-precedence escape hatch, write-back
-persistence (the `mkdir`'d directory is read back from IndexedDB), and the
-JS-eval fallback.
-
-### Liquid Glass design language (3.6.0)
-
-The win/mac personas gained the four-phase glass treatment described in
-"OS personas" above (frost tokens, focused-window specular rim, `--paper`
-document fill fixing the Daylight dark-on-dark defect, anchored
-rise/drop/unfold motion with reduced-motion gates, and the Chromium-only
-feDisplacementMap edge refraction shipped behind a `CSS.supports` probe).
-LG work was driven by `LIQUID-GLASS.md`; the lens map math is pure
-(`os/lens.js`) and unit-tested (`tests/lens.test.js` — 11 tests covering SDF
-sign conventions, band neutrality, inward displacement directions, corner
-behaviour, and the stable filter ids CSS references).
-
-### FireCraft joins the desktop (3.15.0)
-
-The twelfth craft app — FireCraft, the clean-room Fireworks CS6
-reimplementation (hybrid vector + bitmap web design) — became a default
-app. Unlike the first eleven it has **no upstream release zips and no
-checkout here**: its web bundle deploys from its own repository checkout
-(`/nas/Temp/repos/FireCraft`, independent git repo, wasm release target)
-via that repo's own dist pipeline (`cargo run -p xtask -- dist --web`,
-which enforces the wasm size budget and runs a bridge smoke against the
-release bytes, plus a `MANIFEST.sha256` over the output) to the
-`firecraft-web` Pages project. The registry row is a plain external
-default (`embed: true`); embedding needs no special casing because the
-bundle ships no frame-hostile headers and Pages serves the wasm as
-`application/wasm`.
-
-The bundle carries a documented postMessage bridge
-(`/nas/Temp/repos/FireCraft/docs/WEBOS.md`):
-inbound `openDocument{bytes}` / `apply{name,payload}` / `exportPng` /
-`exportDocument` / `ping`, outbound replies filtered on
-`source: "firecraft"`. WebOS currently uses only the `ready` liveness
-signal (verified end to end in real Chromium: desktop icon → live iframe →
-`ready` → full editor UI); deeper integration (autosave into the Files
-disk, open-with, export hand-off) is planned work — see
-`docs/planning/HANDOFF.md` phase H2.
-
-The app mark (`public/icons/craft/firecraft.png`) is original code-drawn
-art (`packaging/icons-src/firecraft.svg`, flame mid-vector-edit) rasterized
-with the headless-Chromium technique — FireCraft ships no upstream mark
-yet; swapping it in later is HANDOFF phase H3.

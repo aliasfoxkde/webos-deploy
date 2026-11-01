@@ -31,10 +31,12 @@ uploading and running arbitrary WASM binaries. The bundled apps and shell
 also do not yet cover the full range of everyday work that a daily-driver
 OS needs.
 
-The browser app can display remote pages through a proxy. Until the
+The in-window browser uses official embeds and cross-origin iframes where
+sites permit them. Pages that block framing require a normal browser-tab
+handoff. The unsafe same-origin HTML proxy has been disabled rather than
+rewriting remote pages under the WebOS origin; see the
 [proxy isolation issue](https://github.com/aliasfoxkde/ArtCraft-WebOS/issues/12)
-is resolved, do not sign into sensitive sites through that feature; see the
-[security policy](SECURITY.md).
+and [security policy](SECURITY.md).
 
 ## Where it is heading
 
@@ -44,6 +46,14 @@ or bootable installation later. The vision includes portable identity and
 settings, a safe app and WASM ecosystem, AI-assisted customization, and a
 community contribution path where people and agents can propose changes
 through reviewable issues and pull requests.
+
+The AI integration model, Page Agent boundary, WASM artifact types, and
+community contribution workflow are documented in the
+[AI-first architecture](docs/planning/AI-FIRST-ARCHITECTURE.md).
+
+The experimental Browser Agent view in AI Workspace connects to the official
+Page Agent browser extension when the user installs and authorizes it; see the
+[Page Agent integration notes](docs/planning/AI-FIRST-ARCHITECTURE.md#page-agent-integration).
 
 Those capabilities are goals, not features available today. The
 [product vision and phased roadmap](docs/planning/product-vision.md) sets
