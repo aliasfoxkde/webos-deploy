@@ -11,6 +11,13 @@ const FEATURED = [...STORE_APPS]
   .filter((a) => a.rating != null)
   .sort((a, b) => (b.rating - a.rating) || a.name.localeCompare(b.name))[0];
 
+/* Banner strip: the runners-up after the featured hero (top-rated, stable
+   order), so the storefront shows a curated row instead of one card. */
+const BANNERS = [...STORE_APPS]
+  .filter((a) => a.rating != null && a !== FEATURED)
+  .sort((a, b) => (b.rating - a.rating) || a.name.localeCompare(b.name))
+  .slice(0, 4);
+
 /* Ratings render as "–" when a listing has none (bridge-demo ships null). */
 const rate = (app) => (app.rating == null ? '–' : app.rating.toFixed(1));
 
@@ -142,6 +149,23 @@ export default function AppStore() {
           <div className="hero-action">
             <InstallActions app={FEATURED} />
           </div>
+        </section>
+      )}
+      {cat === 'All' && !needle && (
+        <section className="store-banners" aria-label="Also top rated">
+          {BANNERS.map((app) => (
+            <button
+              key={app.id}
+              className="store-banner"
+              style={{ '--win-accent': app.accent }}
+              onClick={() => setDetail(app)}
+              title={`${app.name} details`}
+            >
+              <img src={app.icon} alt="" />
+              <span className="banner-name">{app.name}</span>
+              <span className="banner-rating">{rate(app)} ★ · {app.category}</span>
+            </button>
+          ))}
         </section>
       )}
       <div className="store-grid">

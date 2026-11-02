@@ -411,6 +411,28 @@ describe('AppStore', () => {
     expect(c.container.querySelectorAll('.store-cats .chip').length).toBeGreaterThan(2);
   });
 
+  it('shows a curated banner strip of top-rated runners-up under the hero', () => {
+    const c = mount(<AppStore />);
+    const banners = [...c.container.querySelectorAll('.store-banner')];
+    expect(banners.length).toBe(4);
+    // Every banner is a rated listing, none duplicates the hero, and each
+    // names a real catalog entry.
+    const heroName = c.container.querySelector('.store-hero h3').textContent;
+    const rated = STORE_APPS.filter((a) => a.rating != null)
+      .sort((a, b) => (b.rating - a.rating) || a.name.localeCompare(b.name));
+    banners.forEach((b, i) => {
+      expect(rated[i + 1].name).toBe(b.querySelector('.banner-name').textContent);
+      expect(b.querySelector('.banner-name').textContent).not.toBe(heroName);
+    });
+    // A banner click opens its detail sheet.
+    fireEvent.click(banners[0]);
+    expect(c.container.querySelector('.store-detail')).toBeTruthy();
+    // Back to the grid, then the strip disappears once a category is active.
+    fireEvent.click([...c.container.querySelectorAll('.store-detail button')].find((x) => x.textContent.includes('All apps')));
+    fireEvent.click([...c.container.querySelectorAll('.store-cats .chip')].find((x) => x.textContent !== 'All'));
+    expect(c.container.querySelector('.store-banners')).toBeNull();
+  });
+
   it('category chips and search narrow the grid; misses explain themselves', () => {
     const c = mount(<AppStore />);
     const byCat = [...c.container.querySelectorAll('.store-cats .chip')]

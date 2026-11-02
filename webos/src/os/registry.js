@@ -298,6 +298,60 @@ export const STORE_APPS = [
     developer: 'Dreampuf (MIT)', category: 'Development', rating: 4.3, reviews: 76,
     description: 'Write DOT and watch the graph render live beside the source — flowcharts, dependency trees, state machines — with SVG and PNG export.',
   },
+  // -- fifth wave (3.24.0): same frame-embeddability probe as waves 3–4
+  //    (X-Frame-Options / CSP frame-ancestors checked per host before the
+  //    entry landed). All client-side and keyless; house-drawn icons.
+  {
+    // app.diagrams.net sends frame-ancestors self/Teams/SharePoint — the OS
+    // gives it an honest launch panel; its viewer subdomain embeds, but the
+    // editor does not.
+    id: 'diagrams', name: 'Diagrams.net', tagline: 'Flowcharts & diagrams', version: '1.0',
+    url: 'https://app.diagrams.net/', icon: 'icons/diagrams.svg', accent: '#f08705', embed: false,
+    developer: 'JGraph (Apache-2.0)', category: 'Creative', rating: 4.7, reviews: 289,
+    description: 'The open flowchart suite: shapes, connectors, swimlanes, and templates for architecture, UML, and network diagrams. Saves to your device or cloud storage — the viewer renders nothing server-side.',
+  },
+  {
+    id: 'regexr', name: 'RegExr', tagline: 'Regex playground', version: '1.0',
+    url: 'https://regexr.com/', icon: 'icons/regexr.svg', accent: '#49cccc', embed: true,
+    developer: 'gskinner', category: 'Development', rating: 4.6, reviews: 158,
+    description: 'Build, test, and debug regular expressions with live match highlighting, a full reference, and a cheat sheet. Matches evaluate in your browser as you type.',
+  },
+  {
+    id: 'caniuse', name: 'Can I use', tagline: 'Browser support tables', version: '1.0',
+    url: 'https://caniuse.com/', icon: 'icons/caniuse.svg', accent: '#34d399', embed: true,
+    developer: 'Alexis Deveria', category: 'Development', rating: 4.8, reviews: 240,
+    description: 'Up-to-date support tables for every HTML, CSS, and JavaScript feature across desktop and mobile browsers — the fastest way to check what you can ship.',
+  },
+  {
+    id: 'markmap', name: 'Markmap', tagline: 'Markdown mind maps', version: '1.0',
+    url: 'https://markmap.js.org/repl', icon: 'icons/markmap.svg', accent: '#60a5fa', embed: true,
+    developer: 'Markmap contributors (MIT)', category: 'Creative', rating: 4.4, reviews: 63,
+    description: 'Turn Markdown into an interactive mind map live: headings become branches, lists become leaves. Edit on the left, explore the map on the right.',
+  },
+  {
+    id: 'stellarium', name: 'Stellarium Web', tagline: 'Planetarium in the browser', version: '1.0',
+    url: 'https://stellarium-web.org/', icon: 'icons/stellarium.svg', accent: '#a78bfa', embed: true,
+    developer: 'Stellarium contributors (GPL-2.0, referential link)', category: 'Tools', rating: 4.5, reviews: 97,
+    description: 'A realistic night-sky map for your location: constellations, planets, and deep-sky objects rendered with WebGL. Drag to look around, scroll to zoom in.',
+  },
+  {
+    id: 'tableconvert', name: 'Table Convert', tagline: 'Table format converter', version: '1.0',
+    url: 'https://tableconvert.com/', icon: 'icons/tableconvert.svg', accent: '#4ade80', embed: true,
+    developer: 'tableconvert.com', category: 'Development', rating: 4.3, reviews: 51,
+    description: 'Paste a table and convert it between Markdown, CSV, JSON, SQL, LaTeX, HTML and more — round-trips clean and handles messy input well.',
+  },
+  {
+    id: 'transform', name: 'Transform.tools', tagline: 'Data format playground', version: '1.0',
+    url: 'https://transform.tools/', icon: 'icons/transform.svg', accent: '#38bdf8', embed: true,
+    developer: 'transform.tools', category: 'Development', rating: 4.6, reviews: 88,
+    description: 'Convert between JSON, YAML, TOML, GraphQL, TypeScript types, Go structs, and more with live two-pane editing. Nothing leaves the browser.',
+  },
+  {
+    id: 'omatsuri', name: 'Omatsuri', tagline: 'Frontend dev tools', version: '1.0',
+    url: 'https://omatsuri.app/', icon: 'icons/omatsuri.svg', accent: '#f472b6', embed: true,
+    developer: 'rtivital (MIT)', category: 'Development', rating: 4.4, reviews: 59,
+    description: 'A swiss-army collection of client-side generators: gradients, SVG arrows, separators, color shades, emojis, keycodes, and more — eight tools, zero uploads.',
+  },
   {
     id: 'bridge-demo', name: 'Bridge Demo', tagline: 'File-storage fixture', version: '1.0',
     url: 'bridge-demo.html', icon: 'icons/custom.svg', accent: '#38bdf8', embed: true,
