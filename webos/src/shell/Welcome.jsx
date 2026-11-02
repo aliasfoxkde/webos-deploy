@@ -2,6 +2,7 @@ import React from 'react';
 import { PERSONAS } from '../os/personas.js';
 import { VERSION } from '../version.js';
 import { useOS } from '../os/state.jsx';
+import useModalFocus from './useModalFocus.js';
 
 /* First-run welcome: brand + capabilities + persona picker + docs links.
    Shown once (webos.welcomed), skipped for ?open= deep links, reopenable
@@ -9,8 +10,9 @@ import { useOS } from '../os/state.jsx';
    its defaults immediately, so the desktop behind the overlay follows. */
 export default function Welcome({ onEnter }) {
   const os = useOS();
+  const dialogRef = useModalFocus();
   return (
-    <div className="welcome" role="dialog" aria-modal="true" aria-label="Welcome to WebOS">
+    <div className="welcome" role="dialog" aria-modal="true" aria-label="Welcome to WebOS" ref={dialogRef} tabIndex={-1}>
       <section className="wl-card">
         <header className="wl-head">
           <img src="icons/logo.svg" alt="" width="44" height="44" />

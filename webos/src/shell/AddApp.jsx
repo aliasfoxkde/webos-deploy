@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useOS } from '../os/state.jsx';
+import useModalFocus from './useModalFocus.js';
 
 // Uploaded icons are data URLs in localStorage — small cap, icons are tiny.
 const MAX_ICON = 512 * 1024;
@@ -18,6 +19,7 @@ export default function AddApp({ app, onClose }) {
   const [f, setF] = useState(() => (editing ? { ...blank, ...app } : blank));
   const [err, setErr] = useState('');
   const fileRef = useRef(null);
+  const dialogRef = useModalFocus();
   const nameRef = useRef(null);
   const set = (patch) => setF((v) => ({ ...v, ...patch }));
 
@@ -83,7 +85,10 @@ export default function AddApp({ app, onClose }) {
       <div
         className="props addapp"
         role="dialog"
+        aria-modal="true"
         aria-label={editing ? 'Edit app' : 'Add app'}
+        ref={dialogRef}
+        tabIndex={-1}
       >
         <header className="props-head">
           {f.icon

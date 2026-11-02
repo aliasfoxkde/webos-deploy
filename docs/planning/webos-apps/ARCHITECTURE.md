@@ -220,6 +220,10 @@ sections above and below; this index is the complete file-level map.
 - `src/apps/browser/manifest.js` — Browser plugin manifest (id, name, icon, default window size)
 - `src/apps/browser/tabs.js` — pure tab/window reducer (open/close/activate, per-tab history, mode overrides) unit-tested without a DOM
 - `src/apps/browser/urls.js` — URL intelligence: normalize typed input into a navigable URL and classify how a site may render in a WebOS window
+- `src/apps/cast/manifest.js` — CastCraft plugin manifest (id, name, icon, default window size)
+- `src/apps/cast/CastApp.jsx` — CastCraft: OBS-style scene compositor — screen/camera sources, canvas preview, MediaRecorder recording, full track teardown
+- `src/apps/cast/cast.css` — CastCraft window styles (theme tokens only)
+- `src/apps/cast/scene.js` — pure scene state: add/remove/toggle sources, paint order, safe stop-all teardown
 - `src/apps/calculator/BasicKeys.jsx` — digit/decimal key set shared by the Standard and Scientific keypads
 - `src/apps/calculator/Calculator.jsx` — calculator plugin shell: mode tabs, engine state wiring
 - `src/apps/calculator/Display.jsx` — expression + result display, error surfacing
@@ -261,6 +265,11 @@ sections above and below; this index is the complete file-level map.
 - `src/apps/notepad/manifest.js` — Notepad plugin manifest (id, name, icon, default window size)
 - `src/apps/notepad/notepad.css` — Notepad window styles (theme tokens only)
 - `src/apps/notepad/notes.js` — note store: pure functions + debounced localStorage autosave
+- `src/apps/snippet/SnippetApp.jsx` — snippet tool: capture → annotate (pen/arrow/box) → save/copy/download
+- `src/apps/snippet/CaptureOverlay.jsx` — full-screen region-select capture over getDisplayMedia with crop math and stream teardown
+- `src/apps/snippet/capture.js` — pure capture math: drag rect normalization, letterbox-aware source crop, timestamped filenames
+- `src/apps/snippet/manifest.js` — Snippet plugin manifest (id, name, icon, default window size)
+- `src/apps/snippet/snippet.css` — Snippet window and capture overlay styles (theme tokens only)
 - `src/apps/photos/Photos.jsx` — image viewer: disk library, viewer stage, transform/adjust/markup panels
 - `src/apps/photos/imops.js` — pure image ops: path triage, rotate/flip/crop math, tonal adjust baking, annotation rendering, canvas output
 - `src/apps/photos/manifest.js` — Photos plugin manifest (id, name, icon, default window size)
@@ -317,6 +326,7 @@ sections above and below; this index is the complete file-level map.
 - `src/shell/WaterWallpaper.jsx` — interactive water wallpaper host: canvas lifecycle, pointer input, watergl engine + waterfx params
 - `src/shell/Welcome.jsx` — first-run welcome screen and persona chooser
 - `src/shell/Window.jsx` — window chrome: 8-direction resize, titlebar drag, plugin vs EmbedFrame content, focus/z-order hooks
+- `src/shell/useModalFocus.js` — shared modal focus management: traps Tab inside a dialog, focuses it on mount, restores focus to the previously focused element on unmount
 - `src/shell/watergl.js` — WebGL water simulation (wave equation, pointer ripples) behind WaterWallpaper; falls back to a 2D canvas render
 - `src/shell/winDrag.js` — shared titlebar move-drag with snap-zone integration (used by Window.jsx and the virtual windows in App.jsx)
 - `src/shell/settings/Appearance.jsx` — Appearance panel: persona/theme pickers, chrome knobs, the wallpaper studio (composite builder)

@@ -3,6 +3,7 @@ import { filePut, fileGet, fileDel, fileDelTree, fileList, dirPut } from '../../
 import { fmtBytes } from '../../os/format.js';
 import { useOS } from '../../os/state.jsx';
 import { useContextMenu } from '../../shell/ContextMenu.jsx';
+import useModalFocus from '../../shell/useModalFocus.js';
 import './files.css';
 
 /* Files — a small virtual disk over IndexedDB plus a live "this device"
@@ -83,6 +84,7 @@ export default function FilesApp() {
   const [all, setAll] = useState([]);
   const [usage, setUsage] = useState(null);
   const [preview, setPreview] = useState(null); // { rec, url? , text? }
+  const previewRef = useModalFocus(preview != null);
   const [creating, setCreating] = useState(null); // { kind: 'dir' | 'file' } while the inline form is open
   const [newName, setNewName] = useState(''); // pending name for the create form
   const [renaming, setRenaming] = useState(null); // path whose tile is an inline rename form
@@ -323,9 +325,9 @@ export default function FilesApp() {
       onDrop={(e) => { e.preventDefault(); setDragOver(false); if (e.dataTransfer?.files?.length) upload([...e.dataTransfer.files]); }}
     >
       <header className="f-bar">
-        <div className="f-tabs" role="tablist">
-          <button className={tab === 'disk' ? 'on' : ''} onClick={() => setTab('disk')}>WebOS disk</button>
-          <button className={tab === 'device' ? 'on' : ''} onClick={() => setTab('device')}>This device</button>
+        <div className="f-tabs" role="tablist" aria-label="Files views">
+          <button className={tab === 'disk' ? 'on' : ''} role="tab" aria-selected={tab === 'disk'} aria-controls="files-disk-panel" onClick={() => setTab('disk')}>WebOS disk</button>
+          <button className={tab === 'device' ? 'on' : ''} role="tab" aria-selected={tab === 'device'} aria-controls="files-device-panel" onClick={() => setTab('device')}>This device</button>
         </div>
         <span className="f-spring" />
         {tab === 'disk' && (
@@ -347,7 +349,7 @@ export default function FilesApp() {
               <button key={seg + i} className={i === crumbs.length - 1 ? 'on' : ''} onClick={() => setCwd(`${ROOT}/${crumbs.slice(0, i + 1).join('/')}`)}>/ {seg}</button>
             ))}
           </nav>
-          <div className="f-scroll">
+          <div className="f-scroll" id="files-disk-panel" role="tabpanel" aria-label="WebOS disk">
             <div className="f-grid" data-cm="fbg">
               {creating !== null && (
                 <form className="f-tile f-newdir" onSubmit={(e) => { e.preventDefault(); createEntry(); }}>
@@ -429,7 +431,7 @@ export default function FilesApp() {
       )}
 
       {tab === 'device' && (
-        <div className="f-scroll">
+        <div className="f-scroll" id="files-device-panel" role="tabpanel" aria-label="This device">
           {!hasFsApi && (
             <div className="f-empty">
               This browser doesn&apos;t expose the File System Access API.<br />
@@ -482,7 +484,7 @@ export default function FilesApp() {
       </footer>
 
       {preview && (
-        <div className="f-preview" role="dialog" aria-label={preview.rec.name}>
+        <div className="f-preview" role="dialog" aria-modal="true" aria-label={preview.rec.name} ref={previewRef} tabIndex={-1}>
           <header>
             <span className="f-pv-name">{preview.rec.name}</span>
             <span className="f-spring" />

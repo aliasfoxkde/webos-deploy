@@ -484,3 +484,62 @@ land, not retro-hunting these arms.
 | 189 | Repair the broken Aegis CI gate | P3 | completed |
 | 190 | Dependency refresh | P4 | completed (majors deferred with reasons) |
 | 191 | Adopt upstream craft app releases | P10 | completed (2026-10-22) |
+
+## Phase P13 — Screen Capture Suite (2026-11-01, not started)
+
+Operator request: "add screen share (like OBS in the browser), snippet /
+screenshot tool, and so on". Browser-only (WebOS constraint: no Rust, no
+native). Two surfaces, one shared capture core.
+
+### P13.1 — Snippet/screenshot tool ("SnipCraft")
+
+A bundled WebOS app `webos/src/apps/snippet/` following the standard manifest
+pattern (`manifest.js` + component, registered in `manifests.js` /
+`components.js`).
+
+- Region-select capture overlay: click-drag a rubber-band rect over the
+  desktop, Escape cancels; Enter/preview confirms.
+- Capture backends, in preference order:
+  1. `navigator.mediaDevices.getDisplayMedia` with a transient crop to
+     the dragged region (works cross-origin, real pixels).
+  2. DOM rasterization of a target window (foreignObject + SVG snapshot)
+     as a fallback for same-document content — document the CORS
+     limitation honestly rather than shipping a half-working path.
+- Post-capture editor: crop handles, annotate (pen / arrow / text /
+  highlight), then download PNG or copy to clipboard
+  (`ClipboardItem`, with a toast on permission denial — never crash).
+- Save captured images into the WebOS files store so Photos/other apps
+  can open them.
+
+Exit gate: `npm run ci` green, new vitest specs for region math +
+state machine, e2e sweep phase exercising the overlay (per H4.4),
+Aegis re-scan (H4.3), screenshot evidence.
+
+### P13.2 — Screen share / broadcast ("CastCraft")
+
+A bundled WebOS app at `webos/src/apps/cast` — OBS-like *scene* model, not just a
+share button:
+
+- Sources: `getDisplayMedia` (screen/window/tab), `getUserMedia`
+  (camera, mic), optional image/HTML scene layers composed on a canvas.
+- Preview canvas with per-source visibility toggles and z-order
+  (compositor loop via `requestAnimationFrame`, MediaRecorder for
+  local recording to WebM).
+- Destinations (honest scoping): local record always; WebRTC
+  peer-to-peer share via manual copy/paste SDP offer-answer (no
+  signaling server — serverless by design, same pattern the browser
+  app uses post-proxy-removal); RTMP is NOT feasible from a browser
+  page without a relay — record that as a documented limit, not a
+  hidden gap.
+- Stop handling: track `ended` events (user clicks browser "Stop
+  sharing"), release all tracks, no leaked MediaStreams (mirror the
+  listener-leak discipline from tasks 175/176).
+
+Exit gate: same as P13.1 plus a leak test (streams/tracks closed on
+unmount), sweep phase for scene composition, Aegis re-scan.
+
+### P13.3 — Docs & release
+
+ARCHITECTURE.md app-table rows, registry rows, H6 release checklist
+(minor bump — new user-facing features).
+

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useOS } from '../os/state.jsx';
 import { STORE_APPS } from '../os/registry.js';
+import useModalFocus from './useModalFocus.js';
 
 /* Android-style app drawer for mobile mode: full-screen sheet, search field,
    one-tap launch grid over every available app (installed + one row to the
@@ -8,6 +9,7 @@ import { STORE_APPS } from '../os/registry.js';
 export default function MobileDrawer({ onClose }) {
   const os = useOS();
   const [q, setQ] = useState('');
+  const dialogRef = useModalFocus();
   const needle = q.trim().toLowerCase();
   const apps = os.apps.filter((a) =>
     !needle || [a.name, a.tagline, a.category].join(' ').toLowerCase().includes(needle)
@@ -16,7 +18,7 @@ export default function MobileDrawer({ onClose }) {
   const launch = (id) => { onClose(); os.launch(id); };
 
   return (
-    <div id="drawer" role="dialog" aria-label="All apps">
+    <div id="drawer" role="dialog" aria-modal="true" aria-label="All apps" ref={dialogRef} tabIndex={-1}>
       <header className="drawer-head">
         <input
           type="search"

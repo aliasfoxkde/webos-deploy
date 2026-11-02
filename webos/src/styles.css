@@ -1035,9 +1035,22 @@ body[data-tb="top"] .tb-pop { animation: drop-in 0.16s cubic-bezier(0.2, 0.9, 0.
 .ctx-menu { animation: unfold-in 0.12s cubic-bezier(0.2, 0.9, 0.3, 1); transform-origin: top left; }
 
 /* Motion is a privilege, not the default: vestibular users (OS setting)
-   and the Settings animation knob both get instant surfaces. */
+   and the Settings animation knob both get instant surfaces. This covers
+   every decorative animation in the shell — surfaces, spinner, boot slide,
+   sidebar/widgets entrances, wallpaper drift, screensaver fades. */
 @media (prefers-reduced-motion: reduce) {
   #start-menu, .tb-pop, .ctx-menu, .win, .gp, #sidebar { animation: none; }
+  .spin, .boot-slide, .sb-in { animation: none !important; }
+  .wp-a-float, .wp-a-drift, .wp-a-pulse, .wp-a-spin { animation: none !important; }
+  .wp-float img { animation: none !important; }
+  #screensaver, #screensaver * { animation: none !important; }
+}
+
+/* Off-screen text for screen readers (live regions, extra context). */
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%);
+  white-space: nowrap; border: 0;
 }
 
 /* -- LG4: Chromium refraction (LIQUID-GLASS.md §5) --
@@ -1484,3 +1497,9 @@ body[data-persona="mac"] #start-menu { bottom: 74px; }
 }
 .wpb-float-grid .seg-row { grid-column: 1 / -1; flex-wrap: wrap; }
 .wpb-float-grid input[type="range"] { width: 100%; }
+
+/* bw-tabs: the tablist inside the strip (new-tab button lives outside it,
+   since role=tablist children must be tabs). */
+.bw-tabs {
+  display: flex; align-items: flex-end; gap: 2px;
+}

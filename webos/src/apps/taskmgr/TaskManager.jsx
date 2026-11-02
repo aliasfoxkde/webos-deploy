@@ -186,6 +186,7 @@ export default function TaskManager() {
               type="button"
               role="tab"
               aria-selected={tab === id}
+              aria-controls="tm-panel"
               className={tab === id ? 'on' : ''}
               onClick={() => setTab(id)}
             >
@@ -199,6 +200,7 @@ export default function TaskManager() {
         </span>
       </header>
 
+      <div id="tm-panel" role="tabpanel">
       {tab === 'processes' && (
         <div className="tm-body">
           <div className="tm-toolbar">
@@ -376,6 +378,7 @@ export default function TaskManager() {
           </p>
         </div>
       )}
+      </div>
     </div>
   );
 }
