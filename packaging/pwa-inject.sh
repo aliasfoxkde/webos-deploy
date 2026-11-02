@@ -179,6 +179,11 @@ inject_app deckcraft   "DeckCraft"   "Presentations and slide decks"            
 inject_app soundcraft  "SoundCraft"  "Audio workstation and multitrack recording" "#2dd4bf" "0.13.1" '
     <path d="M144 192v128M208 144v224M272 112v288M336 160v192M400 208v96"/>'
 
+inject_app solidcraft  "SolidCraft"  "Physics sandbox and rigid-body experiments" "#94a3b8" "0.30.1" '
+    <rect x="136" y="288" width="240" height="48" rx="12"/>
+    <circle cx="200" cy="216" r="40"/>
+    <rect x="272" y="176" width="80" height="80" rx="16" transform="rotate(18 312 216)"/>'
+
 inject_app firecraft   "FireCraft"   "Web & screen design"                     "#f97316" "0.2.3" '
     <path d="M256 80 C320 160 400 200 400 280 C400 360 320 400 256 440 C192 400 112 360 112 280 C112 200 192 160 256 80 Z"/>
     <path d="M256 160 C288 200 320 220 320 268 C320 316 288 336 256 356 C224 336 192 316 192 268 C192 220 224 200 256 160 Z" fill="#f97316" stroke="none"/>'

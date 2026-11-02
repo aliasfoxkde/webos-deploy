@@ -90,6 +90,12 @@ export const DEFAULT_APPS = [
     developer: 'ArtCraft', category: 'Design', rating: 4.4, reviews: 37,
     description: 'Hybrid vector + bitmap canvas for web and screen design: pages, layers, vectors, live filters, slicing and smart guides, with read/write Fireworks PNG (.fw.png) documents — a clean-room reimagining of the classic web-design suite in Rust/WebAssembly.',
   },
+  {
+    id: 'solidcraft', name: 'SolidCraft', tagline: 'Physics sandbox', version: '0.30.1',
+    url: 'https://solidcraft-web-cfu.pages.dev/', icon: 'icons/craft/solidcraft.png', accent: '#94a3b8', embed: true,
+    developer: 'Tangency Labs', category: 'Productivity', rating: 4.5, reviews: 64,
+    description: 'An interactive rigid-body physics sandbox: sketch shapes, joints, and constraints, then run the simulation live in the browser — WebAssembly-powered physics without a desktop install.',
+  },
 
   // -- extra default apps --
   {
