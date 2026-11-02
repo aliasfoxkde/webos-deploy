@@ -49,15 +49,52 @@ export function useContextMenu(buildItems) {
     if (x !== menu.x || y !== menu.y) setMenu({ ...menu, x, y });
   }, [menu]);
 
+  // Keyboard model (WAI-ARIA menu pattern): focus enters the menu on open,
+  // ArrowUp/Down move (wrapping), Home/End jump, Escape closes and returns
+  // focus to the invoking element, Enter/Space run the item.
+  useEffect(() => {
+    if (!menu) return undefined;
+    const el = menuRef.current;
+    el?.focus();
+    const onKey = (e) => {
+      if (!menuRef.current) return;
+      const items = [...menuRef.current.querySelectorAll('.ctx-item:not([disabled])')];
+      const active = () => items.indexOf(document.activeElement);
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setMenu(null);
+        (e.target.closest?.('[data-cm]') || document.activeElement)?.focus?.();
+      } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (!items.length) return;
+        const i = active();
+        const next = i === -1
+          ? 0
+          : (i + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
+        items[next].focus();
+      } else if (e.key === 'Home' || e.key === 'End') {
+        e.preventDefault();
+        if (items.length) (e.key === 'Home' ? items[0] : items[items.length - 1]).focus();
+      } else if ((e.key === 'Enter' || e.key === ' ') && document.activeElement?.classList.contains('ctx-item')) {
+        e.preventDefault();
+        document.activeElement.click();
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [menu]);
+
   const node = menu ? (
-    <div className="ctx-menu" ref={menuRef} style={{ left: menu.x, top: menu.y }} role="menu">
+    <div className="ctx-menu" ref={menuRef} style={{ left: menu.x, top: menu.y }} role="menu" tabIndex={-1}>
       {menu.items.map((it, i) =>
         it === '-' ? (
-          <div className="ctx-sep" key={i} />
+          <div className="ctx-sep" key={i} role="separator" />
         ) : (
           <button
             key={i}
             className="ctx-item"
+            role="menuitem"
+            tabIndex={-1}
             onClick={() => { setMenu(null); it.run(); }}
             disabled={it.disabled}
           >

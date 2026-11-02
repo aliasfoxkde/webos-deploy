@@ -1,0 +1,99 @@
+.snip {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 8px;
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+.snip-toolbar {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.snip-btn {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--fg, #e6e9f0);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  padding: 5px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.snip-btn:hover { background: rgba(255, 255, 255, 0.12); }
+.snip-btn.on { border-color: #38bdf8; color: #38bdf8; }
+.snip-btn.primary { background: #0c4a6e; border-color: #38bdf8; }
+
+.snip-swatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+}
+.snip-swatch.on { border-color: #fff; }
+
+.snip-stage { flex: 1; overflow: auto; display: grid; place-items: center; }
+.snip-empty { opacity: 0.6; }
+.snip-canvas-wrap { position: relative; max-width: 100%; }
+.snip-img { display: block; max-width: 100%; max-height: 100%; }
+.snip-ink {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.snip-saved { color: #22c55e; font-size: 12px; margin: 0; }
+.snip-error { color: #f43f5e; font-size: 12px; margin: 0; }
+
+/* Full-screen capture overlay */
+.snip-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.85);
+  display: grid;
+  place-items: center;
+}
+.snip-pick {
+  text-align: center;
+  display: grid;
+  gap: 12px;
+  color: var(--fg, #e6e9f0);
+}
+.snip-actions { display: flex; gap: 8px; justify-content: center; }
+.snip-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  cursor: crosshair;
+  touch-action: none;
+}
+.snip-rect {
+  position: fixed;
+  border: 2px dashed #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+  pointer-events: none;
+}
+.snip-hint {
+  position: fixed;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #fff;
+  font-size: 13px;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 6px 14px;
+  border-radius: 999px;
+}
+
+.snip-video.hidden { display: none; }

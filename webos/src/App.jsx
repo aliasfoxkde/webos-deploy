@@ -12,6 +12,7 @@ import AddApp from './shell/AddApp.jsx';
 import Sidebar from './shell/Sidebar.jsx';
 import MobileDrawer from './shell/MobileDrawer.jsx';
 import Welcome from './shell/Welcome.jsx';
+import useModalFocus from './shell/useModalFocus.js';
 import Screensaver from './shell/Screensaver.jsx';
 import { startMoveDrag } from './shell/winDrag.js';
 import { zoneRect } from './os/snap.js';
@@ -77,11 +78,34 @@ function VirtualWindow({ win }) {
 
 const DRAG_THRESHOLD = 6; // px of movement before a press becomes a drag
 
+/* Screen-reader announcements for window lifecycle. A single polite live
+   region; diffing on ids means restore (same id set) announces nothing. */
+function Announcer({ windows }) {
+  const os = useOS();
+  const prev = useRef(null);
+  const [msg, setMsg] = useState('');
+  useEffect(() => {
+    const ids = windows.map((w) => String(w.id));
+    const before = prev.current;
+    prev.current = ids;
+    if (!before) return; // first render: no announcement for the initial state
+    const opened = windows.find((w) => !before.includes(String(w.id)));
+    if (opened) {
+      setMsg(`${os.findApp(opened.appId)?.name ?? opened.appId} window opened`);
+      return;
+    }
+    const closedId = before.find((id) => !ids.includes(id));
+    if (closedId) setMsg('Window closed');
+  }, [windows, os]);
+  return <div role="status" aria-live="polite" className="visually-hidden">{msg}</div>;
+}
+
 /* Group popup: rename, launch members, unfile members, remove the group. */
 function GroupPopup({ groupId, onClose }) {
   const os = useOS();
   const group = os.groups.find((g) => g.id === groupId);
   const [name, setName] = useState(group?.name || '');
+  const dialogRef = useModalFocus(group != null);
   // Escape closes from anywhere (document-level, so focus inside inputs counts)
   useEffect(() => {
     const k = (e) => { if (e.key === 'Escape') onClose(); };
@@ -97,7 +121,10 @@ function GroupPopup({ groupId, onClose }) {
       <div
         className="gp"
         role="dialog"
+        aria-modal="true"
         aria-label={group.name}
+        ref={dialogRef}
+        tabIndex={-1}
       >
         <header className="gp-head">
           <input
@@ -566,6 +593,7 @@ export default function App() {
             VIRTUAL[w.appId] ? <VirtualWindow key={w.id} win={w} /> : <Window key={w.id} win={w} />
           )}
         </div>
+        <Announcer windows={os.windows} />
       </main>
       <StartMenu
         open={startOpen}

@@ -192,14 +192,17 @@ export default function BrowserApp({ args }) {
 
   return (
     <div className="bw" ref={rootRef}>
-      <div className="bw-strip" role="tablist" aria-label="Browser tabs">
+      <div className="bw-strip">
+        <div className="bw-tabs" role="tablist" aria-label="Browser tabs">
         {state.tabs.map((t, i) => {
           const e = t.entries[t.index];
           return (
             <div
               key={t.id}
+              id={`bw-tab-${t.id}`}
               role="tab"
               aria-selected={t.id === tab.id}
+              aria-controls="bw-panel"
               tabIndex={0}
               className={`bw-tab ${t.id === tab.id ? 'active' : ''}`}
               onClick={() => dispatch({ type: 'activate', id: t.id })}
@@ -223,6 +226,7 @@ export default function BrowserApp({ args }) {
             </div>
           );
         })}
+        </div>
         <button
           type="button"
           className="bw-newtab"
@@ -281,7 +285,7 @@ export default function BrowserApp({ args }) {
         </div>
       </div>
 
-      <div className="bw-content">
+      <div className="bw-content" id="bw-panel" role="tabpanel" aria-labelledby={`bw-tab-${tab.id}`}>
         {state.tabs.map((t) => {
           const e = t.entries[t.index];
           const isActive = t.id === tab.id;

@@ -21,13 +21,14 @@ function Shell() {
   const calc = useCalc();
   return (
     <div className="calc">
-      <div className="calc-tabs" role="tablist">
+      <div className="calc-tabs" role="tablist" aria-label="Calculator modes">
         {MODES.map((m) => (
           <button
             key={m.id}
             type="button"
             role="tab"
             aria-selected={calc.mode === m.id}
+            aria-controls="calc-panel"
             className={`calc-tab ${calc.mode === m.id ? 'on' : ''}`}
             onClick={() => calc.setMode(m.id)}
           >
@@ -35,11 +36,13 @@ function Shell() {
           </button>
         ))}
       </div>
-      {calc.mode === 'standard' && <Standard />}
-      {calc.mode === 'scientific' && <Scientific />}
-      {calc.mode === 'graph' && <Graphing />}
-      {calc.mode === 'programmer' && <Programmer />}
-      {calc.mode === 'converter' && <Converter />}
+      <div id="calc-panel" role="tabpanel">
+        {calc.mode === 'standard' && <Standard />}
+        {calc.mode === 'scientific' && <Scientific />}
+        {calc.mode === 'graph' && <Graphing />}
+        {calc.mode === 'programmer' && <Programmer />}
+        {calc.mode === 'converter' && <Converter />}
+      </div>
     </div>
   );
 }

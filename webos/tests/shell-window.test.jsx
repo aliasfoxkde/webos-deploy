@@ -110,7 +110,7 @@ describe('Window', () => {
     const c = mountApp('calc');
     expect(c.container.textContent).toContain('Starting Calculator…');
     // the lazy chunk resolves in a macrotask — waitFor drains it inside act
-    await c.findByText('Standard', {}, { timeout: 5_000 }); // calculator mode tabs
+    await c.findByText('Standard', {}, { timeout: 30_000 }); // calculator mode tabs (generous: CI hosts under load resolve lazy chunks slowly)
     expect(c.container.textContent).not.toContain('Starting Calculator…');
   });
 

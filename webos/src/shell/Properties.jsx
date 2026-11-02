@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useOS } from '../os/state.jsx';
 import { STORE_APPS } from '../os/registry.js';
+import useModalFocus from './useModalFocus.js';
 
 export function Stars({ rating, size = 14 }) {
   const full = Math.round(rating || 0);
@@ -23,6 +24,7 @@ const sourceHost = (url) => {
 export default function Properties({ appId, onClose }) {
   const os = useOS();
   const app = os.findApp(appId);
+  const dialogRef = useModalFocus(app != null);
   // Escape closes from anywhere (document-level, so focus inside inputs counts)
   useEffect(() => {
     const k = (e) => { if (e.key === 'Escape') onClose(); };
@@ -49,7 +51,10 @@ export default function Properties({ appId, onClose }) {
       <div
         className="props"
         role="dialog"
+        aria-modal="true"
         aria-label={`${app.name} properties`}
+        ref={dialogRef}
+        tabIndex={-1}
       >
         <header className="props-head">
           <img src={app.icon} alt="" />

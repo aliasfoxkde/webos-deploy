@@ -1,0 +1,56 @@
+.cast {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 8px;
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+.cast-toolbar { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+
+.cast-btn {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--fg, #e6e9f0);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  padding: 5px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  text-decoration: none;
+}
+.cast-btn:hover { background: rgba(255, 255, 255, 0.12); }
+.cast-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.cast-btn.small { padding: 2px 8px; }
+.cast-btn.rec { border-color: #f43f5e; color: #f43f5e; }
+.cast-btn.rec.on { background: #f43f5e; color: #fff; }
+
+.cast-stage {
+  width: 100%;
+  max-width: 100%;
+  border-radius: 10px;
+  background: #0a0f18;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.cast-sources { display: flex; flex-direction: column; gap: 4px; }
+.cast-source {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+}
+.cast-eye button {
+  background: none;
+  border: none;
+  color: var(--fg, #e6e9f0);
+  opacity: 0.45;
+  cursor: pointer;
+  font-size: 15px;
+}
+.cast-eye.on button { opacity: 1; color: #22c55e; }
+.cast-label { flex: 1; font-size: 13px; }
+.cast-empty { opacity: 0.6; font-size: 13px; }
+.cast-error { color: #f43f5e; font-size: 12px; margin: 0; }

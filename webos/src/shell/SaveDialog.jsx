@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import useModalFocus from './useModalFocus.js';
 
 /* Shared save-as dialog for export handoffs.
    Opens a filename input over a blurred backdrop; calls onSave(filename)
@@ -19,6 +20,7 @@ import { createPortal } from 'react-dom';
 export default function SaveDialog({ suggestedName, directory, format, onSave, onCancel }) {
   const [name, setName] = useState(() => suggestedName ?? 'untitled.png');
   const inputRef = useRef(null);
+  const dialogRef = useModalFocus();
 
   // Auto-focus the input when the dialog opens; select the name without the extension.
   // Use a ref to capture the initial name so the effect runs once on mount only —
@@ -54,6 +56,8 @@ export default function SaveDialog({ suggestedName, directory, format, onSave, o
         role="dialog"
         aria-label="Save as"
         aria-modal="true"
+        ref={dialogRef}
+        tabIndex={-1}
       >
         <header className="props-head">
           <img src="icons/file-export.svg" alt="" />

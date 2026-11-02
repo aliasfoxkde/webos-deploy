@@ -204,12 +204,13 @@ export default function Editor({ args } = {}) {
         </button>
       </div>
 
-      <div className="ed-tabs" role="tablist">
+      <div className="ed-tabs" role="tablist" aria-label="Open files">
         {state.buffers.map((b) => (
           <span
             key={b.id}
             role="tab"
             aria-selected={b.id === state.activeId}
+            aria-controls={showPreview ? 'ed-preview' : 'ed-host'}
             tabIndex={0}
             className={`ed-tab ${b.id === state.activeId ? 'on' : ''}`}
             onClick={() => applyState(reducer(state, { type: 'activate', id: b.id }))}
@@ -235,11 +236,11 @@ export default function Editor({ args } = {}) {
       </div>
 
       {showPreview ? (
-        <div className="ed-preview">
+        <div id="ed-preview" role="tabpanel" className="ed-preview">
           <MarkdownView src={active.text} />
         </div>
       ) : (
-        <div className="ed-host" ref={host} />
+        <div id="ed-host" role="tabpanel" className="ed-host" ref={host} />
       )}
 
       <div className="ed-status">

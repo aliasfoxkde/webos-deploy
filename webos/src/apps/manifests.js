@@ -12,5 +12,7 @@ import chat from './chat/manifest.js';
 import photos from './photos/manifest.js';
 import notepad from './notepad/manifest.js';
 import taskmgr from './taskmgr/manifest.js';
+import snippet from './snippet/manifest.js';
+import cast from './cast/manifest.js';
 
-export const PLUGIN_APPS = [browser, terminal, video, calc, editor, weather, files, chat, photos, notepad, taskmgr];
+export const PLUGIN_APPS = [browser, terminal, video, calc, editor, weather, files, chat, photos, notepad, taskmgr, snippet, cast];

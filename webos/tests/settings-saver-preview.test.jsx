@@ -100,21 +100,21 @@ describe('SaverPreview', () => {
 });
 
 describe('SaverPreview — default-speed fallbacks', () => {
-  // The `s.speed || 1` / `s.photoSecs || 8` arms run when the saver state
-  // carries no explicit speed (the default-off-prefs path).
-  it('FX and photo kinds use their default speed/photoSecs when unset', () => {
+  // The `s.speed || 1` / `s.photoSecs || 8` arms guard against a falsy value
+  // (e.g. a zeroed/corrupt prefs blob) reaching the child implementations.
+  it('FX and photo kinds fall back to their defaults on a falsy speed/photoSecs', () => {
     const c = mount();
-    act(() => cur.setSaver({ kind: 'matrix' })); // no speed → || 1
+    act(() => cur.setSaver({ kind: 'matrix', speed: 0 })); // 0 → || 1
     expect(c.container.querySelector('canvas#saver-preview-fx')).toBeTruthy();
     act(() => { rafCalls[rafCalls.length - 1](16); });
     expect(ctx2d.calls.some(([n]) => n === 'fillText')).toBe(true);
-    act(() => cur.setSaver({ kind: 'photos' })); // no photoSecs → || 8
+    act(() => cur.setSaver({ kind: 'photos', photoSecs: 0 })); // 0 → || 8
     expect(c.container.querySelector('.saver-photo')).toBeTruthy();
   });
 
-  it('water kind without explicit speed uses the 0.35 default factor', () => {
+  it('water kind falls back to the 0.35 default factor on a falsy speed', () => {
     const c = mount();
-    act(() => cur.setSaver({ kind: 'water' }));
+    act(() => cur.setSaver({ kind: 'water', speed: 0 }));
     expect(c.container.querySelector('canvas#saver-preview-fx')).toBeTruthy();
     expect(rafCalls.length).toBeGreaterThan(0);
   });
