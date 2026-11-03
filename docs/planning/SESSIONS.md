@@ -1,3 +1,33 @@
+## 2026-11-02 — SolidCraft becomes the thirteenth craft app; v3.25.0 released
+
+- **SolidCraft** (tangency-labs/solidcraft v0.30.1, rigid-body physics
+  sandbox) registered as the thirteenth craft app (PR #27): registry row
+  (tagline "Physics sandbox", accent `#94a3b8`, embed),
+  `fetch-apps.sh` entry (third org field: `tangency-labs`),
+  `pwa-inject.sh` row, version-sync test list, shell icon. Deployed to
+  `solidcraft-web-cfu.pages.dev` (the registered URL serves the local
+  unpacked build byte-for-byte — verified by index.html diff before any
+  redeploy was attempted). Aegis baseline regenerated for the two new
+  LOW findings (interpretability-tool, excess-line-length) — both
+  matched residual classes already accepted for the other twelve.
+- **v3.25.0** shipped (PRs #26–#28, #30): first release cut through the
+  automated tag-push workflow (#25) — HISTORY.md row + version bump
+  + tag, CI ran gates and deployed Pages. Contents: same-origin proxy
+  removal (#26, closes #12), Snippet capture + CastCraft, store fifth
+  wave, SolidCraft (#27).
+- **Found by verification, not by the gate**: the release bump missed
+  `public/sw.js` — production kept `webos-v3.24.0` as its cache
+  version, so existing clients would serve the stale shell. `package.json`
+  and `src/version.js` were bumped but the SW is a third hand-maintained
+  version site. Fixed in PR #30 and pinned: `tests/version.test.js` now
+  asserts the SW cache version equals `src/version.js`, so the next
+  missed bump fails `npm run ci` instead of shipping. (Registry versions
+  were already pinned; the SW version was the unpinned site.) Lesson
+  generalizes: every per-release hand-edit needs a pinning test, and the
+  release checklist should be executable, not remembered —
+  [HANDOFF.md](HANDOFF.md) release section updated to list all three
+  version sites.
+
 ## 2026-10-22 — the Aegis baseline is line-sensitive (found by CI)
 
 - The commit that closed P9.2–P9.4 went red on the Aegis gate
