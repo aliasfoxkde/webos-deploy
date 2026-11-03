@@ -39,6 +39,7 @@ APPS_LIST=(
   "pdfcraft 0.14.0"
   "photocraft 0.16.0"
   "soundcraft 0.13.1"
+  "solidcraft 0.30.1 tangency-labs"
   "vectorcraft 0.17.0"
   "wordcraft 0.11.0"
 )

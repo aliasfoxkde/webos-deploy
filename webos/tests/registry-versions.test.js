@@ -22,8 +22,8 @@ const PACKAGING = join(process.cwd(), '..', 'packaging');
 // Every craft app rides the fetch-apps.sh pipeline: upstream publishes a
 // web release zip for each of them.
 const FETCHED = ['cadcraft', 'deckcraft', 'designcraft', 'effectcraft', 'firecraft',
-  'gridcraft', 'lightcraft', 'pdfcraft', 'photocraft', 'soundcraft', 'vectorcraft',
-  'wordcraft'];
+  'gridcraft', 'lightcraft', 'pdfcraft', 'photocraft', 'solidcraft', 'soundcraft',
+  'vectorcraft', 'wordcraft'];
 
 // Apps whose bundle gets the deployment's PWA wiring injected.
 const INJECTED = FETCHED.filter((id) => id !== 'effectcraft');
@@ -32,7 +32,7 @@ function fetchListVersions() {
   const src = readFileSync(join(PACKAGING, 'fetch-apps.sh'), 'utf8');
   const block = src.slice(src.indexOf('APPS_LIST=('));
   const versions = {};
-  for (const m of block.matchAll(/"([a-z]+)\s+([0-9][0-9.]*)\s*(?:[a-z]+)?"/g)) {
+  for (const m of block.matchAll(/"([a-z]+)\s+([0-9][0-9.]*)\s*(?:[a-z-]+)?"/g)) {
     versions[m[1]] = m[2];
   }
   return versions;

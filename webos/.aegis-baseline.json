@@ -13716,8 +13716,40 @@
       "reference": "https://chartjs.org/docs/latest/general/accessibility.html",
       "tags": [],
       "kind": "pattern",
-      "fingerprint": "chart-accessibility:src/os/registry.js:91:c6a467714f2bc700c7fe032e01ae1b6c52045613211106a00cd5e91790c9be56",
+      "fingerprint": "chart-accessibility:src/os/registry.js:91:85aba12830a1ba94c1156dea8dd9ce65ef9c5ffe384768b886db8db7b4fca7d9",
       "stable_id": "aegis-934123126a87a9009efde18abd7b005737c7d8cec6f51f985b41fd1bdb6b49fd"
+    },
+    {
+      "pattern": "excess-line-length",
+      "category": "code-quality",
+      "severity": "low",
+      "confidence": "high",
+      "location": {
+        "file": "src/os/registry.js",
+        "line": 97,
+        "column": 1
+      },
+      "description": "Excessively long line detected (>200 characters)",
+      "tags": [],
+      "kind": "pattern",
+      "fingerprint": "excess-line-length:src/os/registry.js:97:0b0a709754c2f6be298e8ea339054562eeaec244a57276c701033ca778b07a23",
+      "stable_id": "aegis-67e317517ec381f8705e3878c894dba1f5bad0bbcc5f67b9d3d75083e770d553"
+    },
+    {
+      "pattern": "interpretability-tool",
+      "category": "ai-safety",
+      "severity": "low",
+      "confidence": "high",
+      "location": {
+        "file": "src/os/registry.js",
+        "line": 97,
+        "column": 69
+      },
+      "description": "Interpretability tool reference detected",
+      "tags": [],
+      "kind": "pattern",
+      "fingerprint": "interpretability-tool:src/os/registry.js:97:ec098178cd829fd9686d5e9c33aebc65c1d1e1f1de92967c51603c84bd6510ac",
+      "stable_id": "aegis-4762d4c82ea77c23930e9189e6986910aca4df2b708198dd655fedfcc0081b6e"
     },
     {
       "pattern": "x-frame-options",
@@ -13726,15 +13758,15 @@
       "confidence": "high",
       "location": {
         "file": "src/os/registry.js",
-        "line": 115,
+        "line": 121,
         "column": 29
       },
       "description": "X-Frame-Options header detected",
       "reference": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Frame-Options",
       "tags": [],
       "kind": "pattern",
-      "fingerprint": "x-frame-options:src/os/registry.js:115:8dc7783322ff9aac99d062f379b85ac37538ce182e849dbe869dba227b719d4d",
-      "stable_id": "aegis-ae2198359a18138ab18e50840293e12da7ce259e87204f8fd164059a3efa8a70"
+      "fingerprint": "x-frame-options:src/os/registry.js:121:8dc7783322ff9aac99d062f379b85ac37538ce182e849dbe869dba227b719d4d",
+      "stable_id": "aegis-84a04dee97af2628fd4ee57205f3104e9dc5a630e8e41acb7a00a2f7566f3b10"
     },
     {
       "pattern": "magic-number",
@@ -13743,14 +13775,14 @@
       "confidence": "medium",
       "location": {
         "file": "src/os/registry.js",
-        "line": 139,
+        "line": 145,
         "column": 67
       },
       "description": "Magic number detected",
       "tags": [],
       "kind": "pattern",
-      "fingerprint": "magic-number:src/os/registry.js:139:0af7d7158becc6d02dc41536107090e77195cf90c556cadb37866528cc94e8a9",
-      "stable_id": "aegis-17c9f31d8c9c3e2d5a74ce44339c1f2d59649907bbe524c4ff078c263b036ff2"
+      "fingerprint": "magic-number:src/os/registry.js:145:0af7d7158becc6d02dc41536107090e77195cf90c556cadb37866528cc94e8a9",
+      "stable_id": "aegis-25de1fa703c57d5e30075ee6622bd282c3668feb8589421fbfe31124cab1b3cf"
     },
     {
       "pattern": "interpretability-tool",
@@ -13759,14 +13791,14 @@
       "confidence": "high",
       "location": {
         "file": "src/os/registry.js",
-        "line": 182,
+        "line": 188,
         "column": 57
       },
       "description": "Interpretability tool reference detected",
       "tags": [],
       "kind": "pattern",
-      "fingerprint": "interpretability-tool:src/os/registry.js:182:ec098178cd829fd9686d5e9c33aebc65c1d1e1f1de92967c51603c84bd6510ac",
-      "stable_id": "aegis-56402d638cd0b0a9eed9369ce18b0beeab519a1737ea060a422561e513c24414"
+      "fingerprint": "interpretability-tool:src/os/registry.js:188:ec098178cd829fd9686d5e9c33aebc65c1d1e1f1de92967c51603c84bd6510ac",
+      "stable_id": "aegis-db9850f66e477079965ef18a9cc66531694cb5bb3997726c91cdafdbbdce554d"
     },
     {
       "pattern": "x-frame-options",
@@ -13775,15 +13807,15 @@
       "confidence": "high",
       "location": {
         "file": "src/os/registry.js",
-        "line": 222,
+        "line": 228,
         "column": 13
       },
       "description": "X-Frame-Options header detected",
       "reference": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Frame-Options",
       "tags": [],
       "kind": "pattern",
-      "fingerprint": "x-frame-options:src/os/registry.js:222:8dc7783322ff9aac99d062f379b85ac37538ce182e849dbe869dba227b719d4d",
-      "stable_id": "aegis-a713f15b11a0eedc20fb0cf40111dc90739f749bd71e7492eb947ddf9f413de0"
+      "fingerprint": "x-frame-options:src/os/registry.js:228:8dc7783322ff9aac99d062f379b85ac37538ce182e849dbe869dba227b719d4d",
+      "stable_id": "aegis-77ef0fb16b270f2c9e3530219cbf156d49df12e986fe5c597511e71ba3936fc2"
     },
     {
       "pattern": "interpretability-tool",
@@ -13792,14 +13824,14 @@
       "confidence": "high",
       "location": {
         "file": "src/os/registry.js",
-        "line": 260,
+        "line": 266,
         "column": 65
       },
       "description": "Interpretability tool reference detected",
       "tags": [],
       "kind": "pattern",
-      "fingerprint": "interpretability-tool:src/os/registry.js:260:ec098178cd829fd9686d5e9c33aebc65c1d1e1f1de92967c51603c84bd6510ac",
-      "stable_id": "aegis-a3bc4b40da68f60a8f773a5ef5cda419d7ca85573290d5f0eeb76d624096c404"
+      "fingerprint": "interpretability-tool:src/os/registry.js:266:ec098178cd829fd9686d5e9c33aebc65c1d1e1f1de92967c51603c84bd6510ac",
+      "stable_id": "aegis-f4875940258ea50e3a6231b76b18faec6ce4452bbfd5932357aa1e4718d2107b"
     },
     {
       "pattern": "interpretability-tool",
@@ -13808,14 +13840,14 @@
       "confidence": "high",
       "location": {
         "file": "src/os/registry.js",
-        "line": 287,
+        "line": 293,
         "column": 115
       },
       "description": "Interpretability tool reference detected",
       "tags": [],
       "kind": "pattern",
-      "fingerprint": "interpretability-tool:src/os/registry.js:287:ec098178cd829fd9686d5e9c33aebc65c1d1e1f1de92967c51603c84bd6510ac",
-      "stable_id": "aegis-bae48c0a7076926c257149a6ac5f461c75e9e42d390302252e6809ca5b4457f7"
+      "fingerprint": "interpretability-tool:src/os/registry.js:293:ec098178cd829fd9686d5e9c33aebc65c1d1e1f1de92967c51603c84bd6510ac",
+      "stable_id": "aegis-20f7816c42191e7a3a2c5a0c1e0da266cfe3462329b6b5dcfe18dbfcd6770b0c"
     },
     {
       "pattern": "x-frame-options",
@@ -13824,15 +13856,15 @@
       "confidence": "high",
       "location": {
         "file": "src/os/registry.js",
-        "line": 302,
+        "line": 308,
         "column": 10
       },
       "description": "X-Frame-Options header detected",
       "reference": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Frame-Options",
       "tags": [],
       "kind": "pattern",
-      "fingerprint": "x-frame-options:src/os/registry.js:302:8dc7783322ff9aac99d062f379b85ac37538ce182e849dbe869dba227b719d4d",
-      "stable_id": "aegis-a947cba0a340490c60f751128dd5757d735da4f104a2f4041e5eb01686a2270c"
+      "fingerprint": "x-frame-options:src/os/registry.js:308:8dc7783322ff9aac99d062f379b85ac37538ce182e849dbe869dba227b719d4d",
+      "stable_id": "aegis-63fbbbf76c0039e696f6d554bc408275cf5b850b47a26978b7b77eeca9fd9ce9"
     },
     {
       "pattern": "excess-line-length",
@@ -13841,14 +13873,14 @@
       "confidence": "high",
       "location": {
         "file": "src/os/registry.js",
-        "line": 311,
+        "line": 317,
         "column": 1
       },
       "description": "Excessively long line detected (>200 characters)",
       "tags": [],
       "kind": "pattern",
-      "fingerprint": "excess-line-length:src/os/registry.js:311:6e25d63c7fb211e09476182d40586bc1164341dddd38fc4268776c638aac2790",
-      "stable_id": "aegis-b564a94327fed202ee1279817cf326785fd9d1209dc361223c939521e28f6c55"
+      "fingerprint": "excess-line-length:src/os/registry.js:317:6e25d63c7fb211e09476182d40586bc1164341dddd38fc4268776c638aac2790",
+      "stable_id": "aegis-6301027b9d05e55b1ec76983d3051a569a006d5af71e0f1fcd430041319e8d7e"
     },
     {
       "pattern": "interpretability-tool",
@@ -13857,14 +13889,14 @@
       "confidence": "high",
       "location": {
         "file": "src/os/registry.js",
-        "line": 311,
+        "line": 317,
         "column": 45
       },
       "description": "Interpretability tool reference detected",
       "tags": [],
       "kind": "pattern",
-      "fingerprint": "interpretability-tool:src/os/registry.js:311:ec098178cd829fd9686d5e9c33aebc65c1d1e1f1de92967c51603c84bd6510ac",
-      "stable_id": "aegis-03261c41c453f8366696766946e0ea84fbdefb63f4f472d62085960d191278f8"
+      "fingerprint": "interpretability-tool:src/os/registry.js:317:ec098178cd829fd9686d5e9c33aebc65c1d1e1f1de92967c51603c84bd6510ac",
+      "stable_id": "aegis-059f56a33972af01485445608e364b92fb1cec16f52af1147fe9ae8868d6f996"
     },
     {
       "pattern": "excess-line-length",
@@ -13873,14 +13905,14 @@
       "confidence": "high",
       "location": {
         "file": "src/os/registry.js",
-        "line": 359,
+        "line": 365,
         "column": 1
       },
       "description": "Excessively long line detected (>200 characters)",
       "tags": [],
       "kind": "pattern",
-      "fingerprint": "excess-line-length:src/os/registry.js:359:d2286fe43c735981da7132d47767eede56f8a2b1b9960427bb508b20df3ae64e",
-      "stable_id": "aegis-7c579801ca40067109c26c7fa8985d29dcefe86323edee884cb2b1e7d5ceb156"
+      "fingerprint": "excess-line-length:src/os/registry.js:365:d2286fe43c735981da7132d47767eede56f8a2b1b9960427bb508b20df3ae64e",
+      "stable_id": "aegis-3f3176b0feac2b11695277dc08fcb8b5269f4e9ad200a0597cbdd8e4afdcf9a5"
     },
     {
       "pattern": "react-missing-key-prop",
@@ -30574,23 +30606,23 @@
     "files_scanned": 121,
     "files_skipped": 0,
     "files_failed": 0,
-    "bytes_scanned": 776535,
-    "finding_count": 1891,
+    "bytes_scanned": 777041,
+    "finding_count": 1893,
     "suppressed_count": 0,
     "patterns_matched": 407,
     "files_by_extension": {},
     "findings_by_severity": {
       "high": 1036,
       "info": 2,
-      "low": 586,
+      "low": 588,
       "medium": 267
     },
     "findings_by_category": {
       "accessibility": 161,
       "ai-detection": 33,
-      "ai-safety": 38,
+      "ai-safety": 39,
       "cloud-native": 13,
-      "code-quality": 172,
+      "code-quality": 173,
       "compliance": 4,
       "data-visualization": 64,
       "devops": 3,
