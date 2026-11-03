@@ -65,8 +65,15 @@ you complete them.
   wrapped at 72, `Co-Authored-By: Claude <noreply@anthropic.com>` trailer.
   Start and end every session with a commit + push.
 - **Version bumps are ×3**: `webos/package.json`, `webos/src/version.js`,
-  `webos/public/sw.js` (`webos-vX.Y.Z`). A test enforces package.json ⇄
-  version.js; production verification relies on the sw.js cache name.
+  `webos/public/sw.js` (`webos-vX.Y.Z`). Tests enforce package.json ⇄
+  version.js and version.js ⇄ sw.js (`tests/version.test.js` — the sw.js
+  pin was added after v3.25.0 shipped with a stale SW cache), so a missed
+  bump now fails `npm run ci`. Releases are cut by the automated tag-push
+  workflow (`.github/workflows/release.yml`): add the HISTORY.md row,
+  bump all three, commit through a PR (direct main pushes are declined by
+  the Safeguards ruleset), merge, then `git tag vX.Y.Z && git push
+  origin vX.Y.Z` — CI runs the gates, creates the GitHub release from the
+  HISTORY.md row, and deploys Pages.
 - **Docs are gated**: `tests/docs-coverage.test.js` pins the ARCHITECTURE
   Module index to the src/ tree; `tests/docs-references.test.js` asserts
   every repo path cited in README/CLAUDE.md/docs/** exists (craft-repo-

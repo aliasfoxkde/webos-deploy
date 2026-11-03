@@ -4,20 +4,20 @@ Live status board. Update this (and [SESSIONS.md](SESSIONS.md)) at the end
 of every working session. Plan-of-record for open work:
 [HANDOFF.md](HANDOFF.md).
 
-## Snapshot (runtime baseline 2026-10-25; repository and CI verified 2026-11-01)
+## Snapshot (runtime baseline 2026-11-02; repository and CI verified 2026-11-02)
 
 | Dimension | State |
 |---|---|
-| Released / deployed version | **3.23.0** ([v3.23.0](https://github.com/aliasfoxkde/ArtCraft-WebOS/releases/tag/v3.23.0)) → next: **3.24.0** (e2e hardening release) |
-| Production | https://artcraft-webos.pages.dev — served bundle hash matches local `webos/dist`, `sw.js` cache `webos-v3.23.0` |
-| Craft apps | all twelve on their current upstream web release (2026-10-25): cadcraft 0.13.0, deckcraft 0.11.1, designcraft 0.13.0, effectcraft 0.17.0, firecraft 0.2.3, gridcraft 0.12.1, lightcraft 0.14.0, pdfcraft 0.14.0, photocraft 0.16.0, soundcraft 0.13.1, vectorcraft 0.17.0, wordcraft 0.11.0 — eight of them served from the R2 `craftweb` route |
+| Released / deployed version | **3.25.0** ([v3.25.0](https://github.com/aliasfoxkde/ArtCraft-WebOS/releases/tag/v3.25.0)) |
+| Production | https://artcraft-webos.pages.dev — served bundle hash matches local `webos/dist`, `sw.js` cache `webos-v3.25.0` |
+| Craft apps | all thirteen on their current upstream web release (2026-11-02): cadcraft 0.13.0, deckcraft 0.11.1, designcraft 0.13.0, effectcraft 0.17.0, firecraft 0.2.3, gridcraft 0.12.1, lightcraft 0.14.0, pdfcraft 0.14.0, photocraft 0.16.0, **solidcraft 0.30.1** (tangency-labs), soundcraft 0.13.1, vectorcraft 0.17.0, wordcraft 0.11.0 — eight of them served from the R2 `craftweb` route |
 | FireCraft | https://firecraft-web.pages.dev — **v0.2.3**, served from the upstream release zip (wasm `firecraft-web-d13f1a83e8a1a76f`) on the standard `fetch-apps.sh` pipeline; bridge autosave/open-with/exportPng→Photos + export-to-Files (2026-10-21) |
-| Tests | ~1390 specs / 91 files, `npm run ci` green |
-| Coverage | 98.92% stmts / 94.92% branches / 99.10% funcs / **99.92% lines**; floors 98.6/94.6/98.8/99.85 in `webos/vitest.config.js` (91 files, measured − tolerance) |
+| Tests | 1475 specs / 95 files, `npm run ci` green |
+| Coverage | 98.88% stmts / 94.86% branches / 98.95% funcs / **99.91% lines**; floors 98.6/94.6/98.8/99.85 in `webos/vitest.config.js` (95 files, measured − tolerance) |
 | Lint | strictest ruleset, zero warnings |
 | Accessibility | WCAG 2.1 AAA token gates incl. wallpaper-extreme flattening + desktop scrim pills |
 | Docs coverage | ARCHITECTURE.md Module index ⇄ src/ enforced by `tests/docs-coverage.test.js` — now in GitForge CI pipeline |
-| Registry versions | 12/12 craft-app rows match the deployed bundle (verified by asset + wasm hash); pinned by `tests/registry-versions.test.js` |
+| Registry versions | 13/13 craft-app rows match the deployed bundle (verified by asset + wasm hash); pinned by `tests/registry-versions.test.js`. The shell SW cache version is pinned to `src/version.js` by `tests/version.test.js` (added after the v3.25.0 SW-bump miss) |
 | CI | GitHub Actions: lint, docs gate, WCAG audit, coverage ratchet, build, E2E sweep, **Shellcheck**, **Aegis**, and **CodeQL**. GitHub Safeguards now requires both CodeQL results and the full WebOS CI check before merge. GitForge mirrors the application gates. Historical GitForge trigger issue remains in R2. |
 | Aegis | scanner pinned to `aliasfoxkde/aegis` **v0.6.4** (checksum-verified) via `packaging/aegis-scan.sh`; baseline regenerated with that binary (1809 findings / 111 files / 22 categories); the gate fails only on findings outside the baseline |
 
@@ -39,17 +39,10 @@ of every working session. Plan-of-record for open work:
 
 ## Open (ordered; atomic tasks in HANDOFF.md)
 
-- [ ] **S1** Same-origin proxy removal (issue #12) — code complete on
-      branch `codex/disable-browser-proxy` (commit bf8148a): fail-closed
-      410 worker, proxy mode stripped from the browser, session
-      reclassification, fail-closed contract tests, docs rewritten. Open
-      the PR, merge, close #12, then release/deploy (v3.25.0).
 - [ ] **P15/P16** OSS-readiness refinements in
       [OSS-READINESS-PLAN.md](OSS-READINESS-PLAN.md) — dependency-review
       workflow, branch-coverage ratchet trial, P16.3 accessibility audit
       beyond contrast.
-- [ ] **PR #25** Automated release workflow (`codex/release-workflow`) —
-      review, gate, merge.
 - [ ] **H1** Routine-change loop — standing procedure, apply per change.
 - [x] **H2** FireCraft: H2.0–H2.6 complete — v0.2.1 deployed, v3.17.0 shipped.
       H2.1 contract documented; H2.2 postToApp correlate implemented; H2.3
@@ -60,8 +53,9 @@ of every working session. Plan-of-record for open work:
 - [ ] **H3** Upstream adoption watch — H3.1 FireCraft app mark swap when
       upstream ships one (waiting on aliasfoxkde/FireCraft#2, still open
       2026-10-25). All twelve apps were re-adopted 2026-10-25 (P13, v3.23.0);
-      the watch continues for the next upstream release of any of the
-      twelve. H3.3 registry audit holds — pinned by
+      SolidCraft joined as the thirteenth 2026-11-02 (v3.25.0); the watch
+      continues for the next upstream release of any app. H3.3 registry
+      audit holds — pinned by
       `tests/registry-versions.test.js`.
 - [x] **P9** Future-work items — P9.1 and P9.5 closed with the craft-app
       upgrade (2026-10-22); P9.2 preview server pinned to 127.0.0.1;
@@ -90,7 +84,7 @@ of every working session. Plan-of-record for open work:
       export-to-Files path got component-level tests, and the E2E sweep's
       FireCraft open-with phase was repaired (it imported a module URL the
       production build does not serve) — the sweep is green 27/27.
-- [x] **H6** Releases — v3.18.0 shipped 2026-10-19 (its gate was red; fixed in v3.19.0), v3.19.0 shipped 2026-10-20 with a green gate, v3.20.0 shipped 2026-10-21 (FireCraft v0.2.2 sync, coverage sprint, Aegis gate repaired), v3.21.0 shipped 2026-10-22 (all craft apps upgraded to their current upstream releases; R2 publish automated), v3.22.0 shipped 2026-10-24 (reproducible Aegis baseline, Dependabot, e2e shell-state assertions, os/db error-path coverage), v3.22.1 shipped 2026-10-25 (e2e DevTools-port timeout fix), v3.23.0 shipped 2026-10-25 (all twelve craft apps upgraded to current upstream releases — P13). Checklist in HANDOFF.md.
+- [x] **H6** Releases — v3.18.0 shipped 2026-10-19 (its gate was red; fixed in v3.19.0), v3.19.0 shipped 2026-10-20 with a green gate, v3.20.0 shipped 2026-10-21 (FireCraft v0.2.2 sync, coverage sprint, Aegis gate repaired), v3.21.0 shipped 2026-10-22 (all craft apps upgraded to their current upstream releases; R2 publish automated), v3.22.0 shipped 2026-10-24 (reproducible Aegis baseline, Dependabot, e2e shell-state assertions, os/db error-path coverage), v3.22.1 shipped 2026-10-25 (e2e DevTools-port timeout fix), v3.23.0 shipped 2026-10-25 (all twelve craft apps upgraded to current upstream releases — P13), v3.24.0 shipped 2026-11-01 (e2e sweep hardening), v3.25.0 shipped 2026-11-02 via the automated tag-push release workflow (#25) — first release cut through CI (same-origin proxy removal #26 closing #12; Snippet + CastCraft; store fifth wave; SolidCraft as the thirteenth craft app #27; SW-cache version pinned to src/version.js #30 after the release's missed sw.js bump). Checklist in HANDOFF.md.
 
 ## Deliberately closed (do not reopen without new evidence)
 
