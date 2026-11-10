@@ -216,7 +216,57 @@ Btrfs is a candidate filesystem for the installed Linux target, not a browser fe
 
 A device ROM is not the same deliverable as an ISO. It requires an explicit device list, bootloader unlock/flash process, device-specific kernel/device tree, hardware drivers, secure/verified boot or an honest documented alternative, OTA update signing, partition layout, recovery/restore tool, radios/sensors/cameras/power validation, and a maintainable security-update commitment. Do not imply universal Android-device compatibility.
 
-## 9. Phased execution order
+## 9. External ecosystem alignment: reuse the Craft foundation, then complete the SDK
+
+ArtCraft WebOS should not independently recreate useful infrastructure that already exists in the wider Craft ecosystem. At the same time, WebOS has a broader remit than any one desktop-app suite: it must provide coherent browser, native, CLI/MCP, and eventually system-level contracts across apps that may not be written in Rust.
+
+### Upstream library source
+
+[storytold/craft-libs](https://github.com/storytold/craft-libs) is an existing Rust workspace for reusable Craft application libraries. It uses small crate boundaries, optional features, shared lint/test conventions, and pinned Git revisions; it is dual-licensed MIT OR Apache-2.0. Evaluate it as the first upstream source for Rust foundations rather than starting a competing collection of near-duplicate crates.
+
+High-value candidates to review include:
+
+- **Web integration:** craft-web-api and craft-web-host for common page-control and parent-host bridge semantics.
+- **AI contracts:** craft-ai-core for versioned tool/model/request/consent/job data. Its current contract is not a general execution engine, agent runtime, or proof that a model/provider adapter exists.
+- **Platform and persistence:** craft-platform, craft-atomic, craft-settings, craft-dialogs, craft-menu, and craft-window where their runtime assumptions match the host.
+- **UI and domain primitives:** craft-ui, craft-cms, craft-keymap, craft-text, and focused format/media crates when actual consumers and compatible targets exist.
+
+Use the [shared-library candidate criteria](https://github.com/storytold/craft-libs/issues/2): prefer mechanisms needed by at least two real applications, small boundaries, measurable quality/performance/maintenance benefit, explicit adapters or policy inputs for app-specific differences, and incremental adoption with tests. Distinguish extraction of identical code from consolidation of divergent implementations, common API standardization, and reusable UI components. A common crate is not automatically the right answer; preserve useful duplication when sharing would create coupling or erase product-specific behavior.
+
+The WebOS host is currently React/TypeScript while many Craft applications are Rust/egui or Rust/WASM. Therefore the completed platform SDK must have two coordinated layers:
+
+1. **Rust implementation libraries:** consume compatible craft-libs crates directly at immutable tested revisions where appropriate; keep dependencies feature-gated and avoid a monolithic umbrella crate.
+2. **Language-neutral platform contracts:** versioned schemas for app manifests, command/tool descriptors, capabilities, permissions, storage, lifecycle, events, errors, and host requests. Generate or validate TypeScript and Rust bindings from the same contract, with conformance fixtures across runtimes.
+3. **Host SDK/adapters:** TypeScript clients for the WebOS shell, browser bridge and broker; Rust adapters for native and WASM apps; CLI/MCP adapters that invoke the same command definitions.
+4. **Product-specific APIs:** application-owned document models, editing policy, UX, and compatibility behavior stay in the application. The platform SDK supplies transport, policy enforcement, lifecycle, identity, and reusable mechanisms, not one universal document model.
+
+craft-web-api/craft-web-host should be evaluated before inventing another browser bridge. FireCraft is a useful first consumer and test case, but the resulting contract must work for a second independent app before it is promoted as a general platform standard. Keep an adapter or compatibility period if the existing FireCraft bridge already has consumers.
+
+### Shared DevOps, release, and contribution model
+
+[storytold/craft-common-actions](https://github.com/storytold/craft-common-actions) already supplies reusable GitHub Actions for quality gates, packaging lint, and multi-platform release engineering. Reuse its proven patterns and contribute generic improvements upstream rather than cloning large workflow files into each repository.
+
+Its current release pipeline provides a useful reference matrix: macOS universal; Windows x64/x86/ARM64; Linux x86_64/aarch64 GNU; Flatpak; Arch; FreeBSD x86_64/aarch64; WebAssembly; Linux RISC-V 64; and optional headless Linux server outputs. It centralizes package/signing helpers, checksums, and release assembly. It is not a complete universal platform matrix: Android APK support (issue [#183](https://github.com/storytold/craft-common-actions/issues/183)), musl builds ([#168](https://github.com/storytold/craft-common-actions/issues/168)), and build-provenance attestations ([#29](https://github.com/storytold/craft-common-actions/issues/29)) are open proposals and must not be represented as shipped features.
+
+Do not copy the workflow wholesale without checking its assumptions. Some jobs enforce Storytold-specific Git dependency policy and shared font/i18n inputs; packaging, signing secrets, architectures, and artifact names may need app-specific inputs or upstream changes. A reusable workflow must not silently omit WebOS-specific browser E2E, schema compatibility, security-boundary, data-migration, or deployed-hash checks.
+
+The artcraft-candidates organization is an incubator and compatibility proving ground, not a transfer of source ownership. Its RFC ([storytold/artcraft#2336](https://github.com/storytold/artcraft/issues/2336)) explicitly aims to let independent authors retain their canonical repositories while candidate forks validate shared crates, multi-platform workflows, and cross-app integration. Follow that model: test on the candidate fork, send generic fixes to the relevant shared repositories, and merge app-specific changes back through reviewed PRs in the canonical product repository.
+
+### SDK and release governance
+
+A finalized shared SDK needs a small set of enforceable engineering standards, not just a package of helper functions:
+
+- Semantic versioning for public crates and host contracts, explicit compatibility ranges, deprecation windows, migration guides, and backwards-compatibility tests.
+- Dependency and feature budgets for each target; no native-only dependency in browser builds unless explicitly required and measured.
+- Required formatting, lint, unit/integration/property tests, docs tests, security/dependency audits, license checks, packaging validation, and target-specific end-to-end probes.
+- Reproducible build inputs, pinned toolchains/actions, protected release environments, least-privilege CI permissions, signed artifacts, checksums, SBOM, and source-to-binary provenance attestations.
+- One release manifest linking every binary/package/module to its version, source SHA, target triple, ABI/API compatibility, feature set, checksums, signature, SBOM, and provenance.
+- Test artifacts by install/launch/runtime behavior, not compilation alone. Keep Stable, Preview/Community, and Planned/Unsupported status separate for every platform and package format.
+- Publish the SDK examples and contract tests as part of the release; an app should be able to integrate without copying internal source or reverse-engineering an installer.
+
+The platform SDK and shared automation should evolve incrementally. Start with the bridge/API, a few high-value shared crates, a reusable conformance suite, and the common quality/release workflows. Expand only after multiple independent consumers prove the abstraction.
+
+## 10. Phased execution order
 
 | Phase | Theme | Main deliverables | Exit evidence |
 |---|---|---|---|
@@ -232,7 +282,7 @@ A device ROM is not the same deliverable as an ISO. It requires an explicit devi
 
 The phases are ordered by dependency, not calendar date. P1–P4 can overlap where interfaces are stable. Native image and ROM work must not block browser usability.
 
-## 10. Engineering governance and acceptance
+## 11. Engineering governance and acceptance
 
 Every new shared library or platform service needs a named owner and at least two concrete consumers unless it is a platform primitive; API/ABI and versioning policy; dependency direction and no-cycle proof; unit, contract, integration, security, and compatibility tests; bundle, cold/warm load, memory, and runtime measurements; license/attribution and provenance record; and migration/deprecation and rollback plan.
 
@@ -242,7 +292,7 @@ Every native artifact needs a source SHA and reproducible build recipe; signed p
 
 Maintain separate status labels for planned, designed, implemented, built, installed, tested, and supported. A checked-in manifest, successful compilation, or upload is not platform certification.
 
-## 11. Immediate next actions
+## 12. Immediate next actions
 
 1. Audit the current WebOS shell and apps for duplicated primitives, dependency overlap, bundle chunks, state ownership, and platform-service access. Produce an inventory before extracting packages.
 2. Define a first small set of shared tokens and UI/service contracts based on repeated production use, not speculative abstractions.
