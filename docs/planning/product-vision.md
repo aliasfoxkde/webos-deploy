@@ -37,6 +37,23 @@ The repository's [quickstart](../getting-started/quickstart.md),
 implementation. The live prototype is at
 [artcraft-webos.pages.dev](https://artcraft-webos.pages.dev/).
 
+## Architecture program
+
+The long-term platform architecture is tracked in
+[PLATFORM-ARCHITECTURE-ROADMAP.md](PLATFORM-ARCHITECTURE-ROADMAP.md).
+It coordinates five concerns that must evolve together: a shared platform
+SDK and reusable component/library ecosystem; safe app and game packaging;
+one capability model for the shell, terminal, CLI, MCP, and AI agents;
+local-first storage and portable identity; and a path from browser/PWA to
+native installations and device-specific builds.
+
+The goal is not to turn every app into one monolith. Apps should remain
+independently developed, versioned, installable, and permission-scoped while
+reusing common code and services where the measured runtime and distribution
+model permits it. Code sharing inside one Vite build differs from sharing a
+library across isolated cross-origin iframe apps or separately compiled WASM
+binaries; those cases must be measured and designed explicitly.
+
 ## Gaps that define the roadmap
 
 - There is no native bootable image or supported hardware matrix.
@@ -71,22 +88,28 @@ and accessibility, remain standing requirements.
 ### 2. Grow useful daily workflows
 
 Prioritize coherent workflows over a large app count: writing and files,
-web research, media, communication, development, and creative work. Improve
-keyboard and assistive-technology support, offline behavior, import/export,
-and predictable persistence. Test workflows across desktop and mobile
-browsers.
+web research, media, communication, development, creative work, and games.
+Build and reuse shared UI primitives, platform-service clients, domain
+engines, and app-level libraries where they reduce duplicated code or shipped
+bytes without coupling independent apps. Keep expensive apps lazy-loaded and
+measure per-app and aggregate transfer/storage cost. Improve keyboard and
+assistive-technology support, offline behavior, import/export, and
+predictable persistence. Test workflows across desktop and mobile browsers.
 
 **Exit evidence:** each supported workflow has documented limits,
 end-to-end tests, keyboard coverage, and a reliable data export path.
 
 ### 3. Define a safe app and WASM package model
 
-Before supporting user-supplied binaries, specify app manifests,
-capabilities, permissions, resource limits, origin isolation, storage
-ownership, package provenance, signing, and revocation. Build a disposable
-test environment for packages and make the permission grants visible to
-users. Keep bundled companion apps working through the same documented
-contracts where practical.
+Before supporting user-supplied binaries, specify a versioned app manifest
+and SDK, app lifecycle, dependency/shared-library declarations, capabilities,
+permissions, resource limits, origin isolation, storage ownership, package
+provenance, signing, update/rollback, and revocation. Define distinct adapters
+for bundled plugins, cross-origin iframe apps, WASM component packages, and
+future native packages; do not pretend they have identical trust or resource
+boundaries. Build a disposable test environment for packages and make
+permission grants visible to users. Keep bundled companion apps working
+through the same documented contracts where practical.
 
 **Exit evidence:** threat model and package format reviewed; hostile-package
 tests cover the declared boundary; permissions are least-privilege and
@@ -105,22 +128,33 @@ data; local-only operation remains supported.
 
 ### 5. Build reviewable AI-assisted customization
 
-Let AI help explain settings, build customizations, and draft apps or
-fixes. Show file changes and required permissions before applying them.
-Run tests and security checks, then prepare an issue or pull request for
-human review. Separate local execution from publishing, deployment, and
-access to user data.
+Make AI a first-class, permission-scoped control plane over the same typed
+capability and command catalog used by the UI and terminal. Add app-aware CLI
+and MCP discovery/invocation, contextual tool schemas, bounded sessions,
+audit records, and approval for destructive actions, external network
+access, installs, privileged storage, and publishing. Let AI explain
+settings, compose workflows, and draft apps/fixes; show file changes and
+permissions before applying them. Run tests and security checks, then prepare
+an issue or pull request for human review. Separate local execution from
+publishing, deployment, and access to user data.
 
 **Exit evidence:** permission-scoped tools, visible diffs, reproducible
 checks, attribution, and explicit approval before external publication.
 
 ### 6. Explore a native and bootable system
 
-Treat an ISO or native image as a separate architecture project. First
-define supported hardware, boot and recovery paths, secure updates,
-encryption, drivers, power management, and how the browser shell relates
-to the host operating system. Prototype on virtual machines before
-promising broad hardware support.
+Treat an ISO, installed Linux system, and device-specific ROM as separate
+delivery targets built on shared platform contracts—not as browser builds
+with a different wrapper. First define the host runtime, supported hardware,
+boot and recovery paths, secure updates, encryption, drivers, graphics/audio/
+network/input services, power management, and how the shell maps to host
+capabilities. For a real Linux installation, design partitioning, filesystems
+(including a Btrfs subvolume/snapshot/rollback strategy), package delivery,
+bootloader integration, and user-data migration explicitly. A browser-only
+runtime cannot provide raw block-device or Btrfs services. Prototype in VMs
+and live images before promising broad hardware support; treat native ROMs as
+separate, device-specific engineering work with bootloader, kernel, driver,
+verified-boot, OTA, and recovery requirements.
 
 **Exit evidence:** published hardware matrix, reproducible image build,
 verified install/upgrade/rollback, recovery tests, and a clear security

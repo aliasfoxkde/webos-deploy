@@ -34,6 +34,7 @@ Nothing in this file requires scrolling past an index.
 
 - [Product vision and roadmap](planning/product-vision.md) — current scope,
   explicit gaps, and staged path toward a user-owned desktop environment.
+- [Platform architecture roadmap](planning/PLATFORM-ARCHITECTURE-ROADMAP.md) — shared libraries/components, app and game packages, CLI/MCP/AI control, and browser-to-native/ISO/ROM direction.
 - [planning/](planning/) — plan of record: [HANDOFF.md](planning/HANDOFF.md)
   (continuation context), [PROGRESS.md](planning/PROGRESS.md) (status board),
   [PHASES.md](planning/PHASES.md) (work plan), [SESSIONS.md](planning/SESSIONS.md),
