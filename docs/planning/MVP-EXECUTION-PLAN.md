@@ -92,6 +92,36 @@ The following workflows define the beta. Tests must exercise actual UI and persi
 | Recovery | Corrupt data, quota exhaustion, interrupted import and migration errors are visible and recoverable where possible | Fault-injection tests and user-visible error assertions |
 | Accessibility | Keyboard-only operation, focus management, live announcements, zoom/reflow and reduced motion on the core flows | Automated gates plus manual keyboard/screen-reader checklist |
 
+## 4.1 Capability parity and product-quality scorecard
+
+Parity is measured at the **user-workflow level**, not by counting apps, menu items, lines of code or passing unit tests. Do not claim broad Windows/macOS/Linux or Office-suite parity from a familiar shell, a catalogue entry, or an embedded app opening.
+
+Every user-facing capability must have one explicit state:
+
+- **Implemented:** code exists, but no complete acceptance receipt has been recorded yet.
+- **Verified:** the scenario passes on the exact candidate/release build, including persisted data and expected failure behavior.
+- **Limited:** the capability works only under documented constraints (for example, a supported browser, an app that permits iframe embedding, or an online external Craft app).
+- **Planned:** accepted future work, not available to users.
+- **Unsupported:** intentionally not promised in this product/runtime.
+
+The MVP scorecard is:
+
+| Surface | MVP parity target | Required proof |
+|---|---|---|
+| Desktop shell | Reliable desktop navigation, window lifecycle, app launch, settings and keyboard operation—not kernel/driver parity with a native OS | First-run, launch, focus/minimize/close, keyboard and mobile E2E |
+| Files workspace | Practical local file/folder create, open, rename, move, delete, import and export with explicit browser storage limits | Real-file round trips, path/Unicode/size cases, reload persistence, backup/restore |
+| Notepad | Everyday plain-text/Markdown note creation, editing, preview, organization and export | Real editing flows, autosave/dirty-state, reopen and export byte comparison |
+| Editor | Everyday text/code editing with reliable open/save/download behavior; no promise of a full IDE | Open from Files, edit, save/export, reload/reopen, large-text and Unicode cases |
+| Craft applications | Launch supported apps and provide only the host-level file storage/open/export integration that is tested. Each Craft app's own feature parity remains independently owned and versioned | Per-app tested integration matrix; app launch alone is not a host-integration pass |
+| Browser/PWA | Useful browser-hosted workspace and installable shell within documented web-platform constraints | Supported-browser, offline/local workflow, service-worker update and external handoff tests |
+| AI | No AI capability is required to complete MVP workflows. Chat remains clearly unavailable until a real provider adapter exists | No-model state shown honestly; no placeholder/echo result represented as AI |
+
+A feature should move from Implemented to Verified only when the test checks the user-visible result, the persisted or exported bytes, and the relevant failure/permission behavior. A screenshot or app-launch smoke is supporting evidence, not the whole receipt.
+
+For external Craft products, record two independent results: (1) **upstream application capability** at its own released version, and (2) **WebOS integration capability** (launch, storage, open-with, export, lifecycle). Do not attribute upstream feature completeness to WebOS, and do not count an iframe launch as proof of data portability.
+
+The product-quality gate should track task completion and data integrity, not only coverage: critical workflow pass rate, restore success on a clean profile, failed/partial import containment, escaped defects, accessibility blockers, browser-specific failures and pilot-reported data-loss incidents. Keep existing lint, coverage and security ratchets as regression controls.
+
 ### Data scope and backup contract
 
 The backup is for **WebOS-managed data**, not an indiscriminate browser-profile dump.
