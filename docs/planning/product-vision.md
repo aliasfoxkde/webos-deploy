@@ -1,8 +1,15 @@
 # ArtCraft WebOS: product vision and roadmap
 
-**Status reviewed:** 2026-11-01  
-**Current implementation:** experimental browser desktop prototype  
-**Roadmap tracking:** [GitHub issue #13](https://github.com/aliasfoxkde/ArtCraft-WebOS/issues/13)
+**Status reviewed:** 2026-11-10  
+**Current implementation:** browser desktop prototype, latest published release v3.25.0 (2026-11-03)  
+**Near-term delivery:** [Productivity MVP issue #37](https://github.com/aliasfoxkde/ArtCraft-WebOS/issues/37)  
+**Long-term roadmap:** [GitHub issue #13](https://github.com/aliasfoxkde/ArtCraft-WebOS/issues/13)
+
+## Near-term delivery decision — browser-first productivity MVP
+
+The first real-user milestone is a dependable, local-first productivity desktop delivered through the browser/PWA. The shell, Files workspace, Notepad, Editor, curated Craft app catalogue, and their end-to-end save/export/recovery workflows should become coherent before more platform layers are added.
+
+The active execution order, acceptance matrix, data backup contract, release gate, and engineering throughput method live in [MVP-EXECUTION-PLAN.md](MVP-EXECUTION-PLAN.md) and [issue #37](https://github.com/aliasfoxkde/ArtCraft-WebOS/issues/37). The native host, Linux ISO/Btrfs, device ROM, generic WASM runtime, identity/sync, and full AI agent system remain valid long-term directions but do not block this browser-first MVP.
 
 ## Product vision
 
@@ -27,9 +34,16 @@ presented as available.
 
 The current product is a browser application with a desktop-like shell,
 including windows, a taskbar, an app launcher, settings, and a virtual Files
-disk. It bundles companion creative applications and provides a terminal
-with WebAssembly-based utilities. Browser storage stays in the current
-browser profile.
+disk. It has 13 bundled first-party plugins and 13 externally registered
+Craft apps, including FireCraft and SolidCraft. Files persist in IndexedDB;
+Notepad and Editor keep local browser state and expose file export paths.
+Data remains scoped to the browser origin/profile, and user-visible complete
+backup/restore is still an open MVP requirement.
+
+The AI Chat adapter currently reports that no model is configured. It is an
+integration seam, not a working AI assistant in the published build. The
+product must remain useful without AI, and any future provider integration
+must be real, opt-in, and explicit about where prompts and context are sent.
 
 The repository's [quickstart](../getting-started/quickstart.md),
 [app guide](../getting-started/apps.md), and
@@ -61,22 +75,20 @@ binaries; those cases must be measured and designed explicitly.
 - WebAssembly support is not an arbitrary binary upload-and-run sandbox.
 - The app collection does not yet replace the range of tools people need
   for everyday computing.
-- The same-origin browser proxy was removed for security (issue #12):
-  remote HTML must not execute with the WebOS origin. Frame-hostile sites
-  open in a normal browser tab; any future isolated-origin replacement
-  needs its own threat model.
+- The same-origin browser proxy was removed for security and issue #12 is
+  closed. Remote HTML must not execute with the WebOS origin. Frame-hostile
+  sites require normal browser-tab handoff; no proxy replacement is assumed.
+- User-visible backup/restore for WebOS-managed data is not complete
+  (issue #17) and is the first major MVP data-safety requirement.
+- AI Chat has no configured production model adapter (issue #21); do not
+  describe the shipped echo/no-model adapter as an assistant.
 - AI-assisted app authoring and contribution workflows are not implemented.
 
 ## Phased roadmap
 
 ### 1. Make the browser prototype safe and dependable
 
-Resolve the [proxy isolation issue](https://github.com/aliasfoxkde/ArtCraft-WebOS/issues/12),
-document the browser security boundary, and keep local data export and
-recovery understandable. Establish release checks for app provenance,
-storage compatibility, browser support, and accessibility. Do not add
-account or sync features before the local data model and threat model are
-clear.
+Keep the resolved [proxy isolation boundary](https://github.com/aliasfoxkde/ArtCraft-WebOS/issues/12) enforced, document the browser security boundary, and make local data export/recovery understandable. Establish release checks for app provenance, storage compatibility, browser support and accessibility. The active MVP execution plan prioritizes backup/restore and real end-to-end work before account or sync features.
 
 **Resolved:** the proxy was disabled rather than isolated (2026-11-01) —
 no remote page executes with the WebOS origin, and the fail-closed endpoint
@@ -175,8 +187,9 @@ maintenance model.
 
 ## Source of truth
 
-This document describes product direction. The
-[GitHub roadmap issue](https://github.com/aliasfoxkde/ArtCraft-WebOS/issues/13)
-tracks project-level work; implementation status belongs in the relevant
-code, tests, and release notes. Update this document when the product
-scope or phase ordering changes.
+This document describes long-term product direction. The [MVP execution
+plan](MVP-EXECUTION-PLAN.md) and [issue #37](https://github.com/aliasfoxkde/ArtCraft-WebOS/issues/37)
+govern near-term delivery; [roadmap issue #13](https://github.com/aliasfoxkde/ArtCraft-WebOS/issues/13)
+tracks the broader user-owned OS vision. Implementation status belongs in
+code, tests and release receipts. Keep historical plans as historical
+records rather than competing active task lists.
