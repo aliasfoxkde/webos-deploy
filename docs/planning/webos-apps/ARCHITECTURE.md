@@ -562,15 +562,19 @@ context in scope — the escape hatch. Every command mutates real OS state;
 read). Command execution is serialized (`busy` gate) so async commands like
 `sqlite` (sql.js, lazy) can't interleave with input.
 
-**Craft MCP bridge — audit result (3.1, blocked upstream):** the web craft
-builds have NO control surface today. `vectorcraft/apps/vectorcraft-web/src/
-main.rs` documents it: "no TCP control server (browsers can't listen on
-sockets)" — and there is no postMessage/JS bridge either. Until the craft
-repos add a web channel (a `window.postMessage` bridge in the eframe web
-runner is the natural shape), `craft <app> <command>` can't exist. The wosh
-command envelope is deliberately MCP-shaped (`{ method, params }` over
-`get/set` paths) so an external AI client can drive the same surface, and a
-future bridge drops in without changing the shell.
+**Craft MCP bridge — historical audit result (3.1, blocked upstream):**
+the October audit found that the generic Storytold web Craft builds did not
+expose a common browser control surface. The VectorCraft web runner documented
+that it had no TCP control server (browsers cannot listen on sockets) and no
+generic page bridge. This was a historical cross-app finding, not a statement
+that no individual app has a host bridge today: FireCraft later added and
+integrated its own documented postMessage contract (see the FireCraft
+integration section below). Do not infer from that one integration that all
+Craft apps expose a common CLI/MCP protocol. The shared command discovery,
+typed web host bridge and MCP broker remain long-term cross-app work in
+[PLATFORM-ARCHITECTURE-ROADMAP.md](../PLATFORM-ARCHITECTURE-ROADMAP.md).
+The wosh command envelope remains an OS-local shell interface, not a
+network/TCP MCP server.
 
 **v86 Linux mode** stays tracked for 3.1 (CDN-fetched image at the user's
 request; keeps CSR purity).
