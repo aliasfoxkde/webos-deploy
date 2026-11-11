@@ -27,7 +27,7 @@ Do not delay this MVP for native ISO/Btrfs/ROM, arbitrary WASM, a broad shared S
 - The unsafe same-origin browser proxy was removed; issue #12 is closed.
 - Native system install, identity/sync and arbitrary WASM are not current browser MVP capabilities.
 
-An earlier PR #36 docs/MVP commit `8d0ef7faeb37b620e29b7588054c099578705ff8` passed CI [42909470708](https://github.com/aliasfoxkde/ArtCraft-WebOS/actions/runs/42909470708) and CodeQL [42909470552](https://github.com/aliasfoxkde/ArtCraft-WebOS/actions/runs/42909470552). The latest branch head `a599902cad4a05de468b213e8d32f69df9d3e259` has CI [43072246686](https://github.com/aliasfoxkde/ArtCraft-WebOS/actions/runs/43072246686) and CodeQL [43072246612](https://github.com/aliasfoxkde/ArtCraft-WebOS/actions/runs/43072246612) in progress/queued. These are documentation-branch checks only; base `main` and deployed v3.25.0 are unchanged. Issue #17 still has no implementation PR and remains the first code milestone.
+PR #36 branch head `2ab390be6d538b64263775d3f8c84278ebaa688f` passed full CI [43072646913](https://github.com/aliasfoxkde/ArtCraft-WebOS/actions/runs/43072646913) and CodeQL [43072647074](https://github.com/aliasfoxkde/ArtCraft-WebOS/actions/runs/43072647074) on 2026-11-11. The CI included lint, security/docs/accessibility checks, tests/coverage, production build and headless-Chrome E2E. These are documentation/MVP branch checks only; base `main` and deployed v3.25.0 are unchanged. Issue #17 still has no implementation PR and remains the first code milestone.
 
 See [PROGRESS.md](PROGRESS.md) for the full baseline and open-work order. Refresh GitHub before acting: the table above is a snapshot, not a live API.
 
