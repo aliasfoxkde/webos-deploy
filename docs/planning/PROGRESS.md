@@ -9,8 +9,8 @@
 
 | Dimension | Verified state |
 |---|---|
-| Canonical main | `5b4fe552428f2fc02e7887897ceeb1744edb8fec`, committed 2026-11-03 |
-| Latest published release | [v3.25.0](https://github.com/aliasfoxkde/ArtCraft-WebOS/releases/tag/v3.25.0), published 2026-11-03 |
+| Canonical main | `5b4fe552428f2fc02e7887897ceeb1744edb8fec`, committed 2026-11-02 7:47 p.m. Central (2026-11-03 01:47:19 UTC) |
+| Latest published release | [v3.25.0](https://github.com/aliasfoxkde/ArtCraft-WebOS/releases/tag/v3.25.0), published 2026-11-02 7:30 p.m. Central (2026-11-03 01:30:30 UTC) |
 | Latest full main CI | [Run 41562004984](https://github.com/aliasfoxkde/ArtCraft-WebOS/actions/runs/41562004984), passed 2026-11-03 on the current main SHA |
 | Latest scheduled CodeQL | [Run 42621998306](https://github.com/aliasfoxkde/ArtCraft-WebOS/actions/runs/42621998306), passed 2026-11-09 on the current main SHA |
 | Latest recorded test/coverage baseline | 1,475 specs / 95 files; 98.88% statements, 94.86% branches, 98.95% functions, 99.91% lines (last recorded 2026-11-02; verify again before release) |
