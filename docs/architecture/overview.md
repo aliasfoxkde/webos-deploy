@@ -10,6 +10,10 @@ Authoritative deep dive: [planning/webos-apps/ARCHITECTURE.md](../planning/webos
 — its `## Module index` is machine-enforced against `webos/src/` by
 `webos/tests/docs-coverage.test.js` (a doc that misses a file fails CI).
 
+The 13 bundled first-party plugins are separate from the 13 external
+Craft app registrations described in
+[the app guide](../getting-started/apps.md).
+
 ## Layers
 
 ```
@@ -20,7 +24,7 @@ webos/src/
 ├── shell/                window system UI: Window, Taskbar, StartMenu, Store,
 │                         Settings, ContextMenu, Sidebar, Screensaver, ErrorBoundary
 └── apps/                 bundled plugins: browser, calculator, chat, editor,
-                          files, notepad, photos, taskmgr, terminal, video, weather
+                          files, notepad, photos, taskmgr, terminal, video, weather, snippet, cast
 ```
 
 ## Key contracts
