@@ -27,7 +27,7 @@ Do not delay this MVP for native ISO/Btrfs/ROM, arbitrary WASM, a broad shared S
 - The unsafe same-origin browser proxy was removed; issue #12 is closed.
 - Native system install, identity/sync and arbitrary WASM are not current browser MVP capabilities.
 
-PR #36's docs/MVP branch passed CI run [42909470708](https://github.com/aliasfoxkde/ArtCraft-WebOS/actions/runs/42909470708) and CodeQL run [42909470552](https://github.com/aliasfoxkde/ArtCraft-WebOS/actions/runs/42909470552) on 2026-11-11, at branch commit `8d0ef7faeb37b620e29b7588054c099578705ff8`. These are documentation-branch checks; the base `main` code and deployed v3.25.0 release are unchanged. Issue #17 still has no implementation PR and remains the first code milestone.
+An earlier PR #36 docs/MVP commit `8d0ef7faeb37b620e29b7588054c099578705ff8` passed CI [42909470708](https://github.com/aliasfoxkde/ArtCraft-WebOS/actions/runs/42909470708) and CodeQL [42909470552](https://github.com/aliasfoxkde/ArtCraft-WebOS/actions/runs/42909470552). The latest branch head `a599902cad4a05de468b213e8d32f69df9d3e259` has CI [43072246686](https://github.com/aliasfoxkde/ArtCraft-WebOS/actions/runs/43072246686) and CodeQL [43072246612](https://github.com/aliasfoxkde/ArtCraft-WebOS/actions/runs/43072246612) in progress/queued. These are documentation-branch checks only; base `main` and deployed v3.25.0 are unchanged. Issue #17 still has no implementation PR and remains the first code milestone.
 
 See [PROGRESS.md](PROGRESS.md) for the full baseline and open-work order. Refresh GitHub before acting: the table above is a snapshot, not a live API.
 
@@ -36,7 +36,7 @@ See [PROGRESS.md](PROGRESS.md) for the full baseline and open-work order. Refres
 1. Read the repository-level agent/developer instructions that exist, especially `docs/AGENTS.md` and any root `AGENTS.md` / `CLAUDE.md`.
 2. Read [MVP-EXECUTION-PLAN.md](MVP-EXECUTION-PLAN.md), then [PROGRESS.md](PROGRESS.md), then the last two entries in [SESSIONS.md](SESSIONS.md).
 3. Check `git status`, current branch, current HEAD, and the base SHA. Preserve existing work. Do not reset, force-push or overwrite another agent's branch.
-4. Refresh open PRs/issues and their base/head commits. In particular reconcile PR #20 (Page Agent draft; stale proxy text) and PR #15 (older roadmap draft) against main before touching either.
+4. Refresh open PRs/issues and their base/head commits. PR #15 was closed as superseded by #36. PR #20 is a future Page Agent draft outside the MVP; verify its proxy/security assumptions against main before resuming it.
 5. Inspect only the modules and tests needed for the assigned issue. The canonical plugin/module index is in [webos-apps/ARCHITECTURE.md](webos-apps/ARCHITECTURE.md); the bridge contract is [architecture/bridge.md](../architecture/bridge.md).
 
 ## 4. Work intake and implementation rules
