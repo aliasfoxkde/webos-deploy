@@ -8,7 +8,9 @@ the numbers actually are.
 
 > **Superseded by `docs/planning/QUALITY-PROGRAM.md`**, which records the
 > executed program (phases A–G, outcomes, triage). This file is kept as
-> the original working plan. Current planning: `docs/planning/HANDOFF.md`.
+> the original working plan. The executed quality record is dated historical
+evidence; active product planning is `docs/planning/MVP-EXECUTION-PLAN.md`,
+with current status in `docs/planning/PROGRESS.md`.
 
 ## Ground truth (2026-10-11, post-3.9.0)
 
