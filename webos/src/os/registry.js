@@ -15,7 +15,7 @@
 import { PLUGIN_APPS } from '../apps/manifests.js';
 
 export const DEFAULT_APPS = [
-  // -- the 12 craft apps (deployed on Cloudflare Pages from upstream release
+  // -- the 13 external craft apps (deployed on Cloudflare Pages from upstream release
   //    zips via packaging/fetch-apps.sh; the wasm of the seven oversized
   //    bundles streams from the R2 bucket `craftweb` through a _worker.js) --
   {
