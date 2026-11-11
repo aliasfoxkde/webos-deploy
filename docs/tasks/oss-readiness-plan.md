@@ -1,5 +1,13 @@
 # OSS-Readiness Plan — closeout (2026-11-01)
 
+> **Historical task record — reviewed 2026-11-10.** This checklist is
+> retained as evidence of the 2026-11-01 OSS-readiness pass. Its open
+> checkboxes are not a current queue; later release automation and
+> application-catalogue work have changed the baseline. Current near-term
+> product work is governed by
+> [MVP-EXECUTION-PLAN.md](../planning/MVP-EXECUTION-PLAN.md), with live
+> status in [PROGRESS.md](../planning/PROGRESS.md).
+>
 Status after [PR #14](https://github.com/aliasfoxkde/ArtCraft-WebOS/pull/14)
 merged as `605e0a9` on 2026-11-01. The public default branch now contains
 the README, product vision, onboarding, community, licensing, and security
