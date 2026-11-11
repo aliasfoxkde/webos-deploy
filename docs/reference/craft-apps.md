@@ -20,6 +20,18 @@
 
 Eight of the 13 external app bundles were recorded as served from the Cloudflare R2 `craftweb` route to stay within the Pages per-asset limit. Verify the current deployment configuration before changing this count or route list.
 
+### Version reconciliation note — 2026-11-11
+
+The FireCraft row in the WebOS registry is pinned to `0.2.3`, while
+[aliasfoxkde/FireCraft](https://github.com/aliasfoxkde/FireCraft) has
+published `v0.2.5`. Treat the registry value above as the version
+currently declared by WebOS, **not** as proof that it is the newest
+upstream release. Before changing it, fetch the candidate web ZIP,
+verify its manifest and deployed JS/Wasm hashes, exercise the WebOS host
+bridge and file handoff, and then update the registry, app fetch pin,
+service-worker cache stamp and registry-version test in one reviewed
+change. Do not infer the deployed bundle version from the upstream tag.
+
 ## Release and source ownership
 
 Asset naming for fetched upstream web builds is `{app}-web-<version>.zip`. FireCraft is independently maintained in `aliasfoxkde/FireCraft`; the Storytold apps are maintained in their respective upstream repositories; SolidCraft is from `tangency-labs/solidcraft`. These are separate products. WebOS consumes their released web artifacts and does not own their source trees.
