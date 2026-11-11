@@ -856,32 +856,27 @@ LG work was driven by `LIQUID-GLASS.md`; the lens map math is pure
 sign conventions, band neutrality, inward displacement directions, corner
 behaviour, and the stable filter ids CSS references).
 
-### FireCraft joins the desktop (3.15.0)
+### FireCraft integration (3.15.0; integration completed by 3.17.0)
 
-The twelfth craft app — FireCraft, the clean-room Fireworks CS6
-reimplementation (hybrid vector + bitmap web design) — became a default
-app. Unlike the first eleven it has **no upstream release zips and no
-checkout here**: its web bundle deploys from its own repository checkout
-(`/nas/Temp/repos/FireCraft`, independent git repo, wasm release target)
-via that repo's own dist pipeline (`cargo run -p xtask -- dist --web`,
-which enforces the wasm size budget and runs a bridge smoke against the
-release bytes, plus a `MANIFEST.sha256` over the output) to the
-`firecraft-web` Pages project. The registry row is a plain external
-default (`embed: true`); embedding needs no special casing because the
-bundle ships no frame-hostile headers and Pages serves the wasm as
-`application/wasm`.
+FireCraft is one of the **13 external Craft applications** in the current
+registry. It is the independently maintained, clean-room Fireworks CS6
+successor that combines vector and bitmap design workflows. FireCraft began
+as a separately deployed web app; from v0.2.2 onward its upstream release ZIP
+was adopted through the same `packaging/fetch-apps.sh` flow as other
+independently released apps. The current registry snapshot records v0.2.3.
+The canonical source remains `aliasfoxkde/FireCraft`; no developer-machine
+checkout path is required by WebOS.
 
-The bundle carries a documented postMessage bridge
-(`/nas/Temp/repos/FireCraft/docs/WEBOS.md`):
-inbound `openDocument{bytes}` / `apply{name,payload}` / `exportPng` /
-`exportDocument` / `ping`, outbound replies filtered on
-`source: "firecraft"`. WebOS currently uses only the `ready` liveness
-signal (verified end to end in real Chromium: desktop icon → live iframe →
-`ready` → full editor UI); deeper integration (autosave into the Files
-disk, open-with, export hand-off) is planned work — see
-`docs/planning/HANDOFF.md` phase H2.
+The FireCraft web build exposes a documented postMessage bridge (see
+FireCraft's `docs/WEBOS.md`): inbound `openDocument{bytes}`,
+`apply{name,payload}`, `exportPng`, `exportDocument` and `ping`, with
+replies scoped to `source: "firecraft"`. The host integration is beyond a
+simple liveness check: the v3.17.0 integration work added autosave into the
+Files disk under `/Apps/firecraft/autosave.fw.png`, Files "Open in FireCraft"
+handoff, export PNG to Photos, export-to-Files, and a browser E2E probe for
+open → apply → exportDocument. The bridge remains a versioned cross-repository
+contract; verify both sides before changing message shapes or permissions.
 
-The app mark (`public/icons/craft/firecraft.png`) is original code-drawn
-art (`packaging/icons-src/firecraft.svg`, flame mid-vector-edit) rasterized
-with the headless-Chromium technique — FireCraft ships no upstream mark
-yet; swapping it in later is HANDOFF phase H3.
+The WebOS app mark is still an original code-drawn asset under
+`webos/public/icons/craft/firecraft.png` (source SVG under
+`packaging/icons-src/firecraft.svg`), not a copied upstream trademark/logo.
