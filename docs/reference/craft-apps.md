@@ -13,7 +13,7 @@
 | lightcraft | 0.14.0 | storytold | `lightcraft-web.pages.dev` / WebOS embed |
 | pdfcraft | 0.14.0 | storytold | `pdfcraft-web.pages.dev` / WebOS embed |
 | photocraft | 0.16.0 | storytold | `photocraft-web.pages.dev` / WebOS embed |
-| solidcraft | 0.30.1 | tangency-labs | `solidcraft` deployment / WebOS embed |
+| solidcraft | 0.30.1 | tangency-labs | `solidcraft-web-cfu.pages.dev` / WebOS embed |
 | soundcraft | 0.13.1 | storytold | `soundcraft-web.pages.dev` / WebOS embed |
 | vectorcraft | 0.17.0 | storytold | `vectorcraft-web-9y7.pages.dev` / WebOS embed |
 | wordcraft | 0.11.0 | storytold | `wordcraft-web.pages.dev` / WebOS embed |
