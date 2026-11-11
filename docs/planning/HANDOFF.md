@@ -1,6 +1,6 @@
 # Handoff — ArtCraft WebOS
 
-> **Reviewed:** 2026-11-10.  
+> **Reviewed:** 2026-11-11.  
 > **Product objective:** ship a dependable local-first productivity beta.  
 > **Start here:** [MVP-EXECUTION-PLAN.md](MVP-EXECUTION-PLAN.md).  
 > **Live status:** [PROGRESS.md](PROGRESS.md).  
@@ -26,6 +26,8 @@ Do not delay this MVP for native ISO/Btrfs/ROM, arbitrary WASM, a broad shared S
 - Published AI Chat has no production model configured; its no-model/echo adapter is not an assistant.
 - The unsafe same-origin browser proxy was removed; issue #12 is closed.
 - Native system install, identity/sync and arbitrary WASM are not current browser MVP capabilities.
+
+PR #36's docs/MVP branch passed CI run [42909470708](https://github.com/aliasfoxkde/ArtCraft-WebOS/actions/runs/42909470708) and CodeQL run [42909470552](https://github.com/aliasfoxkde/ArtCraft-WebOS/actions/runs/42909470552) on 2026-11-11, at branch commit `8d0ef7faeb37b620e29b7588054c099578705ff8`. These are documentation-branch checks; the base `main` code and deployed v3.25.0 release are unchanged. Issue #17 still has no implementation PR and remains the first code milestone.
 
 See [PROGRESS.md](PROGRESS.md) for the full baseline and open-work order. Refresh GitHub before acting: the table above is a snapshot, not a live API.
 
