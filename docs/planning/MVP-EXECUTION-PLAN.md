@@ -1,6 +1,6 @@
 # ArtCraft WebOS — Productivity MVP Execution Plan
 
-> **Status:** active delivery plan, reviewed 2026-11-10.  
+> **Status:** active delivery plan, reviewed 2026-11-11.  
 > **Near-term milestone:** dependable local-first productivity beta for real users.  
 > **Tracking:** [GitHub issue #37](https://github.com/aliasfoxkde/ArtCraft-WebOS/issues/37).  
 > **Long-term direction:** [Product vision](product-vision.md) and [platform architecture roadmap](PLATFORM-ARCHITECTURE-ROADMAP.md).  
@@ -50,6 +50,21 @@ The latest canonical `main` commit is `5b4fe552428f2fc02e7887897ceeb1744edb8fec`
 | Test/quality baseline | Last recorded baseline: 1,475 specs / 95 files; 98.88% statements, 94.86% branches, 98.95% functions, 99.91% lines; existing floors remain enforced | Preserve the quality floor; stop treating higher coverage percentages as the product roadmap |
 
 The current canonical code includes 13 bundled plugins and 13 external Craft app registrations. Do not confuse those two catalogues or repeat the old twelve-app count in documentation.
+
+### 2.1 2026-11-11 reconciliation
+
+The canonical `main` baseline remains `5b4fe552428f2fc02e7887897ceeb1744edb8fec`;
+the successful CI and CodeQL receipts listed above remain the latest
+main-branch receipts. PR #36's documentation branch passed its own CI
+and CodeQL runs on 2026-11-11, but that is not a main-branch build or
+a deployed MVP validation.
+
+One concrete app-registry mismatch is now recorded: WebOS currently pins
+FireCraft at version `0.2.3`, while the canonical FireCraft repository
+has published `v0.2.5`. Verify the fetched ZIP, deployed WASM/JS hashes,
+and host-bridge compatibility before updating the WebOS registry. The
+registry version must always match the actual deployed artifact, not
+merely the newest upstream tag. Include this in MVP-00 reconciliation.
 
 ## 3. MVP scope and explicit exclusions
 
