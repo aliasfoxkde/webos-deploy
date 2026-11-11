@@ -147,6 +147,82 @@ It must explicitly exclude browser credentials, private keys, browser cookies/hi
 
 Restore should validate the entire archive before mutating live state, stage writes or use a recoverable transaction strategy, surface conflicts, preserve the existing data until the user confirms replacement/merge, and provide a deterministic rollback path when an import fails. Schema migrations must be explicit and tested from previous released fixtures.
 
+### Verified storage inventory and implementation contract (2026-11-11)
+
+The current implementation has a small, explicit storage surface. Build backup
+and restore against these stores; do not introduce another data layer.
+
+| Store | Current implementation | Backup treatment |
+|---|---|---|
+| IndexedDB database `webos`, object store `files` | `webos/src/os/db.js`; records are path-keyed file/folder entries with Blob, MIME type, size and modification time | Include user-managed Files content and directory markers, including host-managed `/Apps/<appId>/` namespaces |
+| IndexedDB database `webos`, object store `kv` | `kvGet/kvSet/kvDel`; key/value records hold larger app data such as SQLite bytes | Include only registered/allowlisted WebOS-owned keys whose schema and restore behavior are understood; the storage API needs a safe key-enumeration/snapshot surface |
+| Browser `localStorage` | Shell settings plus app state under `webos.*`; examples include Notepad's `webos.notepad.v1` and Editor's `webos.editor.state` | Include registered keys with serializers/migrations; do not blindly copy arbitrary origin storage or unknown future keys |
+| Embedded app storage bridge | `webos/src/os/bridge.js`; stores data in the Files disk under the app's private `/Apps/<appId>/` root | Include because the bytes are host-managed and enumerated by the Files store; preserve per-app namespace in the manifest |
+| Browser-owned/session-only state | File System Access handles are session-only in Editor; remote app origin storage, cookies and browser credentials are outside the host origin | Exclude and explain. Restore must not attempt to reconstruct file handles or inspect a third-party origin |
+
+The storage entry points above were verified in `webos/src/os/db.js`,
+`webos/src/os/bridge.js`, `webos/src/apps/notepad/notes.js`, and
+`webos/src/apps/editor/buffers.js` on the current baseline. Re-run the
+inventory when app persistence changes.
+
+**Initial archive contract:** use a documented, versioned archive (ZIP is the
+preferred interchange candidate) with a root `manifest.json` and distinct
+payload entries. The manifest records archive schema version, WebOS build
+version, export timestamp, source namespace, entry type, serialized/uncompressed
+size, media type, and SHA-256 digest. Structured settings and app state use
+versioned JSON payloads; file bytes remain binary payloads with their original
+MIME types and logical paths. The archive contains data only—never HTML,
+JavaScript, WASM, extension manifests, executable installers or provider
+credentials.
+
+**Validation before write:**
+
+- Reject unsupported schema versions, duplicate logical paths/keys, absolute
+  paths, traversal segments, malformed names, unknown namespaces, invalid
+  MIME/metadata, digest mismatches, truncated entries, excessive entry counts,
+  and declared or actual size totals above configured limits.
+- Check both compressed and uncompressed sizes to defend against archive bombs.
+  Derive defaults from the supported browser/storage matrix and document them;
+  do not use the Files bridge's single-file 64 MiB cap as a whole-backup limit.
+- Parse and validate the entire archive and produce an import preview before
+  touching the live stores. Display the data categories, counts, total size,
+  conflicts and excluded categories to the user.
+- Start with explicit **replace** and **merge/skip conflicts** semantics only
+  where each store has deterministic behavior. Never silently overwrite a
+  user file or unknown app key. Unknown schema/key migrations fail closed or
+  are preserved as inert data with an explicit unsupported warning; they are
+  never executed.
+- Preserve a recoverable pre-restore snapshot until the entire operation and
+  post-restore integrity scan succeed. IndexedDB's multi-store writes should
+  use a transaction/staging strategy; localStorage updates need a separate
+  rollback plan because they are not part of the IndexedDB transaction.
+- If quota is insufficient, abort before commit and leave current data intact.
+  If a failure occurs after commit begins, run deterministic rollback and show
+  whether rollback succeeded; never show a success-shaped partial restore.
+
+**Required MVP-01 vertical slices:**
+
+1. Add snapshot/enumeration primitives and unit tests to the existing DB module
+   for `files`, `kv` and registered localStorage keys.
+2. Implement deterministic export, archive validation, per-entry checksums and
+   a downloadable backup with a manifest.
+3. Implement import preview and conflict selection, followed by staged restore
+   and rollback.
+4. Add user-facing settings/Files entry points, backup status/help and clear
+   warnings for private browsing, origin changes, browser storage eviction and
+   profile loss.
+5. Run an E2E test using a disposable browser profile: create files, notes,
+   editor buffers and a managed iframe-app file; export; remove the profile's
+   WebOS data; restore; reopen each app; compare file bytes, JSON state and
+   namespaces; then exercise malformed, oversized, interrupted and
+   quota-exhaustion cases.
+
+No backup library has been selected yet. Before adding one, compare maintained
+browser-compatible ZIP implementations for streaming, bounded decompression,
+ZIP64 behavior, integrity checks, license, bundle footprint, and testability.
+Do not hand-roll archive parsing or decompress untrusted data without hard
+limits.
+
 ## 5. Delivery sequence
 
 ### MVP-00 — Re-establish one accurate baseline (P0)
