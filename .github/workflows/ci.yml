@@ -10,14 +10,101 @@ permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-\${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  changes:
+    name: classify-change
+    runs-on: ubuntu-latest
+    outputs:
+      docs_only: \${{ steps.classify.outputs.docs_only }}
+      code_changed: \${{ steps.classify.outputs.code_changed }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Classify changed paths (unknown/empty diffs fail closed)
+        id: classify
+        shell: bash
+        env:
+          EVENT_NAME: \${{ github.event_name }}
+          BEFORE_SHA: \${{ github.event.before }}
+          PR_BASE_SHA: \${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT_NAME" == "workflow_dispatch" || "$EVENT_NAME" == "schedule" ]]; then
+            echo "docs_only=false" >> "$GITHUB_OUTPUT"
+            echo "code_changed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          base="$BEFORE_SHA"
+          if [[ "$EVENT_NAME" == "pull_request" ]]; then base="$PR_BASE_SHA"; fi
+          if [[ -z "$base" || "$base" =~ ^0+$ ]] || ! git cat-file -e "$base^{commit}" 2>/dev/null; then
+            echo "docs_only=false" >> "$GITHUB_OUTPUT"
+            echo "code_changed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [[ "$EVENT_NAME" == "pull_request" ]]; then
+            files=$(git diff --name-only "$base...$GITHUB_SHA")
+          else
+            files=$(git diff --name-only "$base" "$GITHUB_SHA")
+          fi
+          if [[ -z "$files" ]]; then
+            echo "docs_only=false" >> "$GITHUB_OUTPUT"
+            echo "code_changed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          docs_only=true
+          while IFS= read -r file; do
+            [[ -z "$file" ]] && continue
+            case "$file" in
+              docs/*|README.md|CHANGELOG.md|CONTRIBUTING.md|LICENSE|CODE_OF_CONDUCT.md) ;;
+              *) docs_only=false; break ;;
+            esac
+          done <<< "$files"
+          echo "docs_only=$docs_only" >> "$GITHUB_OUTPUT"
+          if [[ "$docs_only" == "true" ]]; then
+            echo "code_changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "code_changed=true" >> "$GITHUB_OUTPUT"
+          fi
+          printf 'Changed files:\n%s\n' "$files"
+
+  docs:
+    name: docs-only-check
+    runs-on: ubuntu-latest
+    needs: [changes]
+    if: needs.changes.outputs.docs_only == 'true'
+    defaults:
+      run:
+        working-directory: webos
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: webos/package-lock.json
+      - name: Install dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts
+      - name: Validate documentation coverage and references
+        run: npx vitest run tests/docs-coverage.test.js tests/docs-references.test.js
+      - name: Validate patch whitespace and conflict markers
+        run: |
+          set -euo pipefail
+          git diff --check
+          if grep -RInE '^(<<<<<<<|=======|>>>>>>>)' ../docs ../README.md 2>/dev/null; then
+            echo "Unresolved merge-conflict marker found in documentation."
+            exit 1
+          fi
+
   webos:
-    name: webos — lint, test, coverage gate, contrast audit, build, e2e
+    name: webos — lint, tests, coverage, contrast, build, e2e
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    needs: [changes]
+    if: needs.changes.outputs.code_changed == 'true'
     defaults:
       run:
         working-directory: webos
@@ -42,7 +129,6 @@ jobs:
       - name: Shellcheck (packaging scripts)
         run: shellcheck ../packaging/*.sh
 
-      # Standalone so each gate is legible in the job summary.
       - name: Docs coverage gate
         run: npx vitest run tests/docs-coverage.test.js
 
