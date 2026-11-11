@@ -16,8 +16,8 @@ Do not delay this MVP for native ISO/Btrfs/ROM, arbitrary WASM, a broad shared S
 
 ## 2. Current verified facts
 
-- Canonical main: `5b4fe552428f2fc02e7887897ceeb1744edb8fec`, 2026-11-03.
-- Latest published release: v3.25.0, 2026-11-03.
+- Canonical main: `5b4fe552428f2fc02e7887897ceeb1744edb8fec`, committed 2026-11-02 7:47 p.m. Central (2026-11-03 01:47:19 UTC).
+- Latest published release: v3.25.0, 2026-11-02 7:30 p.m. Central (2026-11-03 01:30:30 UTC).
 - Full CI on that main SHA passed 2026-11-03; scheduled CodeQL passed 2026-11-09.
 - Last recorded coverage baseline: 1,475 specs / 95 files; 98.88% statements, 94.86% branches, 98.95% functions, 99.91% lines. These are dated baseline values; rerun before release.
 - 13 first-party bundled plugins and 13 external Craft app registrations.
