@@ -32,7 +32,7 @@ A workflow is considered supported only when it has been tested end-to-end on th
 
 ## 2. Verified baseline (2026-11-10 audit)
 
-The latest canonical `main` commit is `5b4fe552428f2fc02e7887897ceeb1744edb8fec`, committed 2026-11-03. The latest published release is [v3.25.0](https://github.com/aliasfoxkde/ArtCraft-WebOS/releases/tag/v3.25.0), published 2026-11-03. The latest full GitHub CI run on that main SHA passed on 2026-11-03; scheduled CodeQL on 2026-11-09 also passed. These are the latest verified receipts, not a claim that the current work branches have passed.
+The latest canonical `main` commit is `5b4fe552428f2fc02e7887897ceeb1744edb8fec`, committed 2026-11-02 7:47 p.m. Central (2026-11-03 01:47:19 UTC). The latest published release is [v3.25.0](https://github.com/aliasfoxkde/ArtCraft-WebOS/releases/tag/v3.25.0), published 2026-11-02 7:30 p.m. Central (2026-11-03 01:30:30 UTC). The latest full GitHub CI run on that main SHA passed on 2026-11-03; scheduled CodeQL on 2026-11-09 also passed. These are the latest verified receipts, not a claim that the current work branches have passed.
 
 | Area | Verified state | Product implication |
 |---|---|---|
