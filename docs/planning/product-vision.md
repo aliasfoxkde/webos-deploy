@@ -1,6 +1,6 @@
 # ArtCraft WebOS: product vision and roadmap
 
-**Status reviewed:** 2026-11-10  
+**Status reviewed:** 2026-11-11  
 **Current implementation:** browser desktop prototype, latest published release v3.25.0 (2026-11-02 Central / 2026-11-03 UTC)  
 **Near-term delivery:** [Productivity MVP issue #37](https://github.com/aliasfoxkde/ArtCraft-WebOS/issues/37)  
 **Long-term roadmap:** [GitHub issue #13](https://github.com/aliasfoxkde/ArtCraft-WebOS/issues/13)
