@@ -2,11 +2,14 @@
 
 > **Status:** architectural work order; proposed and not implemented as a complete platform.
 > **Reviewed:** 2026-11-10.
-> **Product authority:** [product vision](product-vision.md) and [roadmap issue #13](https://github.com/aliasfoxkde/ArtCraft-WebOS/issues/13).
+> **Long-term product authority:** [product vision](product-vision.md) and [roadmap issue #13](https://github.com/aliasfoxkde/ArtCraft-WebOS/issues/13).
+> **Near-term delivery authority:** [MVP execution plan](MVP-EXECUTION-PLAN.md) and [issue #37](https://github.com/aliasfoxkde/ArtCraft-WebOS/issues/37).
 > **Current plugin design:** [WebOS app architecture](webos-apps/ARCHITECTURE.md).
 > **Current file bridge:** [bridge protocol](../architecture/bridge.md).
 
-This document expands the product vision into an architecture and delivery sequence. It is deliberately broader than the current browser prototype. Do not describe a planned capability as shipped until its implementation, threat model, tests, and release evidence exist.
+This document is the long-horizon architecture roadmap, not the active sprint backlog. The first real-user milestone is a dependable, local-first browser/PWA productivity beta. It is sequenced and accepted by [MVP-EXECUTION-PLAN.md](MVP-EXECUTION-PLAN.md); native installation, ISO/Btrfs, ROM, universal WASM, identity/sync, and the generalized SDK do not block that milestone. Keep the long-term architecture ambitious, but do not allow it to displace the immediate MVP acceptance work.
+
+Do not describe a planned capability as shipped until its implementation, threat model, tests, and release evidence exist.
 
 ## 1. Product direction
 
