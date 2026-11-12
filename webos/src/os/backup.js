@@ -125,6 +125,7 @@ export async function createBackupBlob() {
     const encoded = await encodeKvValue(value);
     if (encoded.data) totalPayloadBytes += fromBase64(encoded.data).byteLength;
     else totalPayloadBytes += byteLength(JSON.stringify(encoded.value));
+    ensure(totalPayloadBytes <= MAX_PAYLOAD_BYTES, 'WebOS data exceeds the 128 MiB backup payload limit');
     kv.push({ key, value: encoded });
   }
 
