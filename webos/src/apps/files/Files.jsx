@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { filePut, fileGet, fileDel, fileDelTree, fileList, dirPut } from '../../os/db.js';
+import { createBackupBlob, readBackupFile, restoreBackup } from '../../os/backup.js';
 import { fmtBytes } from '../../os/format.js';
 import { useOS } from '../../os/state.jsx';
 import { useContextMenu } from '../../shell/ContextMenu.jsx';
@@ -92,7 +93,10 @@ export default function FilesApp() {
   const [confirmDel, setConfirmDel] = useState(null); // folder path awaiting 2nd click
   const [dragOver, setDragOver] = useState(false);
   const [device, setDevice] = useState(null); // { root, name, path: [names], entries }
+  const [backupBusy, setBackupBusy] = useState(false);
+  const [backupNotice, setBackupNotice] = useState('');
   const fileInput = useRef(null);
+  const backupInput = useRef(null);
   const createInput = useRef(null);
   const renameInput = useRef(null);
   const alive = useRef(true);
@@ -149,6 +153,54 @@ export default function FilesApp() {
   const upload = async (files) => {
     for (const f of files) await filePut(join(cwd, f.name), f);
     await refresh();
+  };
+
+  const exportBackup = async () => {
+    if (backupBusy) return;
+    setBackupBusy(true);
+    setBackupNotice('Preparing a backup of WebOS-managed data…');
+    try {
+      const blob = await createBackupBlob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'artcraft-webos-backup-' + new Date().toISOString().replace(/[:.]/g, '-') + '.json';
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      setBackupNotice('Backup exported (' + fmtBytes(blob.size) + '). Keep this file somewhere outside this browser profile.');
+    } catch (error) {
+      setBackupNotice('Backup failed: ' + (error.message || error));
+    } finally {
+      setBackupBusy(false);
+    }
+  };
+
+  const importBackup = async (file) => {
+    if (!file || backupBusy) return;
+    setBackupBusy(true);
+    setBackupNotice('Validating backup before changing stored data…');
+    try {
+      const backup = await readBackupFile(file);
+      const counts = backup.counts;
+      const confirmed = window.confirm(
+        'This backup contains ' + counts.files + ' files, ' + counts.folders + ' folders, '
+        + counts.keyValues + ' app database entries and ' + counts.settings + ' settings.\n\n'
+        + 'Restoring replaces all WebOS-managed Files, app database values and webos.* settings in this browser profile. '
+        + 'Export a backup of the current profile first if you may need it. Browser credentials, cookies, remote app-origin data '
+        + 'and device file handles are not included.\n\nContinue with restore?',
+      );
+      if (!confirmed) {
+        setBackupNotice('Restore cancelled. No data was changed.');
+        return;
+      }
+      await restoreBackup(backup);
+      await refresh();
+      setBackupNotice('Restore complete. Reload WebOS to refresh open apps and restored settings.');
+    } catch (error) {
+      setBackupNotice('Restore failed: ' + (error.message || error));
+    } finally {
+      setBackupBusy(false);
+    }
   };
 
   const download = useCallback(async (rec) => {
@@ -336,7 +388,10 @@ export default function FilesApp() {
             <button className="f-btn" onClick={() => { setCreating({ kind: 'dir' }); setNewName('New folder'); }}>New folder</button>
             <button className="f-btn" onClick={() => { setCreating({ kind: 'file' }); setNewName('untitled.txt'); }}>New file</button>
             <button className="f-btn primary" onClick={() => fileInput.current?.click()}>Upload</button>
+            <button className="f-btn" disabled={backupBusy} onClick={exportBackup} title="Export WebOS-managed files, settings and supported app data">Backup</button>
+            <button className="f-btn" disabled={backupBusy} onClick={() => backupInput.current?.click()} title="Validate and restore a WebOS backup">Restore</button>
             <input ref={fileInput} type="file" multiple hidden onChange={(e) => { if (e.target.files?.length) upload([...e.target.files]); e.target.value = ''; }} />
+            <input ref={backupInput} type="file" accept=".json,application/vnd.artcraft.webos-backup+json,application/json" hidden onChange={(e) => { const file = e.target.files?.[0]; e.target.value = ''; if (file) importBackup(file); }} />
           </>
         )}
       </header>
@@ -472,6 +527,7 @@ export default function FilesApp() {
         </div>
       )}
 
+      {backupNotice && <div className="f-status" role="status" aria-live="polite">{backupNotice}</div>}
       <footer className="f-status">
         {tab === 'disk' && (
           <>
