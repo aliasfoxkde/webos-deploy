@@ -1,6 +1,6 @@
 # Handoff — ArtCraft WebOS
 
-> **Reviewed:** 2026-11-11.  
+> **Reviewed:** 2026-11-12.  
 > **Product objective:** ship a dependable local-first productivity beta.  
 > **Start here:** [MVP-EXECUTION-PLAN.md](MVP-EXECUTION-PLAN.md).  
 > **Live status:** [PROGRESS.md](PROGRESS.md).  
@@ -10,7 +10,7 @@ This handoff replaces the October continuation instructions. Those were written 
 
 ## 1. Mission and scope
 
-Make the current browser/PWA desktop usable for real productivity work. The next critical deliverable is user-visible backup/export and validated restore/import for WebOS-managed data, followed by a complete Files + Notepad + Editor workflow and tested handoff to selected Craft apps.
+Make the current browser/PWA desktop usable for real productivity work. The current delivery stream now contains a first backup/restore implementation candidate; the next gate is to validate it with targeted tests, full CI and a disposable-profile browser recovery run. Follow that with a complete Files + Notepad + Editor workflow and tested handoff to selected Craft apps.
 
 Do not delay this MVP for native ISO/Btrfs/ROM, arbitrary WASM, a broad shared SDK, identity/sync, or a complete AI agent. Those remain long-term architecture tracks.
 
@@ -22,7 +22,7 @@ Do not delay this MVP for native ISO/Btrfs/ROM, arbitrary WASM, a broad shared S
 - Last recorded coverage baseline: 1,475 specs / 95 files; 98.88% statements, 94.86% branches, 98.95% functions, 99.91% lines. These are dated baseline values; rerun before release.
 - 13 first-party bundled plugins and 13 external Craft app registrations.
 - Files use IndexedDB; settings and some app state use localStorage. This is browser-profile persistence, not a backed-up native disk.
-- Backup/restore is not yet complete (issue #17).
+- Backup/restore implementation is on PR #36 (branch head must be refreshed before merge); it is not merged, released or clean-profile E2E accepted (issue #17).
 - Published AI Chat has no production model configured; its no-model/echo adapter is not an assistant.
 - The unsafe same-origin browser proxy was removed; issue #12 is closed.
 - Native system install, identity/sync and arbitrary WASM are not current browser MVP capabilities.
@@ -30,6 +30,14 @@ Do not delay this MVP for native ISO/Btrfs/ROM, arbitrary WASM, a broad shared S
 PR #36 checkpoint `2ab390be6d538b64263775d3f8c84278ebaa688f` passed full CI [43072646913](https://github.com/aliasfoxkde/ArtCraft-WebOS/actions/runs/43072646913) and CodeQL [43072647074](https://github.com/aliasfoxkde/ArtCraft-WebOS/actions/runs/43072647074) on 2026-11-11. The latest follow-up adds the concrete storage inventory and backup/restore contract to MVP-01; its fresh CI [43073937714](https://github.com/aliasfoxkde/ArtCraft-WebOS/actions/runs/43073937714) and CodeQL [43073937497](https://github.com/aliasfoxkde/ArtCraft-WebOS/actions/runs/43073937497) were pending/queued at the last check. These are docs/MVP branch checks only; base `main` and deployed v3.25.0 are unchanged. Issue #17 still has no implementation PR and remains the first code milestone.
 
 See [PROGRESS.md](PROGRESS.md) for the full baseline and open-work order. Refresh GitHub before acting: the table above is a snapshot, not a live API.
+
+### 2.1 Current product boundary and backup candidate (2026-11-12)
+
+The current product is strongest as a desktop-like shell for demonstrating and launching Craft apps. It is not a daily driver. Existing IndexedDB storage persists across ordinary reloads in the same origin/profile, and the Files app supports basic virtual-disk operations, but there is no production SSO/account service, device continuity, sync, user-owned native filesystem or full daily-driver application ecosystem.
+
+PR #36 now includes an initial schema-v1 JSON backup candidate. It snapshots the current IndexedDB files/kv stores and registered webos.* localStorage; validates size, shape, paths and SHA-256 integrity; and adds Backup/Restore actions to Files. Restore is replace-only and includes an IndexedDB transaction plus a localStorage rollback attempt. It is not yet a verified recovery feature: run targeted tests, full CI and the disposable-profile export/clear/restore workflow before accepting it. Current limits are 20,000 records, 128 MiB decoded payload and 180 MiB JSON archive; ZIP, merge/conflict resolution and broad browser-memory tests remain future work.
+
+SSO/OIDC is required before a genuine daily-driver claim, but should be optional for local beta use. Do not mock an account system. Provider/backend selection, threat model, secure sessions, account recovery, device revocation and sync design are prerequisites. The long-term 90% common-use-case target and capability matrix are in [PLATFORM-ARCHITECTURE-ROADMAP.md](PLATFORM-ARCHITECTURE-ROADMAP.md), section 10.
 
 ## 3. Cold start (first ten minutes)
 
