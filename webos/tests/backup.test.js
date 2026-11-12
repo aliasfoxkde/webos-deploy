@@ -91,6 +91,29 @@ describe('WebOS data backup', () => {
     await expect(backup.readBackupFile(altered)).rejects.toThrow('unsafe file path');
   });
 
+  it('rejects empty path segments, trailing separators and backslashes', async () => {
+    const archive = JSON.parse(await (await archiveOf()).text());
+    archive.storage.files.push(
+      { path: '/Home//double.txt', dir: true, mtime: 1 },
+      { path: '/Home/trailing/', dir: true, mtime: 1 },
+      { path: '/Home/back\\\\slash', dir: true, mtime: 1 },
+    );
+    const altered = await reSign(archive);
+    await expect(backup.readBackupFile(altered)).rejects.toThrow('unsafe file path');
+  });
+
+  it('rejects an invalid timestamp in the signed manifest', async () => {
+    const archive = JSON.parse(await (await archiveOf()).text());
+    archive.manifest.createdAt = 'not-a-date';
+    const altered = await reSign(archive);
+    await expect(backup.readBackupFile(altered)).rejects.toThrow('invalid export timestamp');
+  });
+
+  it('refuses to export a stored path that is not canonical', async () => {
+    await db.filePut('/Home//unsafe.txt', blob('unsafe'));
+    await expect(archiveOf()).rejects.toThrow('cannot be represented safely');
+  });
+
   it('rejects archive files above the hard input limit without reading them', async () => {
     const oversized = { size: backup.MAX_ARCHIVE_BYTES + 1, text: vi.fn() };
     await expect(backup.readBackupFile(oversized)).rejects.toThrow('180 MiB import limit');
