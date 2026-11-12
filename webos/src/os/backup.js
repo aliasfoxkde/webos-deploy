@@ -98,11 +98,12 @@ async function digest(value) {
 }
 
 function safePath(path) {
-  if (typeof path !== 'string' || !path.startsWith('/') || path.includes('\\') || /[\u0000-\u001f]/.test(path)) return false;
-  const parts = path.split('/');
-  return !parts.some((part) => part === '.' || part === '..') && path.length <= 2048;
+  if (typeof path !== 'string' || !path.startsWith('/') || path === '/'
+    || path.includes(String.fromCharCode(92)) || /[\\u0000-\\u001f]/.test(path)
+    || path.endsWith('/') || path.length > 2048) return false;
+  const parts = path.slice(1).split('/');
+  return parts.every((part) => part.length > 0 && part !== '.' && part !== '..');
 }
-
 function countStorage(storage) {
   return {
     files: storage.files.filter((item) => !item.dir).length,
@@ -177,6 +178,8 @@ export async function readBackupFile(file) {
   ensure(archive && typeof archive === 'object' && archive.format === BACKUP_FORMAT, 'This is not an ArtCraft WebOS backup');
   ensure(archive.schemaVersion === BACKUP_SCHEMA_VERSION, 'This backup version is not supported by this WebOS build');
   ensure(archive.manifest?.schemaVersion === BACKUP_SCHEMA_VERSION, 'Backup manifest is missing or unsupported');
+  ensure(typeof archive.manifest.createdAt === 'string' && Number.isFinite(Date.parse(archive.manifest.createdAt)), 'Backup manifest has an invalid export timestamp');
+  ensure(archive.manifest.application === 'ArtCraft WebOS' && archive.manifest.encoding === 'json+base64', 'Backup manifest describes an unsupported payload format');
   ensure(archive.integrity?.algorithm === 'SHA-256' && /^[a-f0-9]{64}$/.test(archive.integrity.digest || ''),
     'Backup integrity metadata is missing or invalid');
 
@@ -220,6 +223,7 @@ export async function readBackupFile(file) {
   const files = [];
   for (const entry of storage.files) {
     ensure(entry && safePath(entry.path) && !seenPaths.has(entry.path), 'Backup contains a duplicate or unsafe file path');
+    ensure(Number.isFinite(entry.mtime) && entry.mtime >= 0, 'Backup contains an invalid file timestamp');
     seenPaths.add(entry.path);
     const mtime = Number.isFinite(entry.mtime) ? entry.mtime : 0;
     if (entry.dir === true) {
@@ -236,7 +240,7 @@ export async function readBackupFile(file) {
   }
 
   ensure(totalPayloadBytes <= MAX_PAYLOAD_BYTES, 'Backup payload exceeds the 128 MiB restore limit');
-  ensure(Number.isInteger(archive.manifest.payloadBytes) && archive.manifest.payloadBytes === totalPayloadBytes,
+  ensure(archive.manifest.counts && Number.isInteger(archive.manifest.payloadBytes) && archive.manifest.payloadBytes === totalPayloadBytes,
     'Backup payload size does not match its manifest');
   const counts = countStorage({ localStorage: localStorageValues, kv: kvEntries, files });
   ensure(JSON.stringify(counts) === JSON.stringify(archive.manifest.counts), 'Backup item counts do not match its manifest');
