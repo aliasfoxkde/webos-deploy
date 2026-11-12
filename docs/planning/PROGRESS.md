@@ -1,6 +1,6 @@
 # Progress — ArtCraft WebOS
 
-> **Snapshot reviewed:** 2026-11-11. This is the live status board, not a second roadmap.
+> **Snapshot reviewed:** 2026-11-12. This is the live status board, not a second roadmap.
 > **Active near-term plan:** [MVP-EXECUTION-PLAN.md](MVP-EXECUTION-PLAN.md).
 > **MVP tracking:** [issue #37](https://github.com/aliasfoxkde/ArtCraft-WebOS/issues/37).
 > **Long-term vision:** [product-vision.md](product-vision.md) and [PLATFORM-ARCHITECTURE-ROADMAP.md](PLATFORM-ARCHITECTURE-ROADMAP.md).
@@ -17,7 +17,7 @@
 | First-party bundled plugins | 13: Browser, Calculator, Chat, Editor, Files, Notepad, Photos, Task Manager, Terminal, Video, Weather, Snippet and Cast |
 | External Craft app registry | 13: CADCraft, DeckCraft, DesignCraft, EffectCraft, FireCraft, GridCraft, LightCraft, PdfCraft, PhotoCraft, SolidCraft, SoundCraft, VectorCraft and WordCraft |
 | Local persistence | IndexedDB Files disk; browser-profile localStorage for settings and selected app state |
-| Backup/restore | Not yet complete; tracked as P0 in [issue #17](https://github.com/aliasfoxkde/ArtCraft-WebOS/issues/17) |
+| Backup/restore | Initial schema-v1 JSON implementation on PR #36 branch: DB snapshot/replace, SHA-256 validation, Files toolbar, replace/rollback path; not yet passed CI or disposable-profile E2E |
 | AI Chat | No production model adapter configured in the published main build; current adapter is the explicit no-model/echo seam |
 | Browser security | Same-origin HTML proxy removed; [issue #12](https://github.com/aliasfoxkde/ArtCraft-WebOS/issues/12) is closed. Frame-hostile pages require normal browser-tab handoff |
 | Identity/sync | Not shipped as a complete user-facing service |
@@ -35,8 +35,8 @@ The product objective is to make the existing browser desktop useful and safe fo
 
 | Priority | Work | State |
 |---|---|---|
-| P0 | Establish current baseline, unify plans and correct stale references | PR #36 contains the reconciled MVP and platform plans; its docs branch passed CI and CodeQL on 2026-11-11, but remains unmerged and does not change main |
-| P0 | User-visible backup/export and validated restore/import | Open; issue #17; first implementation milestone |
+| P0 | Establish current baseline, unify plans and correct stale references | PR #36 now carries the MVP/platform plan plus the first backup/restore runtime slice; latest head and checks must be refreshed before merge |
+| P0 | User-visible backup/export and validated restore/import | Implementation candidate on PR #36 branch; issue #17; current CI and disposable-profile E2E still required |
 | P0 | Coherent Files + Notepad + Editor workflow and supported Craft app hand-off | Needs implementation-level audit and end-to-end acceptance |
 | P0 | Recovery/error handling for quota, corrupt state, interrupted import and migration | Needs scoped test plan and implementation |
 | P0 | Release candidate, browser E2E, deployed hash verification and pilot instructions | Not started for the MVP |
@@ -71,3 +71,25 @@ Related open issues: #13 (long-term OS vision), #16 (onboarding), #17 (backup/re
 The MVP is ready for a limited real-user beta only when a clean-profile user can complete the workflow matrix in [MVP-EXECUTION-PLAN.md](MVP-EXECUTION-PLAN.md), export/restore supported data with integrity checks, complete core workflows with no AI/account configuration, use the published build within documented browser limits, and report issues against a release SHA with current support/backup guidance.
 
 A green quality gate, a high coverage percentage, or a broad app catalogue alone is not MVP acceptance.
+
+## 2026-11-12 implementation update
+
+PR #36 is no longer a documentation-only proposal. Its head branch now includes an MVP-01 backup/restore implementation candidate:
+
+- IndexedDB `dbSnapshot` reads the existing `files` and `kv` stores in one read transaction; `dbReplace` validates input and replaces both stores in one read/write transaction.
+- `webos/src/os/backup.js` writes schema-v1 uncompressed JSON with Base64 binary values, a SHA-256 integrity digest, 20,000-item, 128 MiB decoded-payload and 180 MiB serialized-file limits.
+- Backup includes the existing host-managed Files disk (including app bridge namespaces), key/value records and `webos.*` localStorage. It does not include cookies, browser credentials, foreign-origin iframe storage or session-only device file handles.
+- Files exposes Backup and Restore actions. Restore validates before writing, shows the replacement scope to the user, replaces the IndexedDB stores atomically, and attempts to roll back the database and localStorage if the settings phase fails.
+- Tests were added for database snapshots/replacement, binary/JSON/Blob round trips, checksum tampering, unsupported schemas, unsafe paths, size limits, rollback, UI confirmation and error paths.
+
+**State: implementation in progress, not accepted.** The transport is deliberately JSON rather than ZIP for this first bounded slice; it is less space-efficient and can use substantial browser memory. Restore is replace-only (no merge or per-item conflict workflow). The code has not yet passed the current PR's full CI/build/E2E gate or a disposable-browser-profile clear-and-restore test. Do not claim backup reliability or a beta-ready data recovery guarantee until those receipts exist.
+
+### Current product boundary
+
+The current WebOS remains an experimental browser desktop and Craft-app demonstrator—not a daily driver. IndexedDB does provide same-origin/profile persistence across ordinary reloads, and Files has basic virtual-disk CRUD/import/export. Those capabilities do not yet constitute a durable user filesystem, mature file-management experience or cross-device data continuity. Production SSO, account/device management, sync, deeper file operations, integrated full-featured applications, real browser-engine capability, game-library lifecycle and extensive customization remain unimplemented or incomplete.
+
+The roadmap now defines the intended 90% common-use-case target and a daily-driver acceptance gate. Treat it as a long-term capability target, not as a current feature claim.
+
+### Change-aware CI behavior
+
+WebOS CI on this branch classifies changed paths before starting expensive jobs. Documentation-only commits run dependency-free-with-lifecycle-scripts-disabled documentation/reference validation and whitespace/conflict checks; they skip lint, full coverage, build and browser E2E. CodeQL uses the same fail-closed path classification and skips analysis only for a proven documentation-only diff. Unknown/empty diffs, scheduled runs and manual dispatch fail closed into the code/security path. This preserves a visible check result without rebuilding the product for a Markdown-only change.
