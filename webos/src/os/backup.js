@@ -105,7 +105,7 @@ function safePath(path) {
 
 function countStorage(storage) {
   return {
-    files: storage.files.length,
+    files: storage.files.filter((item) => !item.dir).length,
     folders: storage.files.filter((item) => item.dir).length,
     keyValues: storage.kv.length,
     settings: storage.localStorage.length,
