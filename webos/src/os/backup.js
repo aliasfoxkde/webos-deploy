@@ -1,0 +1,281 @@
+// Versioned, data-only backup for WebOS-owned storage.
+// This first interoperable format is uncompressed JSON with binary values
+// encoded as Base64. It avoids executing content and avoids decompression
+// bombs; a ZIP transport can be added later without changing the storage schema.
+import * as db from './db.js';
+
+export const BACKUP_FORMAT = 'artcraft-webos-backup';
+export const BACKUP_SCHEMA_VERSION = 1;
+export const MAX_ARCHIVE_BYTES = 180 * 1024 * 1024;
+export const MAX_PAYLOAD_BYTES = 128 * 1024 * 1024;
+export const MAX_BACKUP_ITEMS = 20_000;
+
+const encoder = new TextEncoder();
+const byteLength = (value) => encoder.encode(value).byteLength;
+const fail = (message) => { throw new Error(message); };
+const ensure = (condition, message) => { if (!condition) fail(message); };
+
+function localStorageEntries() {
+  const entries = [];
+  for (let index = 0; index < localStorage.length; index += 1) {
+    const key = localStorage.key(index);
+    if (key?.startsWith('webos.')) entries.push([key, localStorage.getItem(key) ?? '']);
+  }
+  return entries.sort(([a], [b]) => a.localeCompare(b));
+}
+
+function toBase64(bytes) {
+  let binary = '';
+  for (let offset = 0; offset < bytes.length; offset += 0x8000) {
+    const slice = bytes.subarray(offset, Math.min(offset + 0x8000, bytes.length));
+    binary += String.fromCharCode(...slice);
+  }
+  return btoa(binary);
+}
+
+function fromBase64(value) {
+  ensure(typeof value === 'string' && /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(value),
+    'Backup contains malformed Base64 data');
+  let binary;
+  try { binary = atob(value); } catch { fail('Backup contains malformed Base64 data'); }
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+  return bytes;
+}
+
+function plainObject(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const proto = Object.getPrototypeOf(value);
+  return proto === Object.prototype || proto === null;
+}
+
+async function encodeKvValue(value) {
+  if (value instanceof Blob) {
+    return { kind: 'blob', type: value.type || 'application/octet-stream', data: toBase64(new Uint8Array(await value.arrayBuffer())) };
+  }
+  if (value instanceof ArrayBuffer) {
+    return { kind: 'arraybuffer', data: toBase64(new Uint8Array(value)) };
+  }
+  if (ArrayBuffer.isView(value)) {
+    const bytes = new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
+    return { kind: 'typed-array', type: value.constructor.name, data: toBase64(bytes) };
+  }
+  if (value === null || ['string', 'number', 'boolean'].includes(typeof value) || Array.isArray(value) || plainObject(value)) {
+    const json = JSON.stringify(value);
+    ensure(json !== undefined, 'A stored value cannot be represented in a backup');
+    return { kind: 'json', value: JSON.parse(json) };
+  }
+  fail('A stored value uses an unsupported type and cannot be backed up safely');
+}
+
+function decodeKvValue(value) {
+  ensure(value && typeof value === 'object', 'Backup contains an invalid stored value');
+  if (value.kind === 'json') return value.value;
+  const bytes = fromBase64(value.data);
+  if (value.kind === 'blob') {
+    ensure(typeof value.type === 'string' && value.type.length <= 255, 'Backup contains an invalid Blob MIME type');
+    return new Blob([bytes], { type: value.type });
+  }
+  if (value.kind === 'arraybuffer') return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+  if (value.kind === 'typed-array') {
+    const constructors = {
+      Uint8Array, Uint8ClampedArray, Int8Array, Uint16Array, Int16Array,
+      Uint32Array, Int32Array, Float32Array, Float64Array,
+    };
+    const Type = constructors[value.type];
+    ensure(Type, 'Backup contains an unsupported typed-array type');
+    ensure(bytes.byteLength % Type.BYTES_PER_ELEMENT === 0, 'Backup contains a misaligned typed array');
+    const copy = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+    return new Type(copy);
+  }
+  fail('Backup contains an unsupported stored-value encoding');
+}
+
+async function digest(value) {
+  ensure(globalThis.crypto?.subtle, 'This browser does not provide secure SHA-256 support');
+  const result = await globalThis.crypto.subtle.digest('SHA-256', encoder.encode(value));
+  return [...new Uint8Array(result)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+function safePath(path) {
+  if (typeof path !== 'string' || !path.startsWith('/') || path.includes('\\') || /[\u0000-\u001f]/.test(path)) return false;
+  const parts = path.split('/');
+  return !parts.some((part) => part === '.' || part === '..') && path.length <= 2048;
+}
+
+function countStorage(storage) {
+  return {
+    files: storage.files.length,
+    folders: storage.files.filter((item) => item.dir).length,
+    keyValues: storage.kv.length,
+    settings: storage.localStorage.length,
+  };
+}
+
+export async function createBackupBlob() {
+  const snapshot = await db.dbSnapshot();
+  const settings = localStorageEntries();
+  ensure(snapshot.kvEntries.length + snapshot.files.length + settings.length <= MAX_BACKUP_ITEMS,
+    'WebOS has too many stored items for one backup');
+
+  let totalPayloadBytes = settings.reduce((sum, [key, value]) => sum + byteLength(key) + byteLength(value), 0);
+  const kv = [];
+  for (const [key, value] of snapshot.kvEntries) {
+    ensure(typeof key === 'string', 'A stored key cannot be represented in a backup');
+    const encoded = await encodeKvValue(value);
+    if (encoded.data) totalPayloadBytes += fromBase64(encoded.data).byteLength;
+    else totalPayloadBytes += byteLength(JSON.stringify(encoded.value));
+    kv.push({ key, value: encoded });
+  }
+
+  const files = [];
+  for (const record of snapshot.files) {
+    ensure(safePath(record.path), 'A stored file path cannot be represented safely in a backup');
+    if (record.dir) {
+      files.push({ path: record.path, dir: true, mtime: Number(record.mtime) || 0 });
+    } else {
+      ensure(record.blob instanceof Blob, 'A stored file is missing its binary payload');
+      totalPayloadBytes += record.blob.size;
+      files.push({
+        path: record.path,
+        dir: false,
+        type: record.type || record.blob.type || 'application/octet-stream',
+        size: record.blob.size,
+        mtime: Number(record.mtime) || 0,
+        data: toBase64(new Uint8Array(await record.blob.arrayBuffer())),
+      });
+    }
+    ensure(totalPayloadBytes <= MAX_PAYLOAD_BYTES, 'WebOS data exceeds the 128 MiB backup payload limit');
+  }
+
+  const createdAt = new Date().toISOString();
+  const storage = { localStorage: settings, kv, files };
+  const manifest = {
+    schemaVersion: BACKUP_SCHEMA_VERSION,
+    createdAt,
+    application: 'ArtCraft WebOS',
+    counts: countStorage(storage),
+    payloadBytes: totalPayloadBytes,
+    encoding: 'json+base64',
+  };
+  const unsigned = { format: BACKUP_FORMAT, schemaVersion: BACKUP_SCHEMA_VERSION, manifest, storage };
+  const integrity = { algorithm: 'SHA-256', digest: await digest(JSON.stringify(unsigned)) };
+  const serialized = JSON.stringify({ ...unsigned, integrity }, null, 2);
+  ensure(byteLength(serialized) <= MAX_ARCHIVE_BYTES, 'Generated backup exceeds the 180 MiB archive limit');
+  return new Blob([serialized], { type: 'application/vnd.artcraft.webos-backup+json' });
+}
+
+export async function readBackupFile(file) {
+  ensure(file && typeof file.text === 'function' && Number.isFinite(file.size), 'Choose a WebOS backup file');
+  ensure(file.size <= MAX_ARCHIVE_BYTES, 'Backup file exceeds the 180 MiB import limit');
+  const serialized = await file.text();
+  ensure(byteLength(serialized) <= MAX_ARCHIVE_BYTES, 'Backup file exceeds the 180 MiB import limit');
+
+  let archive;
+  try { archive = JSON.parse(serialized); } catch { fail('Backup is not valid JSON'); }
+  ensure(archive && typeof archive === 'object' && archive.format === BACKUP_FORMAT, 'This is not an ArtCraft WebOS backup');
+  ensure(archive.schemaVersion === BACKUP_SCHEMA_VERSION, 'This backup version is not supported by this WebOS build');
+  ensure(archive.manifest?.schemaVersion === BACKUP_SCHEMA_VERSION, 'Backup manifest is missing or unsupported');
+  ensure(archive.integrity?.algorithm === 'SHA-256' && /^[a-f0-9]{64}$/.test(archive.integrity.digest || ''),
+    'Backup integrity metadata is missing or invalid');
+
+  const unsigned = { ...archive };
+  delete unsigned.integrity;
+  const actualDigest = await digest(JSON.stringify(unsigned));
+  ensure(actualDigest === archive.integrity.digest, 'Backup integrity check failed; no data was changed');
+
+  const storage = archive.storage;
+  ensure(storage && Array.isArray(storage.localStorage) && Array.isArray(storage.kv) && Array.isArray(storage.files),
+    'Backup storage manifest is incomplete');
+  ensure(storage.localStorage.length + storage.kv.length + storage.files.length <= MAX_BACKUP_ITEMS,
+    'Backup contains too many items');
+
+  let totalPayloadBytes = 0;
+  const seenSettings = new Set();
+  const localStorageValues = [];
+  for (const entry of storage.localStorage) {
+    ensure(Array.isArray(entry) && entry.length === 2 && typeof entry[0] === 'string' && entry[0].startsWith('webos.'),
+      'Backup contains a setting outside the WebOS-owned namespace');
+    ensure(!seenSettings.has(entry[0]) && typeof entry[1] === 'string', 'Backup contains a duplicate or invalid setting');
+    seenSettings.add(entry[0]);
+    totalPayloadBytes += byteLength(entry[0]) + byteLength(entry[1]);
+    localStorageValues.push([entry[0], entry[1]]);
+  }
+
+  const seenKeys = new Set();
+  const kvEntries = [];
+  for (const entry of storage.kv) {
+    ensure(entry && typeof entry.key === 'string' && !seenKeys.has(entry.key), 'Backup contains a duplicate or invalid database key');
+    seenKeys.add(entry.key);
+    const decoded = decodeKvValue(entry.value);
+    if (decoded instanceof Blob) totalPayloadBytes += decoded.size;
+    else if (decoded instanceof ArrayBuffer) totalPayloadBytes += decoded.byteLength;
+    else if (ArrayBuffer.isView(decoded)) totalPayloadBytes += decoded.byteLength;
+    else totalPayloadBytes += byteLength(JSON.stringify(decoded));
+    kvEntries.push([entry.key, decoded]);
+  }
+
+  const seenPaths = new Set();
+  const files = [];
+  for (const entry of storage.files) {
+    ensure(entry && safePath(entry.path) && !seenPaths.has(entry.path), 'Backup contains a duplicate or unsafe file path');
+    seenPaths.add(entry.path);
+    const mtime = Number.isFinite(entry.mtime) ? entry.mtime : 0;
+    if (entry.dir === true) {
+      files.push({ path: entry.path, dir: true, mtime });
+    } else {
+      ensure(entry.dir === false && Number.isInteger(entry.size) && entry.size >= 0, 'Backup contains invalid file metadata');
+      ensure(typeof entry.type === 'string' && entry.type.length <= 255, 'Backup contains an invalid file MIME type');
+      const bytes = fromBase64(entry.data);
+      ensure(bytes.byteLength === entry.size, 'Backup file size does not match its payload');
+      totalPayloadBytes += bytes.byteLength;
+      files.push({ path: entry.path, blob: new Blob([bytes], { type: entry.type }), type: entry.type, size: entry.size, mtime });
+    }
+    ensure(totalPayloadBytes <= MAX_PAYLOAD_BYTES, 'Backup payload exceeds the 128 MiB restore limit');
+  }
+
+  ensure(totalPayloadBytes <= MAX_PAYLOAD_BYTES, 'Backup payload exceeds the 128 MiB restore limit');
+  ensure(Number.isInteger(archive.manifest.payloadBytes) && archive.manifest.payloadBytes === totalPayloadBytes,
+    'Backup payload size does not match its manifest');
+  const counts = countStorage({ localStorage: localStorageValues, kv: kvEntries, files });
+  ensure(JSON.stringify(counts) === JSON.stringify(archive.manifest.counts), 'Backup item counts do not match its manifest');
+
+  return {
+    createdAt: archive.manifest.createdAt,
+    counts,
+    payloadBytes: totalPayloadBytes,
+    localStorageEntries: localStorageValues,
+    kvEntries,
+    files,
+  };
+}
+
+function replaceLocalStorage(entries) {
+  const current = localStorageEntries();
+  for (const [key] of current) localStorage.removeItem(key);
+  for (const [key, value] of entries) localStorage.setItem(key, value);
+}
+
+export async function restoreBackup(backup) {
+  ensure(backup && Array.isArray(backup.kvEntries) && Array.isArray(backup.files)
+    && Array.isArray(backup.localStorageEntries), 'Validate a backup before restoring it');
+  const previousDb = await db.dbSnapshot();
+  const previousSettings = localStorageEntries();
+  try {
+    await db.dbReplace({ kvEntries: backup.kvEntries, files: backup.files });
+    replaceLocalStorage(backup.localStorageEntries);
+  } catch (error) {
+    try {
+      await db.dbReplace(previousDb);
+      replaceLocalStorage(previousSettings);
+    } catch (rollbackError) {
+      throw new Error(`Restore failed (${error.message || error}) and automatic rollback also failed (${rollbackError.message || rollbackError}). Keep this tab open and export any remaining data before retrying.`);
+    }
+    throw new Error(`Restore failed; the previous WebOS data was restored. ${error.message || error}`);
+  }
+  return backup.counts || countStorage({
+    files: backup.files,
+    kv: backup.kvEntries,
+    localStorage: backup.localStorageEntries,
+  });
+}
