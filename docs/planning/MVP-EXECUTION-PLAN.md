@@ -1,18 +1,18 @@
 # ArtCraft WebOS — Productivity MVP Execution Plan
 
-> **Status:** active delivery plan, reviewed 2026-11-11.  
+> **Status:** active delivery plan, reviewed 2026-11-12.  
 > **Near-term milestone:** dependable local-first productivity beta for real users.  
 > **Tracking:** [GitHub issue #37](https://github.com/aliasfoxkde/ArtCraft-WebOS/issues/37).  
 > **Long-term direction:** [Product vision](product-vision.md) and [platform architecture roadmap](PLATFORM-ARCHITECTURE-ROADMAP.md).  
 > **Current status board:** [PROGRESS.md](PROGRESS.md). This file is the product execution authority; the status board records evidence, not another roadmap.
 
-This plan deliberately separates the product people can use soon from the larger operating-system architecture. We are not reducing the long-term vision. We are putting a working, supportable product in users' hands before expanding into more platform layers.
+This plan deliberately separates the first supportable browser productivity beta from the larger operating-system goal. **The current WebOS is not a daily driver.** Its strongest current use is demonstrating and launching the ArtCraft/Craft application catalogue. The shell and app demos are a useful foundation, but the product still lacks the integrated storage lifecycle, mature file management, reliable app-to-app workflows, account continuity, breadth of full-featured apps, and system refinement expected of a general-purpose computer. We are not reducing the long-term vision; we are building toward it in testable stages.
 
 ## 1. Product decision
 
 **ArtCraft WebOS MVP is a browser-first, installable, local-first productivity desktop.** It combines a desktop shell, a dependable Files workspace, a curated set of bundled utilities, and the ArtCraft creative/productivity application catalogue.
 
-The MVP should let a user do useful work from a normal supported browser or PWA, with no mandatory account, cloud service, native installation, or configured AI provider. It must make local-data limitations visible and provide a tested way to export and restore WebOS-managed data.
+The MVP should let a user do a bounded set of useful work from a normal supported browser or PWA, with no mandatory account, cloud service, native installation, or configured AI provider. It must make local-data limitations visible and provide a tested way to export and restore WebOS-managed data. This is a local-first beta milestone—not the final daily-driver acceptance bar. Before WebOS is described as a daily driver, optional SSO/device continuity, substantially more complete file and app integration, broad common-use-case coverage, and the browser/native platform boundaries must be implemented and independently verified.
 
 The MVP is not a Linux distribution, a full Chromium browser, a universal WASM runtime, or a finished AI agent operating system. Those are separate future programs with separate security and release gates.
 
@@ -44,7 +44,7 @@ The latest canonical `main` commit is `5b4fe552428f2fc02e7887897ceeb1744edb8fec`
 | Notes / Editor | Local autosave; Files export/import paths | Useful primitives, but their state and backup boundaries must be explicit |
 | AI Chat | The shipped adapter is intentionally `No model configured`; the default adapter is an echo/status explanation, not a real model | Do not market AI Chat as an available assistant |
 | Browser | Normal browser tab/iframe behavior; same-origin remote HTML proxy was removed and issue #12 closed | Be honest about frame restrictions and external-browser handoff |
-| Backup/restore | User-visible backup/restore remains open in issue #17 | **P0 MVP data-safety gap** |
+| Backup/restore | Initial implementation is on the active PR #36 branch: bounded JSON backup, SHA-256 integrity check, IndexedDB snapshot/replacement, Files toolbar export/restore and rollback attempt | **In progress; not yet passed current CI or disposable-profile E2E** |
 | Identity / sync | Not implemented as a complete user-facing service | No cloud-sync promises |
 | Native OS | Not implemented in this repository | Not an MVP dependency |
 | Test/quality baseline | Last recorded baseline: 1,475 specs / 95 files; 98.88% statements, 94.86% branches, 98.95% functions, 99.91% lines; existing floors remain enforced | Preserve the quality floor; stop treating higher coverage percentages as the product roadmap |
@@ -165,15 +165,18 @@ The storage entry points above were verified in `webos/src/os/db.js`,
 `webos/src/apps/editor/buffers.js` on the current baseline. Re-run the
 inventory when app persistence changes.
 
-**Initial archive contract:** use a documented, versioned archive (ZIP is the
-preferred interchange candidate) with a root `manifest.json` and distinct
-payload entries. The manifest records archive schema version, WebOS build
-version, export timestamp, source namespace, entry type, serialized/uncompressed
-size, media type, and SHA-256 digest. Structured settings and app state use
-versioned JSON payloads; file bytes remain binary payloads with their original
-MIME types and logical paths. The archive contains data only—never HTML,
-JavaScript, WASM, extension manifests, executable installers or provider
-credentials.
+**Implemented transport in the active PR #36 branch (schema v1):** an
+uncompressed, versioned JSON document with Base64-encoded binary payloads,
+a root manifest, per-archive SHA-256 integrity digest, item counts and payload
+size. Limits are 20,000 records, 128 MiB decoded payload and 180 MiB serialized
+input/output. This first transport deliberately avoids a decompressor and
+therefore avoids ZIP decompression-bomb handling in the first slice. It is not
+as space-efficient as ZIP and can use substantial browser memory; a bounded,
+streaming ZIP transport remains a follow-up after the data schema and clean-
+profile recovery behavior are proven. Structured JSON, Blob, ArrayBuffer and
+common numeric typed-array values are supported; unsupported structured-clone
+types fail closed. The archive contains data only—never HTML, JavaScript,
+WASM, extension manifests, executable installers or provider credentials.
 
 **Validation before write:**
 
@@ -202,12 +205,16 @@ credentials.
 
 **Required MVP-01 vertical slices:**
 
-1. Add snapshot/enumeration primitives and unit tests to the existing DB module
-   for `files`, `kv` and registered localStorage keys.
-2. Implement deterministic export, archive validation, per-entry checksums and
-   a downloadable backup with a manifest.
-3. Implement import preview and conflict selection, followed by staged restore
-   and rollback.
+1. **Implemented on the active PR #36 branch:** atomic IndexedDB snapshot and
+   replacement primitives for `files` and `kv`, plus allowlisted `webos.*`
+   localStorage enumeration in the backup module; unit tests cover the DB API.
+2. **Implemented as schema-v1 JSON on the active PR #36 branch:** deterministic
+   store ordering, manifest counts/sizes, SHA-256 archive integrity and download.
+   Per-file payload checksums and streaming ZIP remain follow-up hardening.
+3. **Initial replace-only restore implemented on the active PR #36 branch:**
+   validate before writes, explicit user confirmation, atomic IndexedDB replacement,
+   and rollback across IndexedDB/localStorage if settings replacement fails. Merge,
+   per-item conflict selection and browser-profile E2E are not implemented yet.
 4. Add user-facing settings/Files entry points, backup status/help and clear
    warnings for private browsing, origin changes, browser storage eviction and
    profile loss.
@@ -217,11 +224,36 @@ credentials.
    namespaces; then exercise malformed, oversized, interrupted and
    quota-exhaustion cases.
 
-No backup library has been selected yet. Before adding one, compare maintained
-browser-compatible ZIP implementations for streaming, bounded decompression,
-ZIP64 behavior, integrity checks, license, bundle footprint, and testability.
-Do not hand-roll archive parsing or decompress untrusted data without hard
-limits.
+No ZIP library has been selected. The current schema-v1 JSON transport does not
+need an archive library. Before replacing it with ZIP, compare maintained browser-
+compatible implementations for streaming, bounded decompression, ZIP64 behavior,
+integrity checks, license, bundle footprint, and testability. Do not hand-roll
+archive parsing or decompress untrusted data without hard limits.
+
+### Implementation state (2026-11-12; PR #36 branch, not released)
+
+The first backup/restore vertical slice is now wired into the Files toolbar.
+The active branch adds `dbSnapshot` and `dbReplace`, `webos/src/os/backup.js`,
+Backup/Restore actions, validation and error messaging, and unit/component tests.
+The backup includes the complete host-owned `files` and `kv` stores and `webos.*`
+localStorage keys; it intentionally excludes cookies, browser credentials, foreign
+origin app storage, and session-only File System Access handles.
+
+**Not yet accepted as MVP-01:** this branch has not yet passed the full current
+CI, production-build, browser E2E, or a disposable-profile export → clear → restore
+→ compare workflow. Restore is replace-only; it does not yet offer merge or
+per-item conflict resolution. The implementation uses one SHA-256 digest over the
+canonicalized JSON document, not a separate digest per file. Treat this as an
+implementation candidate, not a verified recovery guarantee, until those tests
+pass and the supported-size/memory behavior is measured in target browsers.
+
+
+
+### Daily-driver scope boundary
+
+SSO is not mandatory for the local-first browser beta, but it is a **pre-daily-driver platform requirement** for users who expect their identity, app entitlements, preferences and selected data to follow them between devices. The account system must be optional, standards-based, provider-neutral and independently deployable; a login screen without secure session lifecycle, device revocation, recovery, data policy and an actual identity provider is not SSO.
+
+Likewise, IndexedDB already gives this prototype persistent storage across normal reloads, but it remains origin/profile-bound and subject to browser quota, eviction and user-cleared site data. Daily-driver storage means a user-visible storage manager, durable app-private and user-owned file namespaces, bulk file operations and recovery, reliable offline behavior, quotas/diagnostics, backup/restore, and optional encrypted cross-device continuity. It does not mean simply adding another persistence API.
 
 ## 5. Delivery sequence
 
@@ -383,4 +415,4 @@ When these documents conflict, current code and verified release/CI evidence det
 5. Complete MVP-02/03, then cut a clean pilot release through MVP-04.
 6. Use pilot evidence to decide whether AI router, identity/sync or native runtime is the next highest-value investment.
 
-The success criterion is not that the roadmap is comprehensive or that CI reports a high coverage percentage. It is that a person who did not build WebOS can use the deployed product for real work, understand its limits, and trust the documented data export and recovery process.
+The MVP success criterion is that a person who did not build WebOS can use the deployed browser beta for the specific tested workflows, understand its limits, and trust its documented data export and recovery process. **Daily-driver success is a higher, separate bar** defined in the product vision and platform roadmap; passing this MVP does not establish parity with Linux, macOS, Windows or Android.
