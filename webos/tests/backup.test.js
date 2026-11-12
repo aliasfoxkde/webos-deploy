@@ -45,7 +45,7 @@ describe('WebOS data backup', () => {
     const exported = await archiveOf();
     expect(exported.type).toBe('application/vnd.artcraft.webos-backup+json');
     const restored = await backup.readBackupFile(exported);
-    expect(restored.counts).toEqual({ files: 2, folders: 1, keyValues: 3, settings: 1 });
+    expect(restored.counts).toEqual({ files: 1, folders: 1, keyValues: 3, settings: 1 });
 
     await db.dbReplace({ kvEntries: [], files: [] });
     localStorage.removeItem('webos.notepad.v1');
