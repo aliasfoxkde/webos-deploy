@@ -71,3 +71,62 @@ export const fileDelTree = async (prefix) => {
   for (const f of doomed) await fileDel(f.path);
   return doomed.length;
 };
+
+
+// Snapshot both host-owned IndexedDB stores in one read transaction. The key
+// and value arrays from getAllKeys/getAll share IndexedDB's key ordering.
+export const dbSnapshot = async () => {
+  const db = await open();
+  return new Promise((resolve, reject) => {
+    const t = db.transaction(['kv', 'files'], 'readonly');
+    const keys = t.objectStore('kv').getAllKeys();
+    const values = t.objectStore('kv').getAll();
+    const files = t.objectStore('files').getAll();
+    t.oncomplete = () => {
+      resolve({
+        kvEntries: keys.result.map((key, index) => [key, values.result[index]]),
+        files: files.result,
+      });
+    };
+    t.onerror = () => reject(t.error || new Error('snapshot transaction failed'));
+    t.onabort = () => reject(t.error || new Error('snapshot transaction aborted'));
+  });
+};
+
+// Replace both stores atomically. A quota or structured-clone failure aborts
+// the transaction and leaves the previous database contents untouched.
+export const dbReplace = async ({ kvEntries = [], files = [] } = {}) => {
+  if (!Array.isArray(kvEntries) || !Array.isArray(files)) {
+    throw new TypeError('database replacement requires kvEntries and files arrays');
+  }
+  for (const entry of kvEntries) {
+    if (!Array.isArray(entry) || entry.length !== 2 || typeof entry[0] !== 'string') {
+      throw new TypeError('database replacement contains an invalid key/value entry');
+    }
+  }
+  for (const record of files) {
+    if (!record || typeof record.path !== 'string' || !record.path.startsWith('/')) {
+      throw new TypeError('database replacement contains an invalid file record');
+    }
+  }
+
+  const db = await open();
+  return new Promise((resolve, reject) => {
+    const t = db.transaction(['kv', 'files'], 'readwrite');
+    const kv = t.objectStore('kv');
+    const disk = t.objectStore('files');
+    try {
+      kv.clear();
+      disk.clear();
+      for (const [key, value] of kvEntries) kv.put(value, key);
+      for (const record of files) disk.put(record);
+    } catch (error) {
+      try { t.abort(); } catch { /* transaction may already be inactive */ }
+      reject(error);
+      return;
+    }
+    t.oncomplete = () => resolve();
+    t.onerror = () => reject(t.error || new Error('database replacement failed'));
+    t.onabort = () => reject(t.error || new Error('database replacement aborted'));
+  });
+};
