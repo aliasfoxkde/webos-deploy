@@ -1,7 +1,7 @@
 # ArtCraft WebOS — Shared Platform, App Ecosystem, AI Control, and Native Delivery Roadmap
 
 > **Status:** architectural work order; proposed and not implemented as a complete platform.
-> **Reviewed:** 2026-11-10.
+> **Reviewed:** 2026-11-12.
 > **Long-term product authority:** [product vision](product-vision.md) and [roadmap issue #13](https://github.com/aliasfoxkde/ArtCraft-WebOS/issues/13).
 > **Near-term delivery authority:** [MVP execution plan](MVP-EXECUTION-PLAN.md) and [issue #37](https://github.com/aliasfoxkde/ArtCraft-WebOS/issues/37).
 > **Current plugin design:** [WebOS app architecture](webos-apps/ARCHITECTURE.md).
@@ -306,3 +306,82 @@ Maintain separate status labels for planned, designed, implemented, built, insta
 7. Start the native effort with a VM feasibility/design decision and support matrix; keep ISO, installed Btrfs system, and device ROM as separately gated deliverables.
 
 The near-term priority remains a safe, fast, useful browser desktop. Shared code, AI-native tools, games, and native installation are staged platform investments—not excuses to weaken current release quality or to destabilize working apps.
+
+## 10. Daily-driver target: broad capability coverage, not app-count parity
+
+The product ambition is to cover roughly **90% of the common tasks people perform on a personal computer or mobile device**. This is a product target, not a current compatibility claim, and it must be measured by completed workflows. A catalogue with many launch buttons does not equal a usable ecosystem. An external iframe that opens does not prove file integration, offline use, account continuity, keyboard support, accessibility or feature completeness.
+
+The daily-driver target must cover these capability families:
+
+| Capability family | Expected user capability | Current boundary / major work |
+|---|---|---|
+| Files and storage | Browse, search, create, copy, move, rename, tag, trash/restore, preview, share/export, bulk-operate on files and folders; know where data lives and how to recover it | IndexedDB virtual disk and basic Files CRUD exist; storage manager, conflict-safe operations, device filesystem integration and backup acceptance are still incomplete |
+| Documents and productivity | Full everyday document, spreadsheet and presentation workflows; PDF reading/annotation; notes, tasks, calendar, email and collaboration handoff | Craft catalogue can launch some external apps; WebOS integration, offline persistence, cross-app editing/export and workflow quality are not proven |
+| Web and research | A real, secure browser experience with profiles, tabs, downloads, bookmarks, history, privacy controls, extensions or equivalent functionality, and frame-hostile-site support | Current Browser is a web app inside a browser; it is not an independent Chromium-class engine and must use normal external-browser handoff where the platform prevents embedding |
+| Communication | Email, calendar, contacts, messaging, meetings and notifications through supported providers or services | Not a complete first-party communication suite; account/credential handling and integrations are missing |
+| Media and creative | Image, audio and video playback/editing, photo library, capture, graphics/design, CAD/3D and publishing workflows | Several demoable Craft apps exist; verify product depth, import/export and lifecycle individually |
+| Development and technical work | Terminal, text/code editor, project files, Git workflows, runtime diagnostics and safe extension/developer tools | Terminal and Editor foundations exist; project/workspace integration and broader developer platform still need refinement |
+| Games | Discover, install/run, update/uninstall, controller input, saves, achievements where appropriate, offline play, and clear performance/compatibility information | A coherent game library, package trust model, controller/device abstraction and save lifecycle are not implemented as a platform |
+| Common utilities and system experience | Calculator, clock, weather, archive/file tools, screenshots, clipboard, accessibility, notifications, settings, search, window/workspace management and reliable onboarding | Some utilities exist; consistency, discoverability, responsive behavior, customization and recovery need systematic polish |
+
+For every capability family, maintain a compatibility matrix with: user scenario, app/provider, supported browser or host, local/offline behavior, data location, import/export path, keyboard/accessibility status, performance budget, known limitations and a tested release receipt. Mark each capability verified, limited, planned or unsupported. Do not roll these into one unsupported percentage until scenario weights and evidence rules are published.
+
+### 10.1 Identity, SSO and device continuity
+
+SSO is a required **pre-daily-driver** investment, but it must not be a prerequisite for the local-only browser beta. Select a provider-neutral OpenID Connect architecture (Authorization Code + PKCE for public browser clients) only after an identity-provider/backend decision and threat model.
+
+Required behavior:
+
+- Sign in, sign out, session expiry and re-authentication; secure account recovery; optional MFA/passkeys; explicit device/session list and revocation.
+- Separate authentication from authorization. Every app receives a scoped, short-lived capability/session, not the user's provider refresh token.
+- Keep provider tokens and refresh credentials server-side in a confidential backend where applicable. Browser apps should receive only a constrained WebOS session with Secure, HttpOnly, SameSite cookies where the deployment topology supports it; do not place long-lived bearer or refresh tokens in localStorage.
+- Define tenant/user/app/device identifiers, app entitlements, data ownership, export/deletion, audit and consent boundaries before enabling synchronization.
+- Keep local-only mode functional when signed out or offline. Never require identity to open locally saved files.
+- For optional sync, define per-namespace encryption, key recovery, device enrollment/revocation, conflict resolution, partial/offline writes, account deletion and service migration. Do not claim end-to-end encryption until key ownership and recovery have been reviewed and tested.
+
+**Not implemented:** no identity provider, account backend, OIDC client, session broker, sync service or device-revocation lifecycle is currently shipped. Do not add a mock sign-in screen as a substitute for these services.
+
+### 10.2 Persistent storage and file-management platform
+
+Treat storage as a platform service with replaceable adapters—not as a set of unrelated app-local save functions.
+
+- Define a versioned filesystem API: stable item IDs, normalized paths, namespaces, MIME/type metadata, revisions, timestamps, quota accounting, locking and explicit read/write capabilities.
+- Provide user space (/Home), app-private space (/Apps/<appId>), shared user-selected space and system-managed space with distinct authorization.
+- Complete file-manager workflows: folder import/export where browser APIs permit, bulk copy/move/delete, rename, search, sorting, favorites/tags, trash/recovery, duplicate handling, previews, file associations and open-with.
+- Give each first-party app a declared storage schema and migration. Third-party apps receive isolated quotas and scoped bridge APIs; they must not enumerate another app's private files.
+- Make storage limits, persistent-storage permission, quota exhaustion and origin/profile dependency visible. Add user-triggered backup, tested restore, migration, diagnostics and deletion/export controls.
+- On native hosts, map the same API to a real filesystem, permissions and durable handles; do not pretend browser IndexedDB is a native filesystem.
+
+### 10.3 Customization and usability
+
+A general-purpose environment needs deep, reversible customization—not just a theme selector. The target includes themes (including user-defined palettes), light/dark/automatic mode, density and typography, dock/taskbar placement, launcher organization, desktop/workspace layouts, widget/panel composition, window snapping/tiling, keyboard shortcuts, accessibility preferences, default apps/file associations and per-device profiles. Users should be able to export/import their layout and reset a single preference without a factory reset. Customization state must be versioned, backed up and safe to migrate.
+
+### 10.4 Real browser and platform boundary
+
+A browser-based WebOS cannot turn its containing browser tab into an independent browser engine. The browser app can improve tabs, bookmarks, downloads, history and handoff, but frame restrictions, cross-origin isolation and browser security remain hard platform limits. Do not revive same-origin remote HTML proxying. For true browser parity, use a real browser-engine integration or delegate to the system browser from an appropriately sandboxed native host. Keep browser tabs, saved links and download metadata portable where policy allows; external-site credentials and browser profile secrets remain outside WebOS backup by default.
+
+### 10.5 App and game ecosystem
+
+The ecosystem needs both capable first-party apps and independent third-party software. A store listing or iframe launch is not app completeness. The platform must eventually supply:
+
+- A public, versioned SDK and reusable UI/domain libraries with documentation, starter templates, typed service clients and a conformance suite.
+- Signed/versioned manifests, dependency declarations, isolated execution, capability grants, app-private storage, network policy, quotas and revocation.
+- Install/update/rollback/uninstall, compatibility metadata, changelogs, ratings/reviews/moderation and safe discovery.
+- Distinct adapters for bundled plugins, remote iframe apps, browser-native integrations, WASM component packages and native packages. Their trust, storage and runtime guarantees must remain explicit.
+- A real game library: package discovery, controller/gamepad, audio/video/GPU capability reporting, cloud/local save policy, offline entitlements where applicable, performance profiles and uninstall cleanup.
+- A developer portal and deterministic local test harness so third parties can validate APIs and package behavior without production credentials.
+
+### 10.6 Daily-driver exit criteria
+
+Do not call WebOS a daily driver until all of the following are independently demonstrated on a named supported platform matrix:
+
+1. Identity/SSO, sign-out, recovery and device revocation work, while local-only use remains complete for supported offline workflows.
+2. Files, app-private data, app-to-app handoff, backup and restore survive reload, upgrade, migration and documented failure cases.
+3. The compatibility matrix demonstrates broad coverage of the common-use-case families above; the 90% target is measured over weighted workflows, not app catalogue rows.
+4. The browser story is honest and useful, including secure external handoff; native claims use a real browser engine integration where required.
+5. Core customization is persisted, portable, reversible and accessible.
+6. The app/game ecosystem has signed packages, permissions, lifecycle, updates/rollback, usable developer documentation and a meaningful body of tested applications.
+7. Performance, privacy/security, keyboard/screen-reader, mobile/responsive, offline, update and recovery checks pass on the exact candidate release.
+8. An opt-in pilot demonstrates that people who did not build WebOS can use it for sustained work without maintainer intervention or unresolved data-loss risks.
+
+The path to this target is staged: local browser beta and data safety first; daily productivity workflows and usability second; identity and optional continuity third; ecosystem and game platform fourth; native browser/system hosts only when their separate host/security requirements are satisfied.
