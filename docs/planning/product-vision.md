@@ -1,15 +1,25 @@
 # ArtCraft WebOS: product vision and roadmap
 
-**Status reviewed:** 2026-11-11  
-**Current implementation:** browser desktop prototype, latest published release v3.25.0 (2026-11-02 Central / 2026-11-03 UTC)  
+**Status reviewed:** 2026-11-12  
+**Current implementation:** experimental browser desktop / Craft app demonstrator, latest published release v3.25.0 (2026-11-02 Central / 2026-11-03 UTC); not a daily driver  
 **Near-term delivery:** [Productivity MVP issue #37](https://github.com/aliasfoxkde/ArtCraft-WebOS/issues/37)  
 **Long-term roadmap:** [GitHub issue #13](https://github.com/aliasfoxkde/ArtCraft-WebOS/issues/13)
 
 ## Near-term delivery decision — browser-first productivity MVP
 
-The first real-user milestone is a dependable, local-first productivity desktop delivered through the browser/PWA. The shell, Files workspace, Notepad, Editor, curated Craft app catalogue, and their end-to-end save/export/recovery workflows should become coherent before more platform layers are added.
+The first real-user milestone is a dependable, local-first productivity beta delivered through the browser/PWA. That beta is deliberately smaller than the long-term product. The current prototype's strongest capability is demonstrating and launching Craft apps from a desktop-like shell; this is not equivalent to an integrated daily-use operating environment. Files/Notepad/Editor persistence, backups, app-to-app integration and recovery must be proven before the beta is called dependable.
 
 The active execution order, acceptance matrix, data backup contract, release gate, and engineering throughput method live in [MVP-EXECUTION-PLAN.md](MVP-EXECUTION-PLAN.md) and [issue #37](https://github.com/aliasfoxkde/ArtCraft-WebOS/issues/37). The native host, Linux ISO/Btrfs, device ROM, generic WASM runtime, identity/sync, and full AI agent system remain valid long-term directions but do not block this browser-first MVP.
+
+## Current product maturity — explicit boundary
+
+**ArtCraft WebOS is not currently ready to be a daily driver and should not be marketed as one.** The catalogue and app-demo/launch experience are the strongest parts of the prototype. The shell makes it convenient to present and open a collection of Craft apps, but many entries are external applications and an iframe opening is not proof of a first-class integration or of the app's complete feature set.
+
+The browser build already has real local persistence: the virtual Files disk and larger key/value records use IndexedDB; selected settings and app state use origin-scoped localStorage. This survives ordinary reloads in the same browser profile, but it is not a user-owned system filesystem or multi-device storage service. Browser quota, site-data clearing, profile changes, private-browsing behavior and origin changes can affect access. Basic Files create/upload/download/rename/delete operations exist, but a mature file manager still needs safer bulk operations, move/copy, search, trash/recovery, folder import/export, persistent device access where supported, conflict handling and integrated save/open workflows.
+
+Other major daily-driver gaps include production SSO and device/session management; optional cross-device continuity; a truly capable browsing story beyond an app hosted inside the user's browser; complete productivity and communication applications; a real game library; reliable app permissions/install/update/rollback; complete personalization; and consistent accessibility, performance, offline and recovery behavior. Some utilities and creative apps exist, but their presence in the catalogue must not be represented as broad workflow coverage.
+
+The active PR #36 branch now contains an initial backup/restore implementation candidate. It is not merged or released, and is not acceptance evidence until its tests, full CI and disposable-profile browser recovery scenario pass.
 
 ## Product vision
 
@@ -83,6 +93,14 @@ binaries; those cases must be measured and designed explicitly.
 - AI Chat has no configured production model adapter (issue #21); do not
   describe the shipped echo/no-model adapter as an assistant.
 - AI-assisted app authoring and contribution workflows are not implemented.
+
+## Daily-driver goal
+
+The long-term goal is to cover approximately 90% of common personal-computing workflows through a measured compatibility matrix—not by counting app tiles. That target includes file/storage management; documents, spreadsheets, presentations, PDFs, notes, tasks, calendar and email; real web research; communication; media and creative tools; development; games and controller support; common utilities; accessibility and system customization.
+
+SSO is a pre-daily-driver requirement, not a requirement for the local-only beta. The intended design is provider-neutral OIDC with Authorization Code + PKCE for public browser clients, server-side handling of provider refresh tokens, scoped app sessions, account recovery and device revocation. It must coexist with a complete sign-out/local-only mode. Optional sync additionally needs an explicit encryption/key-recovery, conflict and deletion model. No identity provider, account backend, SSO client, sync service or device revocation feature is currently shipped.
+
+The full capability matrix and daily-driver exit criteria are in [PLATFORM-ARCHITECTURE-ROADMAP.md](PLATFORM-ARCHITECTURE-ROADMAP.md), section 10. This is a long-range acceptance target, not a claim of present parity with Linux, macOS, Windows or Android.
 
 ## Phased roadmap
 
