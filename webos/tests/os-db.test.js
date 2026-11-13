@@ -116,7 +116,7 @@ describe('database snapshots and atomic replacement', () => {
     await db.kvSet('bytes', new Uint8Array([3, 4]));
     await db.dirPut('/Home/Docs');
     await db.filePut('/Home/Docs/a.txt', blob('a', 'text/plain'));
-    const snapshot = await db.dbSnapshot();
+    const snapshot = await db.dbReadState();
     expect(snapshot.kvEntries).toEqual([['bytes', new Uint8Array([3, 4])]]);
     expect(snapshot.files.map((item) => item.path).sort()).toEqual(['/Home/Docs', '/Home/Docs/a.txt']);
   });
@@ -124,7 +124,7 @@ describe('database snapshots and atomic replacement', () => {
   it('replaces both stores in one transaction', async () => {
     await db.kvSet('old', 'remove');
     await db.filePut('/Home/old.txt', blob('old'));
-    await db.dbReplace({
+    await db.dbApplyState({
       kvEntries: [['new', { safe: true }]],
       files: [{ path: '/Home/new.txt', blob: blob('new'), type: 'text/plain', size: 3, mtime: 7 }],
     });
@@ -134,8 +134,8 @@ describe('database snapshots and atomic replacement', () => {
   });
 
   it('rejects malformed replacement inputs before opening a transaction', async () => {
-    await expect(db.dbReplace({ kvEntries: 'invalid', files: [] })).rejects.toThrow('requires kvEntries');
-    await expect(db.dbReplace({ kvEntries: [['bad']], files: [] })).rejects.toThrow('invalid key/value');
-    await expect(db.dbReplace({ kvEntries: [], files: [{ path: 'relative.txt' }] })).rejects.toThrow('invalid file record');
+    await expect(db.dbApplyState({ kvEntries: 'invalid', files: [] })).rejects.toThrow('requires kvEntries');
+    await expect(db.dbApplyState({ kvEntries: [['bad']], files: [] })).rejects.toThrow('invalid key/value');
+    await expect(db.dbApplyState({ kvEntries: [], files: [{ path: 'relative.txt' }] })).rejects.toThrow('invalid file record');
   });
 });
