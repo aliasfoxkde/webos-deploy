@@ -154,7 +154,7 @@ async function digest(value) {
 
 function safePath(path) {
   if (typeof path !== 'string' || !path.startsWith('/') || path === '/'
-    || path.includes(String.fromCharCode(92)) || /[\\u0000-\\u001f]/.test(path)
+    || path.includes(String.fromCharCode(92)) || /[\u0000-\u001f]/.test(path)
     || path.endsWith('/') || path.length > 2048) return false;
   const parts = path.slice(1).split('/');
   return parts.every((part) => part.length > 0 && part !== '.' && part !== '..');

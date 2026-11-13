@@ -64,6 +64,7 @@ describe('WebOS data backup', () => {
     expect([...await db.kvGet('sqlite.db')]).toEqual([1, 2, 255]);
     expect(await db.kvGet('plugin.private')).toEqual({ keep: true });
     expect(await db.kvGet('auth.refresh_token')).toBe('keep');
+    expect(localStorage.getItem('webos.auth.refresh-token')).toBe('keep');
     expect(await (await db.fileGet('/Home/Docs/hello.txt')).blob.text()).toBe('hello');
     expect((await db.fileGet('/Home/Docs')).dir).toBe(true);
     expect(JSON.parse(localStorage.getItem('webos.notepad.v1')).notes[0].id).toBe(1);
