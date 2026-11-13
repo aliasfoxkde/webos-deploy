@@ -16,7 +16,7 @@ jobs:
     name: classify-code-changes
     runs-on: ubuntu-latest
     outputs:
-      code_changed: \${{ steps.classify.outputs.code_changed }}
+      code_changed: ${{ steps.classify.outputs.code_changed }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -25,9 +25,9 @@ jobs:
         name: Skip CodeQL only for proven documentation-only changes
         shell: bash
         env:
-          EVENT_NAME: \${{ github.event_name }}
-          BEFORE_SHA: \${{ github.event.before }}
-          PR_BASE_SHA: \${{ github.event.pull_request.base.sha }}
+          EVENT_NAME: ${{ github.event_name }}
+          BEFORE_SHA: ${{ github.event.before }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           set -euo pipefail
           if [[ "$EVENT_NAME" == "schedule" || "$EVENT_NAME" == "workflow_dispatch" ]]; then
@@ -78,10 +78,10 @@ jobs:
       - name: Initialize CodeQL
         uses: github/codeql-action/init@4bfa242aa49c5f7c6770b98670d354a7dfac05f8 # v3
         with:
-          languages: \${{ matrix.language }}
+          languages: ${{ matrix.language }}
           queries: security-extended
 
       - name: Analyze code
         uses: github/codeql-action/analyze@4bfa242aa49c5f7c6770b98670d354a7dfac05f8 # v3
         with:
-          category: /language:\${{ matrix.language }}
+          category: /language:${{ matrix.language }}

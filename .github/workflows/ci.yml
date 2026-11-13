@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: ci-\${{ github.ref }}
+  group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -18,8 +18,8 @@ jobs:
     name: classify-change
     runs-on: ubuntu-latest
     outputs:
-      docs_only: \${{ steps.classify.outputs.docs_only }}
-      code_changed: \${{ steps.classify.outputs.code_changed }}
+      docs_only: ${{ steps.classify.outputs.docs_only }}
+      code_changed: ${{ steps.classify.outputs.code_changed }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -28,9 +28,9 @@ jobs:
         id: classify
         shell: bash
         env:
-          EVENT_NAME: \${{ github.event_name }}
-          BEFORE_SHA: \${{ github.event.before }}
-          PR_BASE_SHA: \${{ github.event.pull_request.base.sha }}
+          EVENT_NAME: ${{ github.event_name }}
+          BEFORE_SHA: ${{ github.event.before }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           set -euo pipefail
           if [[ "$EVENT_NAME" == "workflow_dispatch" || "$EVENT_NAME" == "schedule" ]]; then
