@@ -73,9 +73,9 @@ export const fileDelTree = async (prefix) => {
 };
 
 
-// Snapshot both host-owned IndexedDB stores in one read transaction. The key
+// Read both host-owned IndexedDB stores in one read transaction. The key
 // and value arrays from getAllKeys/getAll share IndexedDB's key ordering.
-export const dbSnapshot = async () => {
+export const dbReadState = async () => {
   const db = await open();
   return new Promise((resolve, reject) => {
     const t = db.transaction(['kv', 'files'], 'readonly');
@@ -93,12 +93,14 @@ export const dbSnapshot = async () => {
   });
 };
 
-// Replace both stores atomically. A quota or structured-clone failure aborts
+// Apply both stores atomically. A quota or structured-clone failure aborts
 // the transaction and leaves the previous database contents untouched.
-export const dbReplace = async ({ kvEntries = [], files = [], replaceKvKeys = null } = {}) => {
+const isStringArray = (value) => Array.isArray(value) && value.every((item) => typeof item === 'string');
+
+export const dbApplyState = async ({ kvEntries = [], files = [], ownedKvKeys = null } = {}) => {
   if (!Array.isArray(kvEntries) || !Array.isArray(files)
-    || (replaceKvKeys !== null && (!Array.isArray(replaceKvKeys) || replaceKvKeys.some((key) => typeof key !== 'string')))) {
-    throw new TypeError('database replacement requires valid kvEntries, files and optional replaceKvKeys arrays');
+    || (ownedKvKeys !== null && !isStringArray(ownedKvKeys))) {
+    throw new TypeError('database replacement requires valid kvEntries, files and optional ownedKvKeys arrays');
   }
   for (const entry of kvEntries) {
     if (!Array.isArray(entry) || entry.length !== 2 || typeof entry[0] !== 'string') {
@@ -117,7 +119,7 @@ export const dbReplace = async ({ kvEntries = [], files = [], replaceKvKeys = nu
     const kv = t.objectStore('kv');
     const disk = t.objectStore('files');
     try {
-      if (replaceKvKeys === null) {
+      if (ownedKvKeys === null) {
         kv.clear();
         for (const [key, value] of kvEntries) kv.put(value, key);
       } else {
@@ -128,7 +130,7 @@ export const dbReplace = async ({ kvEntries = [], files = [], replaceKvKeys = nu
         keys.onsuccess = () => {
           try {
             for (const key of keys.result) {
-              if (replaceKvKeys.includes(key)) kv.delete(key);
+              if (ownedKvKeys.includes(key)) kv.delete(key);
             }
             for (const [key, value] of kvEntries) kv.put(value, key);
           } catch (error) {
