@@ -33,6 +33,19 @@ const reSign = async (archive) => {
 };
 
 describe('WebOS data backup', () => {
+  it('yields between bounded Base64 chunks for large binary data', async () => {
+    const bytes = Uint8Array.from({ length: 0x7ffe * 33 }, (_, index) => index % 251);
+    await db.kvSet('sqlite.db', bytes);
+    const yieldSpy = vi.spyOn(globalThis, 'setTimeout');
+
+    const exported = await archiveOf();
+    expect(yieldSpy).toHaveBeenCalled();
+    const restored = await backup.readBackupFile(exported);
+    await backup.restoreBackup(restored);
+
+    expect([...await db.kvGet('sqlite.db')]).toEqual([...bytes]);
+  });
+
   it('exports and restores WebOS-owned settings, kv values, files and folder markers', async () => {
     await db.dirPut('/Home/Docs');
     await db.filePut('/Home/Docs/hello.txt', blob('hello'));
