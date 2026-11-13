@@ -36,24 +36,34 @@ describe('WebOS data backup', () => {
   it('exports and restores WebOS-owned settings, kv values, files and folder markers', async () => {
     await db.dirPut('/Home/Docs');
     await db.filePut('/Home/Docs/hello.txt', blob('hello'));
-    await db.kvSet('sqlite.bytes', new Uint8Array([1, 2, 255]));
-    await db.kvSet('app.state', { active: true, list: [1, 2] });
-    await db.kvSet('app.blob', blob('binary', 'application/octet-stream'));
+    await db.kvSet('sqlite.db', new Uint8Array([1, 2, 255]));
+    await db.kvSet('plugin.private', { token: 'must-not-be-exported' });
     localStorage.setItem('webos.notepad.v1', JSON.stringify({ notes: [{ id: 1 }] }));
+    localStorage.setItem('webos.auth.refresh-token', 'must-not-be-exported');
     localStorage.setItem('outside.origin', 'leave me alone');
 
     const exported = await archiveOf();
     expect(exported.type).toBe('application/vnd.artcraft.webos-backup+json');
     const restored = await backup.readBackupFile(exported);
-    expect(restored.counts).toEqual({ files: 1, folders: 1, keyValues: 3, settings: 1 });
+    expect(restored.counts).toEqual({ files: 1, folders: 1, keyValues: 1, settings: 1 });
+    expect(restored.excludedLocalStorageKeys).toEqual(['webos.auth.refresh-token']);
+    expect(restored.excludedKvKeys).toEqual(['plugin.private']);
+    const serialized = await exported.text();
+    expect(serialized).not.toContain('must-not-be-exported');
 
-    await db.dbReplace({ kvEntries: [], files: [] });
+    // Simulate a different/current profile that contains unregistered keys.
+    // Restoring owned data must not delete or overwrite those records.
+    await db.dbReplace({
+      kvEntries: [['plugin.private', { keep: true }], ['auth.refresh_token', 'keep']],
+      files: [],
+    });
     localStorage.removeItem('webos.notepad.v1');
+    localStorage.setItem('webos.auth.refresh-token', 'keep');
     await backup.restoreBackup(restored);
 
-    expect(await db.kvGet('app.state')).toEqual({ active: true, list: [1, 2] });
-    expect([...await db.kvGet('sqlite.bytes')]).toEqual([1, 2, 255]);
-    expect(await (await db.kvGet('app.blob')).text()).toBe('binary');
+    expect([...await db.kvGet('sqlite.db')]).toEqual([1, 2, 255]);
+    expect(await db.kvGet('plugin.private')).toEqual({ keep: true });
+    expect(await db.kvGet('auth.refresh_token')).toBe('keep');
     expect(await (await db.fileGet('/Home/Docs/hello.txt')).blob.text()).toBe('hello');
     expect((await db.fileGet('/Home/Docs')).dir).toBe(true);
     expect(JSON.parse(localStorage.getItem('webos.notepad.v1')).notes[0].id).toBe(1);
@@ -146,8 +156,15 @@ describe('WebOS data backup', () => {
     expect(localStorage.getItem('webos.target')).toBeNull();
   });
 
-  it('refuses unsupported structured-clone types rather than silently dropping them', async () => {
-    await db.kvSet('map', new Map([['x', 1]]));
+  it('refuses unsupported structured-clone types for an allowlisted key', async () => {
+    await db.kvSet('sqlite.db', new Map([['x', 1]]));
     await expect(archiveOf()).rejects.toThrow('unsupported type');
+  });
+
+  it('rejects importing an unapproved IndexedDB key even with a valid checksum', async () => {
+    const archive = JSON.parse(await (await archiveOf()).text());
+    archive.storage.kv.push({ key: 'auth.refresh_token', value: { kind: 'json', value: 'stolen' } });
+    const altered = await reSign(archive);
+    await expect(backup.readBackupFile(altered)).rejects.toThrow('unsupported database key');
   });
 });

@@ -95,9 +95,10 @@ export const dbSnapshot = async () => {
 
 // Replace both stores atomically. A quota or structured-clone failure aborts
 // the transaction and leaves the previous database contents untouched.
-export const dbReplace = async ({ kvEntries = [], files = [] } = {}) => {
-  if (!Array.isArray(kvEntries) || !Array.isArray(files)) {
-    throw new TypeError('database replacement requires kvEntries and files arrays');
+export const dbReplace = async ({ kvEntries = [], files = [], replaceKvKeys = null } = {}) => {
+  if (!Array.isArray(kvEntries) || !Array.isArray(files)
+    || (replaceKvKeys !== null && (!Array.isArray(replaceKvKeys) || replaceKvKeys.some((key) => typeof key !== 'string')))) {
+    throw new TypeError('database replacement requires valid kvEntries, files and optional replaceKvKeys arrays');
   }
   for (const entry of kvEntries) {
     if (!Array.isArray(entry) || entry.length !== 2 || typeof entry[0] !== 'string') {
@@ -116,9 +117,27 @@ export const dbReplace = async ({ kvEntries = [], files = [] } = {}) => {
     const kv = t.objectStore('kv');
     const disk = t.objectStore('files');
     try {
-      kv.clear();
+      if (replaceKvKeys === null) {
+        kv.clear();
+        for (const [key, value] of kvEntries) kv.put(value, key);
+      } else {
+        // A selective restore replaces only explicitly owned keys and keeps
+        // unknown/plugin/auth data intact. The read request keeps this
+        // transaction active until its success callback queues the writes.
+        const keys = kv.getAllKeys();
+        keys.onsuccess = () => {
+          try {
+            for (const key of keys.result) {
+              if (replaceKvKeys.includes(key)) kv.delete(key);
+            }
+            for (const [key, value] of kvEntries) kv.put(value, key);
+          } catch (error) {
+            try { t.abort(); } catch { /* transaction may already be inactive */ }
+            reject(error);
+          }
+        };
+      }
       disk.clear();
-      for (const [key, value] of kvEntries) kv.put(value, key);
       for (const record of files) disk.put(record);
     } catch (error) {
       try { t.abort(); } catch { /* transaction may already be inactive */ }

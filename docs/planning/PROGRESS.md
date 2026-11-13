@@ -78,7 +78,7 @@ PR #36 is no longer a documentation-only proposal. Its head branch now includes 
 
 - IndexedDB `dbSnapshot` reads the existing `files` and `kv` stores in one read transaction; `dbReplace` validates input and replaces both stores in one read/write transaction.
 - `webos/src/os/backup.js` writes schema-v1 uncompressed JSON with Base64 binary values, a SHA-256 integrity digest, 20,000-item, 128 MiB decoded-payload and 180 MiB serialized-file limits.
-- Backup includes the existing host-managed Files disk (including app bridge namespaces), key/value records and `webos.*` localStorage. It does not include cookies, browser credentials, foreign-origin iframe storage or session-only device file handles.
+- Backup includes the host-managed Files disk (including app bridge namespaces) plus explicit allowlists for `sqlite.db` and reviewed first-party `webos.*` state keys. Unknown/plugin/auth keys are listed by key name only, never exported, and preserved during selective restore. Cookies, browser credentials, foreign-origin iframe storage and session-only device file handles remain outside scope.
 - Files exposes Backup and Restore actions. Restore validates before writing, shows the replacement scope to the user, replaces the IndexedDB stores atomically, and attempts to roll back the database and localStorage if the settings phase fails.
 - Tests were added for database snapshots/replacement, binary/JSON/Blob round trips, checksum tampering, unsupported schemas, unsafe paths, size limits, rollback, UI confirmation and error paths.
 
@@ -88,7 +88,7 @@ PR #36 is no longer a documentation-only proposal. Its head branch now includes 
 
 The current WebOS remains an experimental browser desktop and Craft-app demonstrator—not a daily driver. IndexedDB does provide same-origin/profile persistence across ordinary reloads, and Files has basic virtual-disk CRUD/import/export. Those capabilities do not yet constitute a durable user filesystem, mature file-management experience or cross-device data continuity. Production SSO, account/device management, sync, deeper file operations, integrated full-featured applications, real browser-engine capability, game-library lifecycle and extensive customization remain unimplemented or incomplete.
 
-The roadmap now defines the intended 90% common-use-case target and a daily-driver acceptance gate. Treat it as a long-term capability target, not as a current feature claim.
+The roadmap now defines the intended 90% common-use-case target and a daily-driver acceptance gate across SSO/device identity, durable local storage and file management, full customization, a real browser-engine path, productivity/communication/creative/developer apps, games and common utilities. Treat that as a long-term, scenario-measured capability target—not as app-count parity or a current feature claim.
 
 ### Change-aware CI behavior
 

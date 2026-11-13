@@ -10,6 +10,52 @@ export const MAX_ARCHIVE_BYTES = 180 * 1024 * 1024;
 export const MAX_PAYLOAD_BYTES = 128 * 1024 * 1024;
 export const MAX_BACKUP_ITEMS = 20_000;
 
+/*
+ * Only first-party keys whose current data shape and user value are known are
+ * included. Add keys here only after reviewing their contents and migration
+ * behavior. Unknown webos.* settings and IndexedDB keys are listed in the
+ * manifest but never exported or removed during restore.
+ */
+export const BACKUP_LOCAL_STORAGE_KEYS = Object.freeze([
+  'webos.browser.session',
+  'webos.calc.ans',
+  'webos.calc.angle',
+  'webos.calc.graph',
+  'webos.calc.history',
+  'webos.calc.memory',
+  'webos.calc.mode',
+  'webos.calc.precision',
+  'webos.chat.history',
+  'webos.composites',
+  'webos.desktop',
+  'webos.desktop.order',
+  'webos.editor.state',
+  'webos.events',
+  'webos.firecraft.autosave',
+  'webos.groups',
+  'webos.installed',
+  'webos.notes',
+  'webos.notepad.v1',
+  'webos.persona',
+  'webos.recents',
+  'webos.saver',
+  'webos.taskbar',
+  'webos.theme',
+  'webos.ui',
+  'webos.uiMode',
+  'webos.userapps',
+  'webos.userthemes',
+  'webos.volume',
+  'webos.weather.loc',
+  'webos.weather.units',
+  'webos.welcomed',
+  'webos.widgets',
+]);
+export const BACKUP_KV_KEYS = Object.freeze(['sqlite.db']);
+
+const LOCAL_STORAGE_KEY_SET = new Set(BACKUP_LOCAL_STORAGE_KEYS);
+const KV_KEY_SET = new Set(BACKUP_KV_KEYS);
+
 const encoder = new TextEncoder();
 const byteLength = (value) => encoder.encode(value).byteLength;
 const fail = (message) => { throw new Error(message); };
@@ -19,9 +65,18 @@ function localStorageEntries() {
   const entries = [];
   for (let index = 0; index < localStorage.length; index += 1) {
     const key = localStorage.key(index);
-    if (key?.startsWith('webos.')) entries.push([key, localStorage.getItem(key) ?? '']);
+    if (key && LOCAL_STORAGE_KEY_SET.has(key)) entries.push([key, localStorage.getItem(key) ?? '']);
   }
   return entries.sort(([a], [b]) => a.localeCompare(b));
+}
+
+function omittedLocalStorageKeys() {
+  const keys = [];
+  for (let index = 0; index < localStorage.length; index += 1) {
+    const key = localStorage.key(index);
+    if (key?.startsWith('webos.') && !LOCAL_STORAGE_KEY_SET.has(key)) keys.push(key);
+  }
+  return keys.sort();
 }
 
 function toBase64(bytes) {
@@ -116,12 +171,22 @@ function countStorage(storage) {
 export async function createBackupBlob() {
   const snapshot = await db.dbSnapshot();
   const settings = localStorageEntries();
-  ensure(snapshot.kvEntries.length + snapshot.files.length + settings.length <= MAX_BACKUP_ITEMS,
+  const excludedLocalStorageKeys = omittedLocalStorageKeys();
+  ensure(snapshot.kvEntries.length + snapshot.files.length + settings.length + excludedLocalStorageKeys.length <= MAX_BACKUP_ITEMS,
     'WebOS has too many stored items for one backup');
+
+  const excludedKvKeys = [];
+  const supportedKvEntries = [];
+  for (const [key, value] of snapshot.kvEntries) {
+    ensure(typeof key === 'string', 'A stored database key cannot be represented in a backup');
+    if (KV_KEY_SET.has(key)) supportedKvEntries.push([key, value]);
+    else excludedKvKeys.push(key);
+  }
+  excludedKvKeys.sort();
 
   let totalPayloadBytes = settings.reduce((sum, [key, value]) => sum + byteLength(key) + byteLength(value), 0);
   const kv = [];
-  for (const [key, value] of snapshot.kvEntries) {
+  for (const [key, value] of supportedKvEntries) {
     ensure(typeof key === 'string', 'A stored key cannot be represented in a backup');
     const encoded = await encodeKvValue(value);
     if (encoded.data) totalPayloadBytes += fromBase64(encoded.data).byteLength;
@@ -159,6 +224,8 @@ export async function createBackupBlob() {
     counts: countStorage(storage),
     payloadBytes: totalPayloadBytes,
     encoding: 'json+base64',
+    excludedLocalStorageKeys,
+    excludedKvKeys,
   };
   const unsigned = { format: BACKUP_FORMAT, schemaVersion: BACKUP_SCHEMA_VERSION, manifest, storage };
   const integrity = { algorithm: 'SHA-256', digest: await digest(JSON.stringify(unsigned)) };
@@ -180,6 +247,16 @@ export async function readBackupFile(file) {
   ensure(archive.manifest?.schemaVersion === BACKUP_SCHEMA_VERSION, 'Backup manifest is missing or unsupported');
   ensure(typeof archive.manifest.createdAt === 'string' && Number.isFinite(Date.parse(archive.manifest.createdAt)), 'Backup manifest has an invalid export timestamp');
   ensure(archive.manifest.application === 'ArtCraft WebOS' && archive.manifest.encoding === 'json+base64', 'Backup manifest describes an unsupported payload format');
+  const excludedLocalStorageKeys = archive.manifest.excludedLocalStorageKeys ?? [];
+  const excludedKvKeys = archive.manifest.excludedKvKeys ?? [];
+  ensure(Array.isArray(excludedLocalStorageKeys) && excludedLocalStorageKeys.length <= MAX_BACKUP_ITEMS
+    && excludedLocalStorageKeys.every((key, index) => typeof key === 'string' && key.startsWith('webos.')
+      && !LOCAL_STORAGE_KEY_SET.has(key) && excludedLocalStorageKeys.indexOf(key) === index),
+  'Backup contains an invalid excluded-settings list');
+  ensure(Array.isArray(excludedKvKeys) && excludedKvKeys.length <= MAX_BACKUP_ITEMS
+    && excludedKvKeys.every((key, index) => typeof key === 'string' && !KV_KEY_SET.has(key)
+      && excludedKvKeys.indexOf(key) === index),
+  'Backup contains an invalid excluded-database-keys list');
   ensure(archive.integrity?.algorithm === 'SHA-256' && /^[a-f0-9]{64}$/.test(archive.integrity.digest || ''),
     'Backup integrity metadata is missing or invalid');
 
@@ -198,8 +275,9 @@ export async function readBackupFile(file) {
   const seenSettings = new Set();
   const localStorageValues = [];
   for (const entry of storage.localStorage) {
-    ensure(Array.isArray(entry) && entry.length === 2 && typeof entry[0] === 'string' && entry[0].startsWith('webos.'),
-      'Backup contains a setting outside the WebOS-owned namespace');
+    ensure(Array.isArray(entry) && entry.length === 2 && typeof entry[0] === 'string'
+      && LOCAL_STORAGE_KEY_SET.has(entry[0]),
+      'Backup contains a setting outside the supported WebOS backup allowlist');
     ensure(!seenSettings.has(entry[0]) && typeof entry[1] === 'string', 'Backup contains a duplicate or invalid setting');
     seenSettings.add(entry[0]);
     totalPayloadBytes += byteLength(entry[0]) + byteLength(entry[1]);
@@ -209,7 +287,8 @@ export async function readBackupFile(file) {
   const seenKeys = new Set();
   const kvEntries = [];
   for (const entry of storage.kv) {
-    ensure(entry && typeof entry.key === 'string' && !seenKeys.has(entry.key), 'Backup contains a duplicate or invalid database key');
+    ensure(entry && typeof entry.key === 'string' && KV_KEY_SET.has(entry.key) && !seenKeys.has(entry.key),
+      'Backup contains a duplicate or unsupported database key');
     seenKeys.add(entry.key);
     const decoded = decodeKvValue(entry.value);
     if (decoded instanceof Blob) totalPayloadBytes += decoded.size;
@@ -252,6 +331,8 @@ export async function readBackupFile(file) {
     localStorageEntries: localStorageValues,
     kvEntries,
     files,
+    excludedLocalStorageKeys,
+    excludedKvKeys,
   };
 }
 
@@ -267,7 +348,11 @@ export async function restoreBackup(backup) {
   const previousDb = await db.dbSnapshot();
   const previousSettings = localStorageEntries();
   try {
-    await db.dbReplace({ kvEntries: backup.kvEntries, files: backup.files });
+    await db.dbReplace({
+      kvEntries: backup.kvEntries,
+      files: backup.files,
+      replaceKvKeys: BACKUP_KV_KEYS,
+    });
     replaceLocalStorage(backup.localStorageEntries);
   } catch (error) {
     try {

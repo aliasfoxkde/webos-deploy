@@ -167,7 +167,7 @@ export default function FilesApp() {
       a.download = 'artcraft-webos-backup-' + new Date().toISOString().replace(/[:.]/g, '-') + '.json';
       a.click();
       setTimeout(() => URL.revokeObjectURL(url), 5000);
-      setBackupNotice('Backup exported (' + fmtBytes(blob.size) + '). Keep this file somewhere outside this browser profile.');
+      setBackupNotice('Backup exported (' + fmtBytes(blob.size) + '). Only explicitly supported WebOS data is included; keep this file outside the browser profile.');
     } catch (error) {
       setBackupNotice('Backup failed: ' + (error.message || error));
     } finally {
@@ -182,12 +182,21 @@ export default function FilesApp() {
     try {
       const backup = await readBackupFile(file);
       const counts = backup.counts;
+      const excluded = [
+        ...(backup.excludedLocalStorageKeys || []),
+        ...(backup.excludedKvKeys || []),
+      ];
+      const excludedNote = excluded.length
+        ? '\n\nThis archive intentionally excludes ' + excluded.length + ' unregistered app-data key(s): '
+          + excluded.join(', ') + '. Their values are not in this backup; matching keys already on this device will be left untouched.'
+        : '';
       const confirmed = window.confirm(
         'This backup contains ' + counts.files + ' files, ' + counts.folders + ' folders, '
-        + counts.keyValues + ' app database entries and ' + counts.settings + ' settings.\n\n'
-        + 'Restoring replaces all WebOS-managed Files, app database values and webos.* settings in this browser profile. '
-        + 'Export a backup of the current profile first if you may need it. Browser credentials, cookies, remote app-origin data '
-        + 'and device file handles are not included.\n\nContinue with restore?',
+        + counts.keyValues + ' supported app database entries and ' + counts.settings + ' supported settings.\n\n'
+        + 'Restoring replaces the WebOS Files disk and only the explicitly supported app-data keys/settings in this browser profile. '
+        + 'Other app/plugin keys are left untouched. Export a backup of the current profile first if you may need it. '
+        + 'Browser credentials, cookies, remote app-origin data and device file handles are not included.'
+        + excludedNote + '\n\nContinue with restore?',
       );
       if (!confirmed) {
         setBackupNotice('Restore cancelled. No data was changed.');

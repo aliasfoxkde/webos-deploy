@@ -206,8 +206,9 @@ WASM, extension manifests, executable installers or provider credentials.
 **Required MVP-01 vertical slices:**
 
 1. **Implemented on the active PR #36 branch:** atomic IndexedDB snapshot and
-   replacement primitives for `files` and `kv`, plus allowlisted `webos.*`
-   localStorage enumeration in the backup module; unit tests cover the DB API.
+   replacement primitives for `files` and `kv`, exact localStorage and key/value
+   backup allowlists, exclusion metadata for unsupported keys, and selective
+   restore that preserves unknown/plugin/auth records; unit tests cover the DB API.
 2. **Implemented as schema-v1 JSON on the active PR #36 branch:** deterministic
    store ordering, manifest counts/sizes, SHA-256 archive integrity and download.
    Per-file payload checksums and streaming ZIP remain follow-up hardening.
@@ -235,9 +236,12 @@ archive parsing or decompress untrusted data without hard limits.
 The first backup/restore vertical slice is now wired into the Files toolbar.
 The active branch adds `dbSnapshot` and `dbReplace`, `webos/src/os/backup.js`,
 Backup/Restore actions, validation and error messaging, and unit/component tests.
-The backup includes the complete host-owned `files` and `kv` stores and `webos.*`
-localStorage keys; it intentionally excludes cookies, browser credentials, foreign
-origin app storage, and session-only File System Access handles.
+The backup includes all user Files content and only the explicit first-party
+allowlists for `sqlite.db` and reviewed `webos.*` settings/app-state keys.
+Unknown IndexedDB keys and unregistered `webos.*` keys are recorded by name in
+the manifest but their values are not exported; selective restore preserves
+unknown/plugin/auth data already on the target device. It also excludes cookies,
+browser credentials, foreign-origin iframe storage and session-only device file handles.
 
 **Not yet accepted as MVP-01:** this branch has not yet passed the full current
 CI, production-build, browser E2E, or a disposable-profile export → clear → restore
@@ -320,7 +324,7 @@ Primary owner: app/workflow workstream.
 2. Onboarding/starter layout polish (issue #16).
 3. WASM Workbench and generic module package model (issue #19).
 4. Shared SDK, common libraries and CLI/MCP tool discovery.
-5. Optional identity, sync, collaboration and encrypted continuity.
+5. Production SSO/account/device services, then optional sync, collaboration and encrypted continuity; account login must not be required for local-only use.
 6. Native host, Linux ISO/installed system with Btrfs, and device-specific ROM.
 
 ## 6. Engineering methodology: improve throughput without lowering quality
