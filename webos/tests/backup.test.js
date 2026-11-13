@@ -53,7 +53,7 @@ describe('WebOS data backup', () => {
 
     // Simulate a different/current profile that contains unregistered keys.
     // Restoring owned data must not delete or overwrite those records.
-    await db.dbReplace({
+    await db.dbApplyState({
       kvEntries: [['plugin.private', { keep: true }], ['auth.refresh_token', 'keep']],
       files: [],
     });
@@ -143,7 +143,7 @@ describe('WebOS data backup', () => {
     localStorage.setItem('webos.target', 'new');
     const restored = await backup.readBackupFile(await archiveOf());
 
-    await db.dbReplace({ kvEntries: [['stable', 'old']], files: [{ path: '/Home/old.txt', blob: blob('old'), type: 'text/plain', size: 3, mtime: 1 }] });
+    await db.dbApplyState({ kvEntries: [['stable', 'old']], files: [{ path: '/Home/old.txt', blob: blob('old'), type: 'text/plain', size: 3, mtime: 1 }] });
     localStorage.clear();
     localStorage.setItem('webos.stable', 'old');
     const originalSet = Storage.prototype.setItem;
