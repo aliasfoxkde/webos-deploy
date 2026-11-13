@@ -2,7 +2,7 @@
 // This first interoperable format is uncompressed JSON with binary values
 // encoded as Base64. It avoids executing content and avoids decompression
 // bombs; a ZIP transport can be added later without changing the storage schema.
-import { dbReplace, dbSnapshot } from './db.js';
+import { dbApplyState, dbReadState } from './db.js';
 
 export const BACKUP_FORMAT = 'artcraft-webos-backup';
 export const BACKUP_SCHEMA_VERSION = 1;
@@ -11,6 +11,8 @@ export const MAX_PAYLOAD_BYTES = 128 * 1024 * 1024;
 export const MAX_BACKUP_ITEMS = 20_000;
 const BASE64_CHUNK_BYTES = 0x7ffe;
 const BASE64_YIELD_EVERY = 32;
+const BASE64_PATTERN = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}={2}|[A-Za-z0-9+/]{3}=)?$/;
+const SHA256_PATTERN = /^[a-f0-9]{64}$/;
 
 /*
  * Only first-party keys whose current data shape and user value are known are
@@ -96,7 +98,7 @@ async function toBase64(bytes) {
 }
 
 function fromBase64(value) {
-  ensure(typeof value === 'string' && /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(value),
+  ensure(typeof value === 'string' && BASE64_PATTERN.exec(value) !== null,
     'Backup contains malformed Base64 data');
   let binary;
   try { binary = atob(value); } catch { fail('Backup contains malformed Base64 data'); }
@@ -155,8 +157,8 @@ function decodeKvValue(value) {
 
 async function digest(value) {
   ensure(globalThis.crypto?.subtle, 'This browser does not provide secure SHA-256 support');
-  const result = await globalThis.crypto.subtle.digest('SHA-256', encoder.encode(value));
-  return [...new Uint8Array(result)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+  const digestBuffer = await globalThis.crypto.subtle.digest('SHA-256', encoder.encode(value));
+  return [...new Uint8Array(digestBuffer)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
 function hasControlCharacter(value) {
@@ -183,15 +185,15 @@ function countStorage(storage) {
 }
 
 export async function createBackupBlob() {
-  const snapshot = await dbSnapshot();
+  const storageState = await dbReadState();
   const settings = localStorageEntries();
   const excludedLocalStorageKeys = omittedLocalStorageKeys();
-  ensure(snapshot.kvEntries.length + snapshot.files.length + settings.length + excludedLocalStorageKeys.length <= MAX_BACKUP_ITEMS,
+  ensure(storageState.kvEntries.length + storageState.files.length + settings.length + excludedLocalStorageKeys.length <= MAX_BACKUP_ITEMS,
     'WebOS has too many stored items for one backup');
 
   const excludedKvKeys = [];
   const supportedKvEntries = [];
-  for (const [key, value] of snapshot.kvEntries) {
+  for (const [key, value] of storageState.kvEntries) {
     ensure(typeof key === 'string', 'A stored database key cannot be represented in a backup');
     if (KV_KEY_SET.has(key)) supportedKvEntries.push([key, value]);
     else excludedKvKeys.push(key);
@@ -210,7 +212,7 @@ export async function createBackupBlob() {
   }
 
   const files = [];
-  for (const record of snapshot.files) {
+  for (const record of storageState.files) {
     ensure(safePath(record.path), 'A stored file path cannot be represented safely in a backup');
     if (record.dir) {
       files.push({ path: record.path, dir: true, mtime: Number(record.mtime) || 0 });
@@ -271,7 +273,7 @@ export async function readBackupFile(file) {
     && excludedKvKeys.every((key, index) => typeof key === 'string' && !KV_KEY_SET.has(key)
       && excludedKvKeys.indexOf(key) === index),
   'Backup contains an invalid excluded-database-keys list');
-  ensure(archive.integrity?.algorithm === 'SHA-256' && /^[a-f0-9]{64}$/.test(archive.integrity.digest || ''),
+  ensure(archive.integrity?.algorithm === 'SHA-256' && SHA256_PATTERN.exec(archive.integrity.digest || '') !== null,
     'Backup integrity metadata is missing or invalid');
 
   const unsigned = { ...archive };
@@ -359,21 +361,24 @@ function replaceLocalStorage(entries) {
 export async function restoreBackup(backup) {
   ensure(backup && Array.isArray(backup.kvEntries) && Array.isArray(backup.files)
     && Array.isArray(backup.localStorageEntries), 'Validate a backup before restoring it');
-  const previousDb = await dbSnapshot();
+  const previousDatabaseState = await dbReadState();
   const previousSettings = localStorageEntries();
   try {
-    await dbReplace({
+    await dbApplyState({
       kvEntries: backup.kvEntries,
       files: backup.files,
-      replaceKvKeys: BACKUP_KV_KEYS,
+      ownedKvKeys: BACKUP_KV_KEYS,
     });
     replaceLocalStorage(backup.localStorageEntries);
   } catch (error) {
     try {
-      await dbReplace(previousDb);
+      await dbApplyState(previousDatabaseState);
       replaceLocalStorage(previousSettings);
     } catch (rollbackError) {
-      throw new Error(`Restore failed (${error.message || error}) and automatic rollback also failed (${rollbackError.message || rollbackError}). Keep this tab open and export any remaining data before retrying.`);
+      throw new Error(
+        `Restore failed (${error.message || error}) and automatic rollback also failed `
+        + `(${rollbackError.message || rollbackError}). Keep this tab open and export any remaining data before retrying.`,
+      );
     }
     throw new Error(`Restore failed; the previous WebOS data was restored. ${error.message || error}`);
   }
