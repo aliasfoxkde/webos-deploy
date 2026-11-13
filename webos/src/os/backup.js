@@ -2,13 +2,15 @@
 // This first interoperable format is uncompressed JSON with binary values
 // encoded as Base64. It avoids executing content and avoids decompression
 // bombs; a ZIP transport can be added later without changing the storage schema.
-import * as db from './db.js';
+import { dbReplace, dbSnapshot } from './db.js';
 
 export const BACKUP_FORMAT = 'artcraft-webos-backup';
 export const BACKUP_SCHEMA_VERSION = 1;
 export const MAX_ARCHIVE_BYTES = 180 * 1024 * 1024;
 export const MAX_PAYLOAD_BYTES = 128 * 1024 * 1024;
 export const MAX_BACKUP_ITEMS = 20_000;
+const BASE64_CHUNK_BYTES = 0x7ffe;
+const BASE64_YIELD_EVERY = 32;
 
 /*
  * Only first-party keys whose current data shape and user value are known are
@@ -79,13 +81,18 @@ function omittedLocalStorageKeys() {
   return keys.sort();
 }
 
-function toBase64(bytes) {
-  let binary = '';
-  for (let offset = 0; offset < bytes.length; offset += 0x8000) {
-    const slice = bytes.subarray(offset, Math.min(offset + 0x8000, bytes.length));
-    binary += String.fromCharCode(...slice);
+async function toBase64(bytes) {
+  let encoded = '';
+  let chunkIndex = 0;
+  for (let offset = 0; offset < bytes.length; offset += BASE64_CHUNK_BYTES) {
+    const slice = bytes.subarray(offset, Math.min(offset + BASE64_CHUNK_BYTES, bytes.length));
+    encoded += btoa(String.fromCharCode(...slice));
+    chunkIndex += 1;
+    if (chunkIndex % BASE64_YIELD_EVERY === 0 && offset + BASE64_CHUNK_BYTES < bytes.length) {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
   }
-  return btoa(binary);
+  return encoded;
 }
 
 function fromBase64(value) {
@@ -106,14 +113,14 @@ function plainObject(value) {
 
 async function encodeKvValue(value) {
   if (value instanceof Blob) {
-    return { kind: 'blob', type: value.type || 'application/octet-stream', data: toBase64(new Uint8Array(await value.arrayBuffer())) };
+    return { kind: 'blob', type: value.type || 'application/octet-stream', data: await toBase64(new Uint8Array(await value.arrayBuffer())) };
   }
   if (value instanceof ArrayBuffer) {
-    return { kind: 'arraybuffer', data: toBase64(new Uint8Array(value)) };
+    return { kind: 'arraybuffer', data: await toBase64(new Uint8Array(value)) };
   }
   if (ArrayBuffer.isView(value)) {
     const bytes = new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
-    return { kind: 'typed-array', type: value.constructor.name, data: toBase64(bytes) };
+    return { kind: 'typed-array', type: value.constructor.name, data: await toBase64(bytes) };
   }
   if (value === null || ['string', 'number', 'boolean'].includes(typeof value) || Array.isArray(value) || plainObject(value)) {
     const json = JSON.stringify(value);
@@ -176,7 +183,7 @@ function countStorage(storage) {
 }
 
 export async function createBackupBlob() {
-  const snapshot = await db.dbSnapshot();
+  const snapshot = await dbSnapshot();
   const settings = localStorageEntries();
   const excludedLocalStorageKeys = omittedLocalStorageKeys();
   ensure(snapshot.kvEntries.length + snapshot.files.length + settings.length + excludedLocalStorageKeys.length <= MAX_BACKUP_ITEMS,
@@ -216,7 +223,7 @@ export async function createBackupBlob() {
         type: record.type || record.blob.type || 'application/octet-stream',
         size: record.blob.size,
         mtime: Number(record.mtime) || 0,
-        data: toBase64(new Uint8Array(await record.blob.arrayBuffer())),
+        data: await toBase64(new Uint8Array(await record.blob.arrayBuffer())),
       });
     }
     ensure(totalPayloadBytes <= MAX_PAYLOAD_BYTES, 'WebOS data exceeds the 128 MiB backup payload limit');
@@ -352,10 +359,10 @@ function replaceLocalStorage(entries) {
 export async function restoreBackup(backup) {
   ensure(backup && Array.isArray(backup.kvEntries) && Array.isArray(backup.files)
     && Array.isArray(backup.localStorageEntries), 'Validate a backup before restoring it');
-  const previousDb = await db.dbSnapshot();
+  const previousDb = await dbSnapshot();
   const previousSettings = localStorageEntries();
   try {
-    await db.dbReplace({
+    await dbReplace({
       kvEntries: backup.kvEntries,
       files: backup.files,
       replaceKvKeys: BACKUP_KV_KEYS,
@@ -363,7 +370,7 @@ export async function restoreBackup(backup) {
     replaceLocalStorage(backup.localStorageEntries);
   } catch (error) {
     try {
-      await db.dbReplace(previousDb);
+      await dbReplace(previousDb);
       replaceLocalStorage(previousSettings);
     } catch (rollbackError) {
       throw new Error(`Restore failed (${error.message || error}) and automatic rollback also failed (${rollbackError.message || rollbackError}). Keep this tab open and export any remaining data before retrying.`);
