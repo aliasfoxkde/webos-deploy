@@ -1,5 +1,14 @@
 # WebOS Quality Program — Coverage, Lint, A11y, CI
 
+> **Historical quality-program record.** The figures, findings and phases
+> below are dated audit evidence from October 2026; they are not current
+> coverage or security counts. Current executable guardrails live in
+> `webos/package.json`, `webos/vitest.config.js`, the test suite and
+> [.github/workflows/ci.yml](../../.github/workflows/ci.yml). The last
+> recorded baseline is in [PROGRESS.md](PROGRESS.md); the active product
+> acceptance criteria are in [MVP-EXECUTION-PLAN.md](MVP-EXECUTION-PLAN.md).
+> Do not reopen completed coverage work simply to chase a higher percentage.
+>
 Status: in progress · owner: webos-deploy · created 2026-10-10
 Scope: this repo's shipped surface — `webos/` (the OS shell), `packaging/`,
 repo docs. The sibling craft checkouts are independent repos with their own

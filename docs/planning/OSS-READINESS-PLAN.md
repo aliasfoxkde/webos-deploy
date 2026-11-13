@@ -1,5 +1,13 @@
 # Open-source readiness plan — post-v3.23.0 (written 2026-11-01)
 
+> **Historical readiness snapshot — superseded 2026-11-10.** The checklist
+> below records the post-v3.23.0 audit and must not be treated as the current
+> execution queue. Several items (release automation, security gates and
+> app-catalog updates) have since changed. The active product release target
+> is [MVP-EXECUTION-PLAN.md](MVP-EXECUTION-PLAN.md); current status is
+> [PROGRESS.md](PROGRESS.md). Verify every workflow and Wiki claim against
+> the live repository before relying on this historical record.
+>
 Derived from a full audit on 2026-11-01: gates green (`npm run ci`), e2e
 sweep 31/31, coverage at 98.89/94.91/99.05/99.92 vs floors
 98.6/94.6/98.8/99.85, token-level WCAG AAA auditor passing, Aegis +
@@ -10,8 +18,12 @@ still open, benchmarked against well-regarded OSS web repos.
 ## Baseline (already done — do not redo)
 
 - README hero + screenshot, `.github/` community files (CONTRIBUTING,
-  CODE_OF_CONDUCT, SUPPORT, issue/PR templates), layered `docs/` tree
-  with AGENTS.md, wiki pushed (13 pages).
+  CODE_OF_CONDUCT, SUPPORT, issue/PR templates), and a layered `docs/`
+  tree with AGENTS.md. A 13-page GitHub Wiki was reported in the original
+  audit, but its current page repository could not be resolved in the
+  2026-11-10 audit; treat Wiki synchronization as unverified until the
+  pages can be inspected directly. The in-repository `docs/` tree is the
+  current documentation source of truth.
 - CI: lint zero-warnings, Aegis pinned scanner, shellcheck, docs gates,
   WCAG contrast auditor, coverage ratchets, build, e2e sweep — mirrored
   in `.github/workflows/ci.yml` and `.gitforce.yml`. Dependabot on.

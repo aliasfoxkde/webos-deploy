@@ -71,3 +71,83 @@ export const fileDelTree = async (prefix) => {
   for (const f of doomed) await fileDel(f.path);
   return doomed.length;
 };
+
+
+// Read both host-owned IndexedDB stores in one read transaction. The key
+// and value arrays from getAllKeys/getAll share IndexedDB's key ordering.
+export const dbReadState = async () => {
+  const db = await open();
+  return new Promise((resolve, reject) => {
+    const t = db.transaction(['kv', 'files'], 'readonly');
+    const keys = t.objectStore('kv').getAllKeys();
+    const values = t.objectStore('kv').getAll();
+    const files = t.objectStore('files').getAll();
+    t.oncomplete = () => {
+      resolve({
+        kvEntries: keys.result.map((key, index) => [key, values.result[index]]),
+        files: files.result,
+      });
+    };
+    t.onerror = () => reject(t.error || new Error('snapshot transaction failed'));
+    t.onabort = () => reject(t.error || new Error('snapshot transaction aborted'));
+  });
+};
+
+// Apply both stores atomically. A quota or structured-clone failure aborts
+// the transaction and leaves the previous database contents untouched.
+const isStringArray = (value) => Array.isArray(value) && value.every((item) => typeof item === 'string');
+
+export const dbApplyState = async ({ kvEntries = [], files = [], ownedKvKeys = null } = {}) => {
+  if (!Array.isArray(kvEntries) || !Array.isArray(files)
+    || (ownedKvKeys !== null && !isStringArray(ownedKvKeys))) {
+    throw new TypeError('database replacement requires valid kvEntries, files and optional ownedKvKeys arrays');
+  }
+  for (const entry of kvEntries) {
+    if (!Array.isArray(entry) || entry.length !== 2 || typeof entry[0] !== 'string') {
+      throw new TypeError('database replacement contains an invalid key/value entry');
+    }
+  }
+  for (const record of files) {
+    if (!record || typeof record.path !== 'string' || !record.path.startsWith('/')) {
+      throw new TypeError('database replacement contains an invalid file record');
+    }
+  }
+
+  const db = await open();
+  return new Promise((resolve, reject) => {
+    const t = db.transaction(['kv', 'files'], 'readwrite');
+    const kv = t.objectStore('kv');
+    const disk = t.objectStore('files');
+    try {
+      if (ownedKvKeys === null) {
+        kv.clear();
+        for (const [key, value] of kvEntries) kv.put(value, key);
+      } else {
+        // A selective restore replaces only explicitly owned keys and keeps
+        // unknown/plugin/auth data intact. The read request keeps this
+        // transaction active until its success callback queues the writes.
+        const keys = kv.getAllKeys();
+        keys.onsuccess = () => {
+          try {
+            for (const key of keys.result) {
+              if (ownedKvKeys.includes(key)) kv.delete(key);
+            }
+            for (const [key, value] of kvEntries) kv.put(value, key);
+          } catch (error) {
+            try { t.abort(); } catch { /* transaction may already be inactive */ }
+            reject(error);
+          }
+        };
+      }
+      disk.clear();
+      for (const record of files) disk.put(record);
+    } catch (error) {
+      try { t.abort(); } catch { /* transaction may already be inactive */ }
+      reject(error);
+      return;
+    }
+    t.oncomplete = () => resolve();
+    t.onerror = () => reject(t.error || new Error('database replacement failed'));
+    t.onabort = () => reject(t.error || new Error('database replacement aborted'));
+  });
+};

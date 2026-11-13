@@ -1,8 +1,9 @@
 # WebOS 3.0 Program — Personas, Real Terminal, AI, Assets
 
 Status: **complete** — the 3.0 wave shipped (personas, terminal 2.9/3.x,
-AI chat, real assets; see ARCHITECTURE.md version sections). Kept as the
-historical plan; current planning lives in `docs/planning/HANDOFF.md`.
+AI chat, real assets; see ARCHITECTURE.md version sections). Kept as a historical record; active near-term delivery lives in
+`docs/planning/MVP-EXECUTION-PLAN.md`, with operating context in
+`docs/planning/HANDOFF.md`.
 
 owner: webos-deploy · created 2026-10-09
 

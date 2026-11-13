@@ -1,3 +1,31 @@
+## 2026-11-10 — productivity MVP reset and documentation reconciliation
+
+Repository audit (read-only baseline):
+- Canonical `main` was `5b4fe552428f2fc02e7887897ceeb1744edb8fec`, committed 2026-11-03; latest release was v3.25.0 (published 2026-11-03).
+- Full CI on that main SHA passed 2026-11-03; scheduled CodeQL passed 2026-11-09. No newer full main CI run was found in this audit.
+- Current registry has 13 external Craft applications (including SolidCraft) and the app manifest barrel has 13 bundled first-party plugins.
+- Files persistence is IndexedDB; settings and selected app state are browser-profile localStorage. User-visible export/backup + restore is still open (#17).
+- The published Chat adapter has no model configured; no production AI assistant is available by default.
+- Browser proxy issue #12 was already closed by the v3.25.0 proxy-removal work. Draft PR #20 and its body still said #12 awaited merge and required reconciliation.
+- FireCraft host integration (autosave, Files open-with, PNG→Photos/export-to-Files, bridge E2E) was completed by WebOS v3.17; the architecture page incorrectly described it as future work and included a developer-machine path.
+
+Planning decisions:
+- Created [MVP execution plan](MVP-EXECUTION-PLAN.md) and tracking issue #37. Near-term target: dependable local-first browser/PWA productivity beta; core Files/Notepad/Editor workflows; backup/export/validated restore; documented browser limits; no mandatory account or AI.
+- Native host/ISO/Btrfs/ROM, arbitrary WASM, universal SDK, identity/sync and full AI agent stay in long-term roadmap, not MVP blockers.
+- Added work-intake limits, task receipts for agent/model/token/tool/CI cost where exposed, separate queue-vs-runtime infrastructure metrics, WIP limits and product lead-time metrics. Root cause of slow cadence has not yet been measured; scope/coordination fragmentation is evidenced, while token/harness/resource causes remain hypotheses.
+
+Documentation updates on the active PR #36 branch:
+- Added MVP-EXECUTION-PLAN.md; rewrote PROGRESS.md and HANDOFF.md around current verified baseline and MVP acceptance.
+- Updated product-vision.md, PLATFORM-ARCHITECTURE-ROADMAP.md, docs/README.md, quickstart, app guide, Craft registry reference, development release/quality pages, architecture overview, and FireCraft integration history.
+- Marked PHASES.md, QUALITY-PROGRAM.md and OSS-READINESS-PLAN.md as historical records rather than active task authorities.
+- Updated webos/src/os/registry.js comment from 12 to 13 external apps.
+- PR #36 description includes MVP plan and scope.
+- PR #15 description marked superseded for active planning; PR #20 body corrected for #12 closure and its remaining Page Agent draft scope; issue #17 prioritized as MVP-01.
+- GitHub Wiki could not be resolved despite has_wiki=true (wiki API/raw page repository returned 404). No wiki content was changed; docs/ remains the verified source of truth until the page repo is accessible.
+
+Validation boundary:
+- These are planning/documentation and one source-comment changes only. No WebOS application behavior, backup/restore implementation, build, npm CI, browser sweep, release or deployment was performed in this session. CI on the updated PR #36 head remains a required validation step.
+
 ## 2026-11-02 — SolidCraft becomes the thirteenth craft app; v3.25.0 released
 
 - **SolidCraft** (tangency-labs/solidcraft v0.30.1, rigid-body physics

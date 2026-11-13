@@ -1,5 +1,14 @@
 # Phased Work Plan — ArtCraft WebOS
 
+> **Historical plan — superseded 2026-11-10.** This file preserves the
+> October–November phase/task record and its original measurements. Do not
+> use its status tables, targets or unchecked task list as the active
+> backlog. The active browser-first delivery plan is
+> [MVP-EXECUTION-PLAN.md](MVP-EXECUTION-PLAN.md), tracked by
+> [issue #37](https://github.com/aliasfoxkde/ArtCraft-WebOS/issues/37).
+> Long-term platform phases remain in
+> [PLATFORM-ARCHITECTURE-ROADMAP.md](PLATFORM-ARCHITECTURE-ROADMAP.md).
+>
 Generated 2026-10-22. Replaces and supersedes the "gaps and next steps"
 portions of prior session records. Read HANDOFF.md first for context,
 conventions, and the standing routine loop.

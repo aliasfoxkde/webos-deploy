@@ -2,7 +2,7 @@
 
 **An experimental, browser-based desktop for running creative apps and exploring a more user-owned operating system.**
 
-[Open the live prototype](https://artcraft-webos.pages.dev/) · [Product vision and roadmap](docs/planning/product-vision.md) · [Report a bug](https://github.com/aliasfoxkde/ArtCraft-WebOS/issues/new/choose)
+[Open the live prototype](https://artcraft-webos.pages.dev/) · [Productivity MVP plan](docs/planning/MVP-EXECUTION-PLAN.md) · [Product vision and roadmap](docs/planning/product-vision.md) · [Report a bug](https://github.com/aliasfoxkde/ArtCraft-WebOS/issues/new/choose)
 
 ![ArtCraft WebOS desktop](docs/screenshot-desktop.png)
 
@@ -19,7 +19,10 @@ utilities. See the [app guide](docs/getting-started/apps.md) and
 
 You can try it without installing anything at
 [artcraft-webos.pages.dev](https://artcraft-webos.pages.dev/). The shell
-stores its files and settings in the browser on that device.
+stores its files and settings in that browser profile. Complete user-visible
+backup/restore is not yet available in the published release; do not keep the
+only copy of important work in the browser profile. Export important files
+from their apps and keep independent copies.
 
 ### Prototype boundaries
 
@@ -73,9 +76,11 @@ coverage, build, and end-to-end gates.
 [![CI](https://github.com/aliasfoxkde/ArtCraft-WebOS/actions/workflows/ci.yml/badge.svg)](https://github.com/aliasfoxkde/ArtCraft-WebOS/actions/workflows/ci.yml)
 
 The project is experimental and may change. Browser storage is local to the
-browser profile; clearing site data removes it. Review the
-[security policy](SECURITY.md) before using the prototype with sensitive
-information.
+browser profile; clearing site data removes it. The active near-term target is
+a dependable local-first productivity beta; its backup/restore and workflow
+acceptance are tracked in [issue #37](https://github.com/aliasfoxkde/ArtCraft-WebOS/issues/37).
+Review the [security policy](SECURITY.md) before using the prototype with
+sensitive information.
 
 ## License and attribution
 

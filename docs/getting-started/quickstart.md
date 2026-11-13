@@ -10,7 +10,7 @@ there is no account and no server-side storage.
 1. Open the URL. The desktop appears with app icons and a taskbar.
 2. Double-click an icon (single tap on mobile) to launch an app.
 3. Open the **Start menu** (bottom taskbar) to browse all apps, including
-   the twelve embedded craft apps and the App Store.
+   the 13 registered external Craft apps and the App Store.
 4. Right-click the desktop for wallpaper, display, and personalization
    options; right-click any icon or titlebar for its property sheet.
 
@@ -26,8 +26,15 @@ there is no account and no server-side storage.
 ## Files & persistence
 
 The **Files** app shows a virtual disk backed by IndexedDB. Downloads,
-saved documents (e.g. FireCraft exports), and app data live there. Clearing
-site data in your browser erases everything — there is no cloud copy.
+saved documents (e.g. FireCraft exports), and app data live there. Settings
+and some bundled-app state are stored in the browser profile as well.
+Clearing site data or losing the browser profile can remove that work.
+
+**Important:** user-visible, complete backup/restore is not yet available in
+this release. Do not treat browser storage as a backed-up system disk or keep
+the only copy of important work in this profile. Export important documents
+from their apps and retain independent copies until the backup/restore
+workflow is implemented and verified.
 
 ## Mobile
 
@@ -36,8 +43,8 @@ Widgets and taskbar behave the same; windows maximize by default.
 
 ## Privacy
 
-No analytics, no telemetry, no accounts. The shell itself makes no network
-calls beyond static assets: embedded sites (craft apps, embed players,
-frame-friendly pages) are fetched by your browser from their own origins,
+No account is required for the local shell. The shell loads static assets and
+the apps/sites you launch; external Craft apps, embeds and frame-friendly
+pages are fetched by your browser from their own origins,
 and the former `/proxy` reader was removed for security — see
 [Browser](../architecture/browser.md).

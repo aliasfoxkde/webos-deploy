@@ -12,8 +12,55 @@ permissions:
   contents: read
 
 jobs:
+  changes:
+    name: classify-code-changes
+    runs-on: ubuntu-latest
+    outputs:
+      code_changed: ${{ steps.classify.outputs.code_changed }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - id: classify
+        name: Skip CodeQL only for proven documentation-only changes
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BEFORE_SHA: ${{ github.event.before }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT_NAME" == "schedule" || "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            echo "code_changed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          base="$BEFORE_SHA"
+          if [[ "$EVENT_NAME" == "pull_request" ]]; then base="$PR_BASE_SHA"; fi
+          if [[ -z "$base" || "$base" =~ ^0+$ ]] || ! git cat-file -e "$base^{commit}" 2>/dev/null; then
+            echo "code_changed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [[ "$EVENT_NAME" == "pull_request" ]]; then
+            files=$(git diff --name-only "$base...$GITHUB_SHA")
+          else
+            files=$(git diff --name-only "$base" "$GITHUB_SHA")
+          fi
+          if [[ -z "$files" ]]; then
+            echo "code_changed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          while IFS= read -r file; do
+            [[ -z "$file" ]] && continue
+            case "$file" in
+              docs/*|README.md|CHANGELOG.md|CONTRIBUTING.md|LICENSE|CODE_OF_CONDUCT.md) ;;
+              *) echo "code_changed=true" >> "$GITHUB_OUTPUT"; exit 0 ;;
+            esac
+          done <<< "$files"
+          echo "code_changed=false" >> "$GITHUB_OUTPUT"
   analyze:
     name: Analyze JavaScript and TypeScript
+    needs: [changes]
+    if: needs.changes.outputs.code_changed == 'true'
     runs-on: ubuntu-latest
     permissions:
       actions: read

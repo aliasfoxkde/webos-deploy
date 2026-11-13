@@ -1,39 +1,95 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to coding agents working in this repository.
 
-## What this directory is
+## What this repository is
 
-A checkout area holding 8 sibling **ArtCraft "craft" apps** — clean-room, pure-Rust reimaginations of classic creative/productivity applications, each targeting 1:1 parity with its reference app plus better speed, openness, and agent control. This directory exists for **web (WASM) deployment**: every app builds to the browser via trunk.
+This repository is **ArtCraft WebOS**: a Vite + React browser desktop, its
+first-party apps, release/deployment tooling, and documentation. It is not
+a Cargo workspace and is not a source monorepo for the independently
+developed Craft applications.
 
-**This directory is ALSO a git repo itself** (`github.com/aliasfoxkde/ArtCraft-WebOS`): it contains **ArtCraft WebOS** — a Vite + React browser desktop that hosts the craft apps — plus the packaging that fetches and deploys their release builds. See `README.md` for the layout (`webos/` shell source, `packaging/fetch-apps.sh` release sync, `apps/` + `zips/` + `r2-blobs/` are gitignored build artifacts). The sibling source repos (`cadcraft/` … `zed/`) are independent git repositories and are **gitignored here** — never commit their contents to this repo.
+- `webos/` contains the browser/PWA shell and 13 bundled first-party plugins.
+- `webos/src/os/registry.js` registers external Craft apps and hosted web apps.
+  The current external Craft catalogue has 13 apps; see
+  [docs/reference/craft-apps.md](docs/reference/craft-apps.md) and
+  [docs/getting-started/apps.md](docs/getting-started/apps.md).
+- `packaging/` contains app-release fetch, deploy, security and E2E tooling.
+- `apps/`, `zips/` and `r2-blobs/` are fetched/release artifacts and are
+  gitignored. Never hand-edit or commit generated app bundles.
+- Craft source repositories are independently versioned and maintained.
+  They may exist as optional sibling checkouts in a maintainer's workspace,
+  but they are not required to clone, build or work on the WebOS shell and
+  must never be committed into this repository.
 
-**The craft sibling dirs are not a Cargo workspace.** Each is an independent git repository (branch `main`, remote `github.com/aliasfoxkde/<app>`) with its own version, history, and agent instructions. There is no cross-repo build; never run cargo from this parent level. Repositories don't share code — they share conventions only (the shared standards live in the separate, non-public `storytold/craftrules` repo, which is **not** checked out anywhere under here — don't look for it locally).
+Do not use a machine-specific path (for example a maintainer's NAS checkout)
+as an application integration contract. Use canonical repository names,
+release assets, registry rows and documented public interfaces.
 
-**WebOS work happens in `webos/`** (Vite + React, no Rust): plugin apps live in `webos/src/apps/<name>/`, the registry in `webos/src/os/registry.js`, architecture in `docs/planning/webos-apps/ARCHITECTURE.md`. Quality gates (run inside `webos/`): `npm run lint` (eslint, zero warnings), `npm run coverage` (vitest + ratchet floors in `vitest.config.js` — includes the WCAG contrast auditor, `tests/contrast-audit.test.js`), `npm run build`; `npm run ci` chains all three. Deploy with `wrangler pages deploy webos/dist --project-name artcraft-webos` after `npm run build`; CI mirrors the gates in `.github/workflows/ci.yml` and `.gitforce.yml`. Craft releases come from the `storytold/<app>` GitHub org (asset `{app}-web-<version>.zip`) — fetch with `packaging/fetch-apps.sh`, never commit fetched builds.
+## Active product objective
 
-| Directory | App | Parity target | Version |
-|---|---|---|---|
-| `cadcraft/` | CADCraft | AutoCAD | 0.3.0 |
-| `designcraft/` | DesignCraft | InDesign | 0.4.0 |
-| `gridcraft/` | GridCraft | Excel | 0.3.0 |
-| `lightcraft/` | LightCraft | Lightroom | 0.4.0 |
-| `pdfcraft/` | PdfCraft | Acrobat | 0.4.0 |
-| `photocraft/` | PhotoCraft | Photoshop | 0.5.0 |
-| `vectorcraft/` | VectorCraft | Illustrator | 0.7.0 |
-| `wordcraft/` | WordCraft | Word | 0.3.0 |
-| `apps/deckcraft/` | DeckCraft | PowerPoint | 0.4.0 |
-| `apps/soundcraft/` | SoundCraft | Pro Tools | 0.5.0 |
-| `apps/effectcraft/` | EffectCraft | After Effects | 0.8.0 |
+The near-term target is a **dependable local-first productivity beta** for
+real users in the browser/PWA. Its active scope, user-workflow acceptance
+matrix, backup/restore contract, work sequencing, WIP limits, token/task
+receipts and infrastructure measurement method are in
+[docs/planning/MVP-EXECUTION-PLAN.md](docs/planning/MVP-EXECUTION-PLAN.md),
+tracked by [issue #37](https://github.com/aliasfoxkde/ArtCraft-WebOS/issues/37).
 
-DeckCraft, SoundCraft and EffectCraft now publish upstream release web zips too, so all twelve craft apps ride the standard `packaging/fetch-apps.sh` pipeline into `apps/<name>/` and deploy from there to `<name>-web.pages.dev`. Their source checkouts moved out of `apps/` to `/nas/Temp/repos/<name>` (2026-10-21) so `fetch_one`'s `rm -rf apps/<name>` cannot destroy them. DeckCraft builds with `trunk build --release`; EffectCraft builds with `cargo xtask web` and ships its own PWA glue (manifest, icons, precaching service worker), so `packaging/pwa-inject.sh` leaves that bundle alone. **FireCraft** (`github.com/aliasfoxkde/firecraft`, checkout at `/nas/Temp/repos/FireCraft`) is a twelfth craft app. Since upstream v0.2.2 it publishes a release web zip (`firecraft-web-<version>.zip`, under the `aliasfoxkde` org — the one craft app not under `storytold`), so it now rides the standard `packaging/fetch-apps.sh` pipeline into `apps/firecraft/` and deploys from there to `firecraft-web.pages.dev`; WebOS registers it as a default app (`firecraft`, firecraft-web.pages.dev). The `/nas/Temp/repos/FireCraft` checkout is still where unreleased work is built (`cargo run -p xtask -- dist --web`), but that build is not what production serves. (`filmcraft` is referenced in docs as a sibling but is not checked out here. Docs reference `storytold/<app>` repos; the actual remotes use the `aliasfoxkde` org.)
+The immediate P0 work is user-visible backup/export and validated restore,
+followed by end-to-end Files, Notepad, Editor and supported Craft-app
+handoff workflows. Native host, ISO/Btrfs, device ROM, arbitrary WASM,
+identity/sync, general-purpose AI agents and the broad SDK are long-term
+tracks; do not make them prerequisites for the browser MVP.
 
-## Continue from the handoff
+The published Chat app currently has no configured production model
+adapter. Do not describe the no-model/echo adapter as a working assistant.
+The same-origin remote HTML proxy was removed; do not reintroduce it or
+serve untrusted remote HTML under the WebOS origin.
 
-For ongoing work, start from `docs/planning/HANDOFF.md` (phased plan with
-atomic tasks, pitfalls, release checklist) and `docs/planning/PROGRESS.md`
-(live status board); session records live in `docs/planning/SESSIONS.md`,
-release/deploy history in `docs/planning/HISTORY.md`.
+## Development and quality gates
+
+WebOS application work happens in `webos/` (Vite + React; no Rust):
+
+```bash
+cd webos
+npm ci
+npm run ci       # strict lint, coverage floors, production build
+npm run sweep    # production build + headless Chrome E2E sweep
+```
+
+Run targeted tests while iterating, then the relevant full gate and browser
+sweep at integration/release points. Never lower coverage, lint, security or
+accessibility gates to make a change pass. Do not repeatedly run the full
+build from multiple agents against the same unchanged tree.
+
+The repository workflows are in `.github/workflows/`; verify the actual
+required jobs on the exact candidate commit. A green run on an earlier SHA
+or another branch is not a release receipt.
+
+## Release artifact and data rules
+
+- Fetch external Craft app releases through `packaging/fetch-apps.sh`.
+  Do not hand-edit downloaded assets or commit fetched builds.
+- Registry versions, release asset hashes and WASM hashes must agree;
+  `webos/tests/registry-versions.test.js` enforces the deployed set.
+- PWA/local data lives in browser-managed storage. IndexedDB/localStorage
+  persistence is not a backup. Do not claim complete export/restore, cloud
+  sync, E2EE, a native filesystem or arbitrary WASM sandbox unless the
+  corresponding feature and tests exist.
+- Keep third-party apps isolated through the documented host bridge;
+  validate origin and source window, namespace storage, and do not grant
+  capabilities based only on an app's presence in the registry.
+- After a release, verify the deployed bundle hashes and service-worker
+  cache stamp against the exact release SHA.
+
+## Source-of-truth docs
+
+- Active MVP: [MVP-EXECUTION-PLAN.md](docs/planning/MVP-EXECUTION-PLAN.md)
+- Current status: [PROGRESS.md](docs/planning/PROGRESS.md)
+- Continuation and operating rules: [HANDOFF.md](docs/planning/HANDOFF.md)
+- Long-term vision: [product-vision.md](docs/planning/product-vision.md)
+- Long-term platform architecture: [PLATFORM-ARCHITECTURE-ROADMAP.md](docs/planning/PLATFORM-ARCHITECTURE-ROADMAP.md)
+- Current docs index: [docs/README.md](docs/README.md)
 
 ## Read the per-repo agent doc first
 

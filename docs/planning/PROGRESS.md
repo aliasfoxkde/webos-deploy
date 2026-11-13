@@ -1,108 +1,95 @@
 # Progress — ArtCraft WebOS
 
-Live status board. Update this (and [SESSIONS.md](SESSIONS.md)) at the end
-of every working session. Plan-of-record for open work:
-[HANDOFF.md](HANDOFF.md).
+> **Snapshot reviewed:** 2026-11-12. This is the live status board, not a second roadmap.
+> **Active near-term plan:** [MVP-EXECUTION-PLAN.md](MVP-EXECUTION-PLAN.md).
+> **MVP tracking:** [issue #37](https://github.com/aliasfoxkde/ArtCraft-WebOS/issues/37).
+> **Long-term vision:** [product-vision.md](product-vision.md) and [PLATFORM-ARCHITECTURE-ROADMAP.md](PLATFORM-ARCHITECTURE-ROADMAP.md).
 
-## Snapshot (runtime baseline 2026-11-02; repository and CI verified 2026-11-02)
+## Verified repository and release baseline
 
-| Dimension | State |
+| Dimension | Verified state |
 |---|---|
-| Released / deployed version | **3.25.0** ([v3.25.0](https://github.com/aliasfoxkde/ArtCraft-WebOS/releases/tag/v3.25.0)) |
-| Production | https://artcraft-webos.pages.dev — served bundle hash matches local `webos/dist`, `sw.js` cache `webos-v3.25.0` |
-| Craft apps | all thirteen on their current upstream web release (2026-11-02): cadcraft 0.13.0, deckcraft 0.11.1, designcraft 0.13.0, effectcraft 0.17.0, firecraft 0.2.3, gridcraft 0.12.1, lightcraft 0.14.0, pdfcraft 0.14.0, photocraft 0.16.0, **solidcraft 0.30.1** (tangency-labs), soundcraft 0.13.1, vectorcraft 0.17.0, wordcraft 0.11.0 — eight of them served from the R2 `craftweb` route |
-| FireCraft | https://firecraft-web.pages.dev — **v0.2.3**, served from the upstream release zip (wasm `firecraft-web-d13f1a83e8a1a76f`) on the standard `fetch-apps.sh` pipeline; bridge autosave/open-with/exportPng→Photos + export-to-Files (2026-10-21) |
-| Tests | 1475 specs / 95 files, `npm run ci` green |
-| Coverage | 98.88% stmts / 94.86% branches / 98.95% funcs / **99.91% lines**; floors 98.6/94.6/98.8/99.85 in `webos/vitest.config.js` (95 files, measured − tolerance) |
-| Lint | strictest ruleset, zero warnings |
-| Accessibility | WCAG 2.1 AAA token gates incl. wallpaper-extreme flattening + desktop scrim pills |
-| Docs coverage | ARCHITECTURE.md Module index ⇄ src/ enforced by `tests/docs-coverage.test.js` — now in GitForge CI pipeline |
-| Registry versions | 13/13 craft-app rows match the deployed bundle (verified by asset + wasm hash); pinned by `tests/registry-versions.test.js`. The shell SW cache version is pinned to `src/version.js` by `tests/version.test.js` (added after the v3.25.0 SW-bump miss) |
-| CI | GitHub Actions: lint, docs gate, WCAG audit, coverage ratchet, build, E2E sweep, **Shellcheck**, **Aegis**, and **CodeQL**. GitHub Safeguards now requires both CodeQL results and the full WebOS CI check before merge. GitForge mirrors the application gates. Historical GitForge trigger issue remains in R2. |
-| Aegis | scanner pinned to `aliasfoxkde/aegis` **v0.6.4** (checksum-verified) via `packaging/aegis-scan.sh`; baseline regenerated with that binary (1809 findings / 111 files / 22 categories); the gate fails only on findings outside the baseline |
+| Canonical main | `5b4fe552428f2fc02e7887897ceeb1744edb8fec`, committed 2026-11-02 7:47 p.m. Central (2026-11-03 01:47:19 UTC) |
+| Latest published release | [v3.25.0](https://github.com/aliasfoxkde/ArtCraft-WebOS/releases/tag/v3.25.0), published 2026-11-02 7:30 p.m. Central (2026-11-03 01:30:30 UTC) |
+| Latest full main CI | [Run 41562004984](https://github.com/aliasfoxkde/ArtCraft-WebOS/actions/runs/41562004984), passed 2026-11-03 on the current main SHA |
+| Latest scheduled CodeQL | [Run 42621998306](https://github.com/aliasfoxkde/ArtCraft-WebOS/actions/runs/42621998306), passed 2026-11-09 on the current main SHA |
+| Latest recorded test/coverage baseline | 1,475 specs / 95 files; 98.88% statements, 94.86% branches, 98.95% functions, 99.91% lines (last recorded 2026-11-02; verify again before release) |
+| First-party bundled plugins | 13: Browser, Calculator, Chat, Editor, Files, Notepad, Photos, Task Manager, Terminal, Video, Weather, Snippet and Cast |
+| External Craft app registry | 13: CADCraft, DeckCraft, DesignCraft, EffectCraft, FireCraft, GridCraft, LightCraft, PdfCraft, PhotoCraft, SolidCraft, SoundCraft, VectorCraft and WordCraft |
+| Local persistence | IndexedDB Files disk; browser-profile localStorage for settings and selected app state |
+| Backup/restore | Initial schema-v1 JSON implementation on PR #36 branch: DB snapshot/replace, SHA-256 validation, Files toolbar, replace/rollback path; not yet passed CI or disposable-profile E2E |
+| AI Chat | No production model adapter configured in the published main build; current adapter is the explicit no-model/echo seam |
+| Browser security | Same-origin HTML proxy removed; [issue #12](https://github.com/aliasfoxkde/ArtCraft-WebOS/issues/12) is closed. Frame-hostile pages require normal browser-tab handoff |
+| Identity/sync | Not shipped as a complete user-facing service |
+| Native host / ISO / Btrfs / ROM | Long-term separate workstreams; not part of the browser MVP |
 
-## Done (evidence in HISTORY.md / SESSIONS.md)
+**Integration drift discovered during this refresh:** WebOS's registry and reference table currently pin FireCraft at **0.2.3**, while the canonical FireCraft repository has published **v0.2.5**. Do not change the WebOS registry by version-string substitution alone: verify the fetched web ZIP, deployed JavaScript/Wasm hashes, and host-bridge compatibility, then update the registry and deployment receipt together. Track this as MVP-00 app-registry reconciliation.
 
-- [x] Quality program phases A–G (audit → plan → lint → AAA → coverage →
-      cleanup/triage → docs gate → release) — complete at v3.14.0.
-- [x] FireCraft deployed + integrated as twelfth craft app — complete at
-      v3.15.0.
-- [x] E2E tooling committed to `packaging/e2e/`.
-- [x] Docs-reference gate (`tests/docs-references.test.js`) + full-docs
-      staleness pass — 18+ stale references fixed, superseded plans
-      (PROGRAM-3, QUALITY-PLAN) bannered (2026-10-15).
-- [x] OSS readiness merged in PR #14 (2026-11-01): public repository,
-      prototype scope and product vision documented, MIT license for
-      first-party shell/tooling, security-reporting guidance, clone/setup
-      instructions, and pinned CodeQL workflow. GitHub CI and CodeQL passed;
-      Pages was not redeployed because no runtime code changed.
+**PR-branch validation:** checkpoint `2ab390be6d538b64263775d3f8c84278ebaa688f` passed full CI [43072646913](https://github.com/aliasfoxkde/ArtCraft-WebOS/actions/runs/43072646913) and CodeQL [43072647074](https://github.com/aliasfoxkde/ArtCraft-WebOS/actions/runs/43072647074) on 2026-11-11. The follow-up backup-contract documentation commit is under fresh CI [43073937714](https://github.com/aliasfoxkde/ArtCraft-WebOS/actions/runs/43073937714) and CodeQL [43073937497](https://github.com/aliasfoxkde/ArtCraft-WebOS/actions/runs/43073937497), pending/queued at the last check. These checks validate the documentation/MVP PR branch only; they do not represent new application code, a new base-main run, or a production deployment.
 
-## Open (ordered; atomic tasks in HANDOFF.md)
+The CI receipts above prove the state of the recorded commits only. The coverage figures are a dated baseline, not a new 2026-11-10 measurement. No full CI run newer than 2026-11-03 was found for `main` during this audit.
 
-- [ ] **P15/P16** OSS-readiness refinements in
-      [OSS-READINESS-PLAN.md](OSS-READINESS-PLAN.md) — dependency-review
-      workflow, branch-coverage ratchet trial, P16.3 accessibility audit
-      beyond contrast.
-- [ ] **H1** Routine-change loop — standing procedure, apply per change.
-- [x] **H2** FireCraft: H2.0–H2.6 complete — v0.2.1 deployed, v3.17.0 shipped.
-      H2.1 contract documented; H2.2 postToApp correlate implemented; H2.3
-      autosave (applied→exportDocument→filePut, ready→fileGet→openDocument);
-      H2.4 open-with via Files context menu; H2.5 exportPng→Photos and
-      export-to-Files (shared SaveDialog component, 2026-10-19); H2.6 E2E probe
-      open→apply→exportDocument round-trip verified.
-- [ ] **H3** Upstream adoption watch — H3.1 FireCraft app mark swap when
-      upstream ships one (waiting on aliasfoxkde/FireCraft#2, still open
-      2026-10-25). All twelve apps were re-adopted 2026-10-25 (P13, v3.23.0);
-      SolidCraft joined as the thirteenth 2026-11-02 (v3.25.0); the watch
-      continues for the next upstream release of any app. H3.3 registry
-      audit holds — pinned by
-      `tests/registry-versions.test.js`.
-- [x] **P9** Future-work items — P9.1 and P9.5 closed with the craft-app
-      upgrade (2026-10-22); P9.2 preview server pinned to 127.0.0.1;
-      P9.3 the sweep asserts internal state (window registry + IndexedDB);
-      P9.4 the legacy driver deprecated, its surfaces ported into the sweep.
-- [x] **P10** Adopt the upstream craft-app releases — complete 2026-10-22:
-      all twelve craft apps upgraded to their current upstream web release
-      (cadcraft 0.3.0→0.10.0 … vectorcraft 0.7.0→0.14.0, deck/sound/effect
-      joined the standard release-zip pipeline), seven oversized wasm
-      bundles moved to the R2 route via `packaging/r2-publish.sh`, registry
-      rows + SW cache stamps re-pinned, each deployment production-verified
-      (asset hash + `application/wasm`), shell released as v3.21.0.
-- [x] **H4** Quality forward path — H4.1 coverage floors met (96.5/88.5/95.8/99.6), H4.2 deps refreshed (vitest 5.0.5, coverage-v8, fake-indexeddb; re-refreshed 2026-10-21: sql.js 1.15.1, vite 6.4.5 — React 19 / Vite 8 / ESLint 10 / happy-dom 21 deferred with reasons in SESSIONS.md), H4.3 Aegis re-scan zero new findings (baseline suppresses all), H4.4 sweep synced.
-- [x] **H5** H5.3 container revalidation complete in node:24-trixie-slim; H5.1 pipeline registered (push, 4e1079cd…ccc957); H5.2 GitHub Actions as primary gate (runner dispatch pending for GitForge).
-- [x] **H7** Coverage determinism + CI repair (2026-10-20) — three one-second
-      clock intervals (Taskbar, Sidebar clock widget, Screensaver big clock)
-      were covered only when the test file outlived the timer, so the same
-      commit measured 95.87% functions on CI and 96.02% locally. The ratchet
-      was set from the local number and turned CI red on every push.
-      `tests/clock-timers.test.jsx` drives all three timers with fake timers;
-      the metric is now reproducible (two consecutive full runs agree exactly)
-      and the floors sit a fixed tolerance below the measured value.
-      Also in this pass: the dead `makeFirecraftExportHandlers` export was
-      removed from `src/shell/Window.jsx` (it duplicated the live
-      state-driven handlers and existed only for its own test), the live
-      export-to-Files path got component-level tests, and the E2E sweep's
-      FireCraft open-with phase was repaired (it imported a module URL the
-      production build does not serve) — the sweep is green 27/27.
-- [x] **H6** Releases — v3.18.0 shipped 2026-10-19 (its gate was red; fixed in v3.19.0), v3.19.0 shipped 2026-10-20 with a green gate, v3.20.0 shipped 2026-10-21 (FireCraft v0.2.2 sync, coverage sprint, Aegis gate repaired), v3.21.0 shipped 2026-10-22 (all craft apps upgraded to their current upstream releases; R2 publish automated), v3.22.0 shipped 2026-10-24 (reproducible Aegis baseline, Dependabot, e2e shell-state assertions, os/db error-path coverage), v3.22.1 shipped 2026-10-25 (e2e DevTools-port timeout fix), v3.23.0 shipped 2026-10-25 (all twelve craft apps upgraded to current upstream releases — P13), v3.24.0 shipped 2026-11-01 (e2e sweep hardening), v3.25.0 shipped 2026-11-02 via the automated tag-push release workflow (#25) — first release cut through CI (same-origin proxy removal #26 closing #12; Snippet + CastCraft; store fifth wave; SolidCraft as the thirteenth craft app #27; SW-cache version pinned to src/version.js #30 after the release's missed sw.js bump). Checklist in HANDOFF.md.
+## Active milestone: local-first productivity MVP
 
-## Deliberately closed (do not reopen without new evidence)
+The product objective is to make the existing browser desktop useful and safe for real users before expanding the platform architecture.
 
-- The 4 uncovered lines — 3 are unreachable reducer/switch `default:` arms
-  (calcState.jsx:126, state.jsx:483, MarkdownView.jsx:81) and Panels.jsx:336
-  is a V8 attribution quirk; documented in QUALITY-PROGRAM.md. The paths
-  that were genuinely reachable (Files.jsx:304 "Open in FireCraft",
-  SaveDialog.jsx:50 backdrop cancel, Window.jsx:81-87 export-to-Files) are
-  covered as of 2026-10-20. Ratchets only ever go up.
-- Istanbul conditional-JSX attribution — covering those lines requires
-  invoking the arrow functions (click the buttons), not refactoring JSX.
-- Cloudflare compute on the rendering path — verified absent; keep it that
-  way (static Pages + thin proxy worker only).
+| Priority | Work | State |
+|---|---|---|
+| P0 | Establish current baseline, unify plans and correct stale references | PR #36 now carries the MVP/platform plan plus the first backup/restore runtime slice; latest head and checks must be refreshed before merge |
+| P0 | User-visible backup/export and validated restore/import | Implementation candidate on PR #36 branch; issue #17; current CI and disposable-profile E2E still required |
+| P0 | Coherent Files + Notepad + Editor workflow and supported Craft app hand-off | Needs implementation-level audit and end-to-end acceptance |
+| P0 | Recovery/error handling for quota, corrupt state, interrupted import and migration | Needs scoped test plan and implementation |
+| P0 | Release candidate, browser E2E, deployed hash verification and pilot instructions | Not started for the MVP |
+| P1 | Real provider-neutral model adapter with secure BYOK and cancellation | Open; issue #21; must not be represented as shipped |
+| P1 | Onboarding/persona/starter-layout polish | Open; issue #16 |
+| Later | Arbitrary WASM Workbench | Open; issue #19; explicitly outside the first MVP |
+| Later | Capability-scoped agent contribution and app-authoring workflow | Open; issue #18 |
+| Later | Shared SDK, app/game package ecosystem, native host, ISO/Btrfs and ROM | Architecture roadmap; not MVP blockers |
 
-## Risk register
+## Work in flight (audited 2026-11-11)
 
-| ID | Description | Impact | Mitigation | Status |
-|---|---|---|---|---|
-| R1 | H3.1 blocked on FireCraft upstream shipping an official app icon (aliasfoxkde/FireCraft#2) | WebOS uses a code-drawn placeholder for FireCraft; official mark unavailable until upstream ships one | Swap script ready; upstream issue filed with exact requirements | ACCEPTED — placeholder glyph is the permanent design (2026-10-19) |
-| R2 | Coverage ratchet was set from a non-reproducible local measurement (2026-10-19) | Every push from 594e579 to 7a6e12c had a red CI; v3.18.0 shipped with a failing gate and the release notes/progress board wrongly claimed CI was green | Root cause found (timer-dependent coverage); `tests/clock-timers.test.jsx` pins the metric; floors now sit a fixed tolerance below a measured value two consecutive runs agree on | RESOLVED 2026-10-20 |
-| R3 | The Aegis CI step added 2026-10-20 never scanned anything: nonexistent `setup-python` SHA, wrong tool (the PyPI `aegis-cli` is an unrelated project), nonexistent `--format github`, and a baseline built by a different aegis version (8 categories vs 22) whose fingerprints matched nothing | The security gate was reported as wired but was in fact dead — the repo was unscanned in CI while the progress board claimed a scan ran | `packaging/aegis-scan.sh` pins the real scanner (aliasfoxkde/aegis v0.6.4) with a verified checksum; the baseline was regenerated with that binary; a negative control (injected AWS key) proves the gate fails on new findings | RESOLVED 2026-10-21 |
+| PR | Scope | Current disposition |
+|---|---|---|
+| [#36](https://github.com/aliasfoxkde/ArtCraft-WebOS/pull/36) | MVP execution plan, product vision, shared platform and native architecture roadmap | Current plan of record. Branch checkpoint `2ab390be` passed full CI [43072646913](https://github.com/aliasfoxkde/ArtCraft-WebOS/actions/runs/43072646913) and CodeQL [43072647074](https://github.com/aliasfoxkde/ArtCraft-WebOS/actions/runs/43072647074) on 2026-11-11. This included lint, Aegis, shellcheck, docs coverage, WCAG contrast, tests/coverage, build, headless-Chrome E2E and artifact upload. A subsequent documentation update specifies the verified storage inventory, archive schema candidate, validation/conflict/rollback contract, and issue #17 implementation slices. That newer PR head has fresh CI [43073937714](https://github.com/aliasfoxkde/ArtCraft-WebOS/actions/runs/43073937714) pending and CodeQL [43073937497](https://github.com/aliasfoxkde/ArtCraft-WebOS/actions/runs/43073937497) queued at the last check. PR remains unmerged; main and production release are unchanged |
+| [#20](https://github.com/aliasfoxkde/ArtCraft-WebOS/pull/20) | Page Agent browser tools and AI-first architecture | Draft future work, not part of the productivity MVP. Rebase and re-audit its proxy/security assumptions against main before resuming |
+| [#15](https://github.com/aliasfoxkde/ArtCraft-WebOS/pull/15) | Older production enhancement roadmap | Closed unmerged on 2026-11-11 as superseded by #36 and issue #37; useful concerns were reconciled into the MVP plan |
+| [#35](https://github.com/aliasfoxkde/ArtCraft-WebOS/pull/35), [#34](https://github.com/aliasfoxkde/ArtCraft-WebOS/pull/34), [#33](https://github.com/aliasfoxkde/ArtCraft-WebOS/pull/33), [#32](https://github.com/aliasfoxkde/ArtCraft-WebOS/pull/32) | Dependency and Actions updates | Refresh their live state independently; keep maintenance PRs separate from MVP feature work |
+
+Related open issues: #13 (long-term OS vision), #16 (onboarding), #17 (backup/restore), #18 (AI copilot/contribution), #19 (WASM Workbench), #21 (model router), #37 (MVP). The issue order does not imply all are equal priority.
+
+## Current blockers and product truths
+
+1. **Data portability is the primary blocker.** IndexedDB and localStorage persist inside one browser profile, but clearing site data/profile loss can remove local work. Backup/restore must be implemented and tested before promoting the product for normal user data.
+2. **The core work loop needs proof.** Existing apps and bridges are useful foundations, but each supported create/edit/open/save/export/restore path needs an executable E2E receipt on the deployed build.
+3. **AI is not an available default feature.** No model is configured in the published adapter. A later provider integration must be explicit, opt-in, cancellable and protect credentials/context.
+4. **Browser limits must remain clear.** WebOS is not a full Chromium engine or native OS. External sites may refuse framing; external app storage not owned by the WebOS bridge is outside the host backup boundary.
+5. **The plan set was fragmented.** Older phase/quality/OSS documents contained stale snapshots and open checklists. They are now marked historical; the MVP execution plan is the active sequence.
+6. **Wiki state is unverified.** The repository reports Wiki support enabled, but the GitHub Wiki page/repository could not be resolved by the available GitHub interface during the 2026-11-10 audit. Do not claim a 13-page Wiki is current. In-repository `docs/` is the canonical documentation source until the Wiki can be inspected and synchronized.
+
+## Definition of done
+
+The MVP is ready for a limited real-user beta only when a clean-profile user can complete the workflow matrix in [MVP-EXECUTION-PLAN.md](MVP-EXECUTION-PLAN.md), export/restore supported data with integrity checks, complete core workflows with no AI/account configuration, use the published build within documented browser limits, and report issues against a release SHA with current support/backup guidance.
+
+A green quality gate, a high coverage percentage, or a broad app catalogue alone is not MVP acceptance.
+
+## 2026-11-12 implementation update
+
+PR #36 is no longer a documentation-only proposal. Its head branch now includes an MVP-01 backup/restore implementation candidate:
+
+- IndexedDB `dbSnapshot` reads the existing `files` and `kv` stores in one read transaction; `dbReplace` validates input and replaces both stores in one read/write transaction.
+- `webos/src/os/backup.js` writes schema-v1 uncompressed JSON with Base64 binary values, a SHA-256 integrity digest, 20,000-item, 128 MiB decoded-payload and 180 MiB serialized-file limits.
+- Backup includes the host-managed Files disk (including app bridge namespaces) plus explicit allowlists for `sqlite.db` and reviewed first-party `webos.*` state keys. Unknown/plugin/auth keys are listed by key name only, never exported, and preserved during selective restore. Cookies, browser credentials, foreign-origin iframe storage and session-only device file handles remain outside scope.
+- Files exposes Backup and Restore actions. Restore validates before writing, shows the replacement scope to the user, replaces the IndexedDB stores atomically, and attempts to roll back the database and localStorage if the settings phase fails.
+- Tests were added for database snapshots/replacement, binary/JSON/Blob round trips, checksum tampering, unsupported schemas, unsafe paths, size limits, rollback, UI confirmation and error paths.
+
+**State: implementation in progress, not accepted.** The transport is deliberately JSON rather than ZIP for this first bounded slice; it is less space-efficient and can use substantial browser memory. Restore is replace-only (no merge or per-item conflict workflow). The code has not yet passed the current PR's full CI/build/E2E gate or a disposable-browser-profile clear-and-restore test. Do not claim backup reliability or a beta-ready data recovery guarantee until those receipts exist.
+
+### Current product boundary
+
+The current WebOS remains an experimental browser desktop and Craft-app demonstrator—not a daily driver. IndexedDB does provide same-origin/profile persistence across ordinary reloads, and Files has basic virtual-disk CRUD/import/export. Those capabilities do not yet constitute a durable user filesystem, mature file-management experience or cross-device data continuity. Production SSO, account/device management, sync, deeper file operations, integrated full-featured applications, real browser-engine capability, game-library lifecycle and extensive customization remain unimplemented or incomplete.
+
+The roadmap now defines the intended 90% common-use-case target and a daily-driver acceptance gate across SSO/device identity, durable local storage and file management, full customization, a real browser-engine path, productivity/communication/creative/developer apps, games and common utilities. Treat that as a long-term, scenario-measured capability target—not as app-count parity or a current feature claim.
+
+### Change-aware CI behavior
+
+WebOS CI on this branch classifies changed paths before starting expensive jobs. Documentation-only commits run dependency-free-with-lifecycle-scripts-disabled documentation/reference validation and whitespace/conflict checks; they skip lint, full coverage, build and browser E2E. CodeQL uses the same fail-closed path classification and skips analysis only for a proven documentation-only diff. Unknown/empty diffs, scheduled runs and manual dispatch fail closed into the code/security path. This preserves a visible check result without rebuilding the product for a Markdown-only change.

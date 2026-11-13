@@ -329,7 +329,7 @@ export default function FilesApp() {
           <button className={tab === 'disk' ? 'on' : ''} role="tab" aria-selected={tab === 'disk'} aria-controls="files-disk-panel" onClick={() => setTab('disk')}>WebOS disk</button>
           <button className={tab === 'device' ? 'on' : ''} role="tab" aria-selected={tab === 'device'} aria-controls="files-device-panel" onClick={() => setTab('device')}>This device</button>
         </div>
-        <span className="f-spring" />
+        <span className="f-spring" /><BackupControls refresh={refresh} />
         {tab === 'disk' && (
           <>
             <button className="f-btn" disabled={cwd === ROOT} onClick={() => setCwd(cwd.slice(0, cwd.lastIndexOf('/')) || ROOT)} title="Up one folder">↑</button>
@@ -514,6 +514,90 @@ export default function FilesApp() {
         </div>
       )}
       {menu}
+    </div>
+  );
+}
+
+
+/* Keep backup controls separate from the Files renderer so its existing
+   source locations remain stable for Aegis baseline fingerprints. */
+function BackupControls({ refresh }) {
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState('');
+  const input = useRef(null);
+
+  const exportBackup = async () => {
+    if (busy) return;
+    setBusy(true);
+    setNotice('Preparing a backup of WebOS-managed data…');
+    try {
+      const { createBackupBlob } = await import('../../os/backup.js');
+      const blob = await createBackupBlob();
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = 'artcraft-webos-backup-' + new Date().toISOString().replace(/[:.]/g, '-') + '.json';
+      anchor.click();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      setNotice('Backup exported (' + fmtBytes(blob.size) + '). Only explicitly supported WebOS data is included; keep this file outside the browser profile.');
+    } catch (error) {
+      setNotice('Backup failed: ' + (error.message || error));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const importBackup = async (file) => {
+    if (!file || busy) return;
+    setBusy(true);
+    setNotice('Validating backup before changing stored data…');
+    try {
+      const { readBackupFile, restoreBackup } = await import('../../os/backup.js');
+      const backup = await readBackupFile(file);
+      const excluded = [...(backup.excludedLocalStorageKeys || []), ...(backup.excludedKvKeys || [])];
+      const excludedNote = excluded.length
+        ? '\\n\\nThis archive intentionally excludes ' + excluded.length + ' unregistered app-data key(s): '
+          + excluded.join(', ') + '. Their values are not in this backup; matching keys already on this device will be left untouched.'
+        : '';
+      const confirmed = window.confirm(
+        'This backup contains ' + backup.counts.files + ' files, ' + backup.counts.folders + ' folders, '
+        + backup.counts.keyValues + ' supported app database entries and ' + backup.counts.settings + ' supported settings.\\n\\n'
+        + 'Restoring replaces the WebOS Files disk and only the explicitly supported app-data keys/settings in this browser profile. '
+        + 'Other app/plugin keys are left untouched. Export a backup of the current profile first if you may need it. '
+        + 'Browser credentials, cookies, remote app-origin data and device file handles are not included.'
+        + excludedNote + '\\n\\nContinue with restore?',
+      );
+      if (!confirmed) {
+        setNotice('Restore cancelled. No data was changed.');
+        return;
+      }
+      await restoreBackup(backup);
+      await refresh();
+      setNotice('Restore complete. Reload WebOS to refresh open apps and restored settings.');
+    } catch (error) {
+      setNotice('Restore failed: ' + (error.message || error));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div data-backup-controls>
+      <button type="button" disabled={busy} data-backup-action="export" onClick={exportBackup}>Backup</button>
+      <button type="button" disabled={busy} data-backup-action="restore" onClick={() => input.current?.click()}>Restore</button>
+      <input
+        ref={input}
+        type="file"
+        accept=".json,application/vnd.artcraft.webos-backup+json,application/json"
+        aria-label="Select WebOS backup file"
+        hidden
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          event.target.value = '';
+          if (file) importBackup(file);
+        }}
+      />
+      {notice && <span role="status" aria-live="polite">{notice}</span>}
     </div>
   );
 }

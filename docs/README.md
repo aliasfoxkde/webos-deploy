@@ -8,7 +8,7 @@ Nothing in this file requires scrolling past an index.
 | Page | What it covers |
 |---|---|
 | [Quickstart](getting-started/quickstart.md) | Open the app, launch apps, keyboard basics |
-| [The craft apps](getting-started/apps.md) | The twelve bundled ArtCraft apps and how embedding works |
+| [The craft apps](getting-started/apps.md) | The 13 registered external Craft apps and how embedding works |
 | [Browser](architecture/browser.md) | What the bundled browser can and cannot load, and why |
 
 ## For developers
@@ -26,18 +26,19 @@ Nothing in this file requires scrolling past an index.
 
 | Page | What it covers |
 |---|---|
-| [Craft app registry](reference/craft-apps.md) | Versions, sources, deploy routes for all twelve apps |
+| [Craft app registry](reference/craft-apps.md) | Versions, sources, deploy routes for all 13 external Craft apps |
 | [Attribution](ATTRIBUTION.md) | Every third-party asset and its license |
 | [Liquid Glass design](planning/webos-apps/LIQUID-GLASS.md) | Design-language research + phased plan |
 
 ## Planning & agent workspace
 
-- [Product vision and roadmap](planning/product-vision.md) — current scope,
-  explicit gaps, and staged path toward a user-owned desktop environment.
+- [MVP execution plan](planning/MVP-EXECUTION-PLAN.md) — active near-term browser/PWA beta, user workflows, data portability, acceptance tests, and delivery method.
+- [Product vision and roadmap](planning/product-vision.md) — long-term scope, explicit gaps, and the staged path toward a user-owned desktop environment.
+- [Platform architecture roadmap](planning/PLATFORM-ARCHITECTURE-ROADMAP.md) — shared libraries/components, app and game packages, CLI/MCP/AI control, and browser-to-native/ISO/ROM direction.
 - [planning/](planning/) — plan of record: [HANDOFF.md](planning/HANDOFF.md)
   (continuation context), [PROGRESS.md](planning/PROGRESS.md) (status board),
-  [PHASES.md](planning/PHASES.md) (work plan), [SESSIONS.md](planning/SESSIONS.md),
-  [HISTORY.md](planning/HISTORY.md), [QUALITY-PROGRAM.md](planning/QUALITY-PROGRAM.md),
+  [PHASES.md](planning/PHASES.md) (historical phase log; superseded for active work), [SESSIONS.md](planning/SESSIONS.md),
+  [HISTORY.md](planning/HISTORY.md), [QUALITY-PROGRAM.md](planning/QUALITY-PROGRAM.md) (historical quality record),
   and [webos-apps/](planning/webos-apps/) design docs.
 - [history/](history/) — release history snapshots and milestone records.
 - [research/](research/) — investigation notes and findings before they become plans.
@@ -45,4 +46,4 @@ Nothing in this file requires scrolling past an index.
 - [tasks/](tasks/) — small ad-hoc task scratch; finished tasks graduate into
   planning docs or are deleted.
 
-Agents: read [AGENTS.md](../AGENTS.md) at the repo root before writing here.
+Agents: read [AGENTS.md](../AGENTS.md) at the repo root and [HANDOFF.md](planning/HANDOFF.md) before writing here. The repository docs are canonical; the GitHub Wiki has not been verifiably synchronized in this audit.
