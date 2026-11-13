@@ -102,6 +102,13 @@ describe('WebOS data backup', () => {
     await expect(backup.readBackupFile(altered)).rejects.toThrow('unsafe file path');
   });
 
+  it('rejects control characters in stored paths even when the archive checksum is valid', async () => {
+    const archive = JSON.parse(await (await archiveOf()).text());
+    archive.storage.files.push({ path: '/Home/unsafe\u0001name.txt', dir: true, mtime: 1 });
+    const altered = await reSign(archive);
+    await expect(backup.readBackupFile(altered)).rejects.toThrow('unsafe file path');
+  });
+
   it('rejects empty path segments, trailing separators and backslashes', async () => {
     const archive = JSON.parse(await (await archiveOf()).text());
     archive.storage.files.push(
