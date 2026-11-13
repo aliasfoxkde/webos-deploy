@@ -589,6 +589,7 @@ function BackupControls({ refresh }) {
         ref={input}
         type="file"
         accept=".json,application/vnd.artcraft.webos-backup+json,application/json"
+        aria-label="Select WebOS backup file"
         hidden
         onChange={(event) => {
           const file = event.target.files?.[0];
